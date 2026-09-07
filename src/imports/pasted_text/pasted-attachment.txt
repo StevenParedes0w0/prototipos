@@ -1,0 +1,387 @@
+CORRECCIÓN FUNCIONAL CRÍTICA — ESTADO ÚNICO Y PERSISTENCIA DEL PLAN
+
+NO modificar el diseño visual.
+
+El problema actual NO es visual.
+
+Existe un error funcional:
+
+En “Configurar matriz de actividades” puedo completar las 5 actividades
+y aparece:
+
+5 / 5 configuradas
+
+pero al continuar a:
+
+“Revisar matriz de actividades”
+
+vuelven a aparecer datos anteriores:
+
+3 configuradas
+2 pendientes
+
+Además, al utilizar:
+
+“Completar pendientes”
+
+se vuelve a la pantalla anterior con información antigua,
+como si los cambios realizados se hubieran perdido.
+
+CORREGIR LA ARQUITECTURA DEL ESTADO.
+
+============================================================
+1. UNA ÚNICA FUENTE DE VERDAD
+============================================================
+
+Todo el flujo de creación del Plan de Trabajo debe utilizar
+UN ÚNICO ESTADO COMPARTIDO.
+
+Crear conceptualmente un único objeto:
+
+PlanDraft
+
+que contenga:
+
+- información general;
+- período;
+- grupo institucional;
+- versión;
+- actividades seleccionadas;
+- configuración completa de cada actividad;
+- contenido;
+- anexos;
+- estado del borrador.
+
+Las pantallas NO deben mantener copias independientes de la matriz.
+
+No crear:
+
+datosMatriz
+datosRevision
+datosPreview
+
+con información diferente.
+
+Todas deben leer y escribir:
+
+PlanDraft.activities
+
+============================================================
+2. ACTIVIDADES IDENTIFICADAS DE FORMA ÚNICA
+============================================================
+
+Cada actividad debe tener un ID estable.
+
+Ejemplo conceptual:
+
+activity-001
+activity-002
+activity-003
+
+La configuración debe guardarse asociada a ese ID.
+
+Ejemplo:
+
+PlanDraft.activities[activityId] = {
+    desde,
+    hasta,
+    responsables,
+    recursos,
+    mediosVerificacion,
+    completa
+}
+
+No identificar actividades únicamente por posición visual o nombre.
+
+============================================================
+3. GUARDAR ACTIVIDAD
+============================================================
+
+Cuando el usuario presiona:
+
+“Guardar actividad”
+
+debe:
+
+1. validar los campos;
+2. actualizar la actividad correspondiente dentro de PlanDraft;
+3. marcarla como completa cuando tenga:
+   - Desde;
+   - Hasta;
+   - al menos un responsable;
+   - al menos un recurso;
+   - al menos un medio de verificación;
+4. cerrar el drawer;
+5. actualizar inmediatamente:
+   - tabla;
+   - contador X / Y configuradas;
+   - alertas;
+   - estado del botón Continuar.
+
+NO volver a cargar datos de demostración después de guardar.
+
+============================================================
+4. CONFIGURACIÓN COMPLETA
+============================================================
+
+Si las 5 actividades están completas:
+
+mostrar:
+
+5 / 5 configuradas
+
+Eliminar:
+
+“Actividades pendientes de configurar”
+
+Habilitar:
+
+CONTINUAR →
+
+Este estado debe conservarse al navegar.
+
+============================================================
+5. REVISAR MATRIZ
+============================================================
+
+La pantalla:
+
+“Revisar matriz de actividades”
+
+NO debe utilizar datos ficticios propios.
+
+Debe construir su contenido directamente desde:
+
+PlanDraft.activities
+
+Por tanto:
+
+si en la pantalla anterior existen:
+
+5 / 5 configuradas
+
+la pantalla de revisión debe mostrar:
+
+5 Actividades
+5 Configuradas
+0 Pendientes
+MATRIZ COMPLETA
+
+y exactamente los mismos:
+
+- Desde;
+- Hasta;
+- responsables;
+- recursos;
+- medios.
+
+============================================================
+6. VOLVER ATRÁS
+============================================================
+
+Si desde “Revisar matriz” se pulsa:
+
+Anterior
+
+o
+
+Editar
+
+la pantalla anterior debe mostrar EXACTAMENTE la información
+ya guardada.
+
+No reiniciar ningún campo.
+
+No restaurar valores iniciales de demostración.
+
+============================================================
+7. COMPLETAR PENDIENTES
+============================================================
+
+Si realmente existen pendientes:
+
+“COMPLETAR PENDIENTES”
+
+debe regresar a la matriz utilizando EL MISMO PlanDraft.
+
+No reconstruir la matriz.
+
+Abrir la primera actividad incompleta conservando todas las demás.
+
+Ejemplo:
+
+Actividad 1 → completa
+Actividad 2 → pendiente
+Actividad 3 → completa
+Actividad 4 → pendiente
+Actividad 5 → completa
+
+Al presionar “Completar pendientes”:
+
+las actividades 1, 3 y 5 deben mantener todos sus datos.
+
+Abrir únicamente la actividad 2.
+
+============================================================
+8. GUARDAR BORRADOR
+============================================================
+
+Hacer funcional el botón:
+
+GUARDAR BORRADOR.
+
+Para este prototipo puede utilizar almacenamiento local
+del navegador.
+
+Guardar el objeto completo PlanDraft.
+
+Al volver posteriormente a:
+
+Mis Planes de Trabajo
+→ Continuar edición
+
+debe restaurarse el mismo borrador.
+
+No hace falta backend real para esta demostración.
+
+Puede utilizar:
+
+localStorage
+
+o un mecanismo equivalente de persistencia del prototipo.
+
+============================================================
+9. AUTOGUARDADO
+============================================================
+
+El indicador:
+
+“Guardando...”
+→
+“Cambios guardados”
+
+debe corresponder realmente a la actualización del PlanDraft.
+
+No debe ser únicamente un elemento visual simulado.
+
+============================================================
+10. NAVEGACIÓN ENTRE PASOS
+============================================================
+
+Los pasos:
+
+1 Información general
+2 Actividades
+3 Matriz
+4 Contenido
+5 Anexos
+6 Previsualización
+7 Firma y envío
+
+deben trabajar sobre el MISMO PlanDraft.
+
+Nunca reiniciar el objeto al cambiar de paso.
+
+============================================================
+11. CAMBIOS EN SELECCIÓN DE ACTIVIDADES
+============================================================
+
+Si el usuario regresa al Paso 2 y elimina una actividad opcional:
+
+eliminar también su configuración asociada del PlanDraft.
+
+Si agrega una nueva actividad:
+
+crear una nueva entrada sin modificar las configuraciones
+de las actividades existentes.
+
+Las actividades obligatorias continúan protegidas.
+
+============================================================
+12. VALIDACIÓN DERIVADA
+============================================================
+
+No almacenar manualmente:
+
+configuredCount = 3
+
+como dato independiente.
+
+Calcular dinámicamente:
+
+configuredCount =
+cantidad de actividades seleccionadas que cumplen
+todos sus campos obligatorios.
+
+Por tanto:
+
+totalActivities
+configuredActivities
+pendingActivities
+canContinue
+
+deben DERIVARSE del contenido real de PlanDraft.activities.
+
+============================================================
+13. ESTADO ESPERADO PARA LA DEMOSTRACIÓN
+============================================================
+
+Después de configurar las cinco actividades:
+
+5 actividades seleccionadas
+5 / 5 configuradas
+0 pendientes
+
+Al pasar a revisión:
+
+5 actividades
+5 configuradas
+0 pendientes
+MATRIZ COMPLETA
+
+Botón:
+
+CONTINUAR A CONTENIDO →
+
+habilitado.
+
+Si regreso a editar:
+
+todos los valores deben mantenerse.
+
+============================================================
+14. NO CAMBIAR
+============================================================
+
+No modificar:
+
+- sidebar;
+- tabla;
+- drawer;
+- colores;
+- stepper;
+- tipografía;
+- fechas;
+- reglas de feriados;
+- responsables;
+- recursos;
+- medios;
+- diseño visual;
+- flujo UX actual.
+
+Esta corrección es exclusivamente de:
+
+ESTADO
+PERSISTENCIA
+SINCRONIZACIÓN ENTRE PANTALLAS.
+
+No generar todavía el Módulo 3.
+
+Primero verificar que el flujo:
+
+Configurar matriz
+→ Revisar matriz
+→ Volver
+→ Revisar nuevamente
+
+mantenga exactamente los mismos datos.
