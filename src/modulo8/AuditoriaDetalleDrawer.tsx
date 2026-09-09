@@ -73,7 +73,6 @@ export default function AuditoriaDetalleDrawer({
               >
                 REGISTRO INMUTABLE
               </span>
-              <span style={{ fontSize: 12, color: "#64748b" }}>ID: {evento.id}</span>
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>
               Detalle del Evento Institucional

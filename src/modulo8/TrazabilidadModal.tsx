@@ -207,7 +207,7 @@ export default function TrazabilidadModal({
                 marginBottom: 20,
               }}
             >
-              ℹ <strong>Historial de versiones:</strong> La sustitución de una evidencia observada genera formalmente la versión 2.0 antes de su validación definitiva.
+              ℹ <strong>Historial de versiones:</strong> La sustitución de una evidencia observada genera una nueva versión de la evidencia (v2.0), que deberá ser validada nuevamente.
             </div>
           )}
 

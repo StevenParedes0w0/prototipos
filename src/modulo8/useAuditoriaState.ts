@@ -46,9 +46,41 @@ export function useAuditoriaState() {
     setFiltros(FILTROS_INICIALES);
   };
 
+function parseFechaToNum(f: string): number {
+  if (!f) return 0;
+  const clean = f.trim();
+  if (clean.includes("-")) {
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      return parseInt(parts[0] + parts[1].padStart(2, "0") + parts[2].padStart(2, "0"), 10);
+    }
+  }
+  if (clean.includes("/")) {
+    const parts = clean.split("/");
+    if (parts.length === 3) {
+      return parseInt(parts[2] + parts[1].padStart(2, "0") + parts[0].padStart(2, "0"), 10);
+    }
+  }
+  return 0;
+}
+
   // Filtrado reactivo en memoria
   const eventosFiltrados = useMemo(() => {
     return eventos.filter((ev) => {
+      // Filtro de Fecha Desde
+      if (filtros.fechaDesde.trim()) {
+        const numDesde = parseFechaToNum(filtros.fechaDesde);
+        const evNum = parseFechaToNum(ev.fecha);
+        if (numDesde && evNum && evNum < numDesde) return false;
+      }
+
+      // Filtro de Fecha Hasta
+      if (filtros.fechaHasta.trim()) {
+        const numHasta = parseFechaToNum(filtros.fechaHasta);
+        const evNum = parseFechaToNum(ev.fecha);
+        if (numHasta && evNum && evNum > numHasta) return false;
+      }
+
       // Búsqueda general por texto (objeto, acción, descripción, usuario)
       if (filtros.busqueda.trim()) {
         const query = filtros.busqueda.toLowerCase();

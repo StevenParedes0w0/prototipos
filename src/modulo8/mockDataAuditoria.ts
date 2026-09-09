@@ -42,7 +42,7 @@ export const NOTIFICACIONES_DOCENTE: NotificacionItem[] = [
       accionLabel: "VER OBSERVACIÓN",
       accionDestino: "actividades",
       actividadId: "act-1",
-      medioId: "medio-1",
+      medioId: "m-1-2",
       modalDirecto: "observacion",
     },
   },
@@ -147,26 +147,6 @@ export const NOTIFICACIONES_REVISOR: NotificacionItem[] = [
       accionDestino: "evidenciasValidar",
       actividadId: "act-1",
       medioId: "medio-1",
-    },
-  },
-  {
-    id: "notif-rev-3",
-    destinatarioRol: "Revisor",
-    destinatarioUsuarioId: "revisor-carlos",
-    titulo: "Plan corregido reenviado",
-    mensaje: "Se recibió la corrección del Plan de Trabajo de la Comisión de Eventos Académicos para nueva revisión técnica.",
-    fechaHora: "06/09/2026 — 16:20",
-    tiempoRelativo: "Ayer",
-    tipo: "PLAN_CORREGIDO",
-    leida: true,
-    objetoRelacionado: {
-      tipo: "Plan de Trabajo",
-      nombre: "Plan de Trabajo — Comisión de Eventos Académicos",
-      grupo: "Comisión de Eventos Académicos",
-      autor: "Ing. Andrea Pérez, Mg.",
-      accionLabel: "REVISAR PLAN",
-      accionDestino: "bandeja",
-      modalDirecto: "revisionPlan",
     },
   },
   {
@@ -452,9 +432,9 @@ export const AUDITORIA_EVENTOS_DEMO: AuditoriaEvento[] = [
   // 11. Accion Plan (4/7 hoy)
   {
     id: "aud-11",
-    fechaHora: "07/09/2026 — 08:50",
+    fechaHora: "07/09/2026 — 09:45",
     fecha: "07/09/2026",
-    hora: "08:50",
+    hora: "09:45",
     usuario: "Ing. Andrea Pérez, Mg.",
     rol: "Docente",
     modulo: "Planes de Trabajo",
@@ -632,9 +612,9 @@ export const AUDITORIA_EVENTOS_DEMO: AuditoriaEvento[] = [
   // 20. Accion Plan
   {
     id: "aud-20",
-    fechaHora: "06/09/2026 — 10:30",
-    fecha: "06/09/2026",
-    hora: "10:30",
+    fechaHora: "07/09/2026 — 09:35",
+    fecha: "07/09/2026",
+    hora: "09:35",
     usuario: "Ing. Carlos López, Mg.",
     rol: "Revisor",
     modulo: "Planes de Trabajo",
@@ -775,7 +755,7 @@ export const TRAZABILIDAD_PLAN_EVENTOS: TrazabilidadObjeto = {
     },
     {
       id: "th-p-4",
-      fechaHora: "06/09/2026 — 10:30",
+      fechaHora: "07/09/2026 — 09:35",
       usuario: "Ing. Carlos López, Mg.",
       rol: "Revisor asignado",
       hito: "PLAN DEVUELTO",
@@ -786,7 +766,7 @@ export const TRAZABILIDAD_PLAN_EVENTOS: TrazabilidadObjeto = {
     },
     {
       id: "th-p-5",
-      fechaHora: "07/09/2026 — 08:45",
+      fechaHora: "07/09/2026 — 09:45",
       usuario: "Ing. Andrea Pérez, Mg.",
       rol: "Docente elaboradora",
       hito: "CORRECCIÓN INICIADA",
@@ -817,7 +797,7 @@ export const TRAZABILIDAD_EVIDENCIA_ACTA: TrazabilidadObjeto = {
     },
     {
       id: "th-e-2",
-      fechaHora: "07/09/2026 — 10:25",
+      fechaHora: "07/09/2026 — 10:28",
       usuario: "Ing. Carlos López, Mg.",
       rol: "Revisor técnico",
       hito: "EVIDENCIA OBSERVADA",

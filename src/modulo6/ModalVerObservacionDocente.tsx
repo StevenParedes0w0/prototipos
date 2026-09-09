@@ -20,7 +20,7 @@ export default function ModalVerObservacionDocente({
     || medio.historialVersiones[medio.historialVersiones.length - 1];
 
   const revisor = medio.revisionActual?.revisadoPor || versionObservada?.revisadoPor || "Ing. Carlos López, Mg.";
-  const fechaHora = medio.revisionActual?.fechaRevision || versionObservada?.fechaRevision || "04/09/2026 — 10:20";
+  const fechaHora = medio.revisionActual?.fechaRevision || versionObservada?.fechaRevision || "07/09/2026 — 10:28";
   const textoObservacion = medio.revisionActual?.observacion 
     || versionObservada?.observacion 
     || "La evidencia presentada no permite verificar completamente el cumplimiento de la actividad. Revise el contenido y vuelva a cargar la evidencia correspondiente.";
@@ -69,7 +69,7 @@ export default function ModalVerObservacionDocente({
                 Observación del revisor
               </h2>
               <p style={{ fontSize: 12, color: "#7f1d1d", margin: 0 }}>
-                Detalle formal de las observaciones registradas por la comisión.
+                Detalle de la observación registrada por el revisor.
               </p>
             </div>
           </div>

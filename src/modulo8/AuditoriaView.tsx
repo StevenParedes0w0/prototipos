@@ -38,6 +38,8 @@ export default function AuditoriaView({
 
   const hayFiltrosActivos =
     Boolean(filtros.busqueda) ||
+    Boolean(filtros.fechaDesde) ||
+    Boolean(filtros.fechaHasta) ||
     Boolean(filtros.usuario) ||
     Boolean(filtros.rol) ||
     Boolean(filtros.modulo) ||
@@ -259,6 +261,56 @@ export default function AuditoriaView({
               value={filtros.busqueda}
               onChange={(e) => {
                 setFiltro("busqueda", e.target.value);
+                setPaginaActual(1);
+              }}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                fontSize: 12.5,
+                border: "1.5px solid #cbd5e1",
+                borderRadius: 6,
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {/* Fecha desde */}
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>
+              Fecha desde
+            </label>
+            <input
+              type="text"
+              placeholder="DD/MM/AAAA"
+              value={filtros.fechaDesde}
+              onChange={(e) => {
+                setFiltro("fechaDesde", e.target.value);
+                setPaginaActual(1);
+              }}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                fontSize: 12.5,
+                border: "1.5px solid #cbd5e1",
+                borderRadius: 6,
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {/* Fecha hasta */}
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>
+              Fecha hasta
+            </label>
+            <input
+              type="text"
+              placeholder="DD/MM/AAAA"
+              value={filtros.fechaHasta}
+              onChange={(e) => {
+                setFiltro("fechaHasta", e.target.value);
                 setPaginaActual(1);
               }}
               style={{

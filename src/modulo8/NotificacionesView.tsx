@@ -22,6 +22,7 @@ export default function NotificacionesView({
 }: NotificacionesViewProps) {
   const [tabFiltro, setTabFiltro] = useState<"todas" | "no_leidas" | "leidas">("todas");
   const [filtroTipo, setFiltroTipo] = useState<string>("TODOS");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<string>("Julio – Diciembre 2026");
   const [busqueda, setBusqueda] = useState<string>("");
 
   // Métricas
@@ -86,7 +87,7 @@ export default function NotificacionesView({
       case "ADMIN_PERIODO_PREPARADO":
         return { label: "Período académico", color: "#4338ca", bg: "#e0e7ff" };
       case "ADMIN_CATALOGO_ACTUALIZADO":
-        return { label: "Catálogo actualizado", color: "#475569", bg: "#f1f5f9" };
+        return { label: "Asignación a grupo", color: "#475569", bg: "#f1f5f9" };
       default:
         return { label: "Notificación", color: "#334155", bg: "#f1f5f9" };
     }
@@ -180,7 +181,7 @@ export default function NotificacionesView({
               {noLeidasCount}
             </span>
             {noLeidasCount > 0 ? (
-              <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>pendientes de revisión</span>
+              <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>sin leer</span>
             ) : (
               <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>al día</span>
             )}
@@ -307,8 +308,24 @@ export default function NotificacionesView({
           </button>
         </div>
 
-        {/* Controles de Búsqueda y Tipo */}
-        <div style={{ display: "flex", gap: 10, flex: 1, justifyContent: "flex-end", minWidth: 280 }}>
+        {/* Controles de Búsqueda, Tipo y Período */}
+        <div style={{ display: "flex", gap: 10, flex: 1, justifyContent: "flex-end", minWidth: 280, flexWrap: "wrap" }}>
+          <select
+            value={filtroPeriodo}
+            onChange={(e) => setFiltroPeriodo(e.target.value)}
+            style={{
+              border: "1.5px solid #cbd5e1",
+              borderRadius: 8,
+              padding: "7px 12px",
+              fontSize: 13,
+              color: "#334155",
+              background: "#ffffff",
+              cursor: "pointer",
+            }}
+          >
+            <option value="Julio – Diciembre 2026">Período: Julio – Diciembre 2026</option>
+          </select>
+
           <select
             value={filtroTipo}
             onChange={(e) => setFiltroTipo(e.target.value)}

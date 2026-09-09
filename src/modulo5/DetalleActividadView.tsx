@@ -26,24 +26,42 @@ export default function DetalleActividadView({
   const [medioParaReemplazar, setMedioParaReemplazar] = useState<MedioVerificacion | null>(null);
   const [medioParaVer, setMedioParaVer] = useState<MedioVerificacion | null>(() => {
     if (initialModalDirecto?.tipo === "visor") {
-      return actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      return (
+        actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
+        actividad.medios.find(m => m.estado === "VALIDADA") ||
+        actividad.medios[0] ||
+        null
+      );
     }
     return null;
   });
   const [medioParaAuditoria, setMedioParaAuditoria] = useState<MedioVerificacion | null>(null);
   const [medioParaObservacion, setMedioParaObservacion] = useState<MedioVerificacion | null>(() => {
     if (initialModalDirecto?.tipo === "observacion") {
-      return actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      return (
+        actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
+        actividad.medios.find(m => m.estado === "OBSERVADA") ||
+        actividad.medios[0] ||
+        null
+      );
     }
     return null;
   });
 
   React.useEffect(() => {
     if (initialModalDirecto?.tipo === "observacion") {
-      const target = actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      const target =
+        actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
+        actividad.medios.find(m => m.estado === "OBSERVADA") ||
+        actividad.medios[0] ||
+        null;
       setMedioParaObservacion(target);
     } else if (initialModalDirecto?.tipo === "visor") {
-      const target = actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      const target =
+        actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
+        actividad.medios.find(m => m.estado === "VALIDADA") ||
+        actividad.medios[0] ||
+        null;
       setMedioParaVer(target);
     }
   }, [initialModalDirecto, actividad]);
