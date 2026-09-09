@@ -28,6 +28,19 @@ import AuditoriaView from "./modulo8/AuditoriaView";
 import AuditoriaDetalleDrawer from "./modulo8/AuditoriaDetalleDrawer";
 import TrazabilidadModal from "./modulo8/TrazabilidadModal";
 import { NotificacionItem } from "./modulo8/types";
+import { ReportePlanItem } from "./modulo9/types";
+import { useReportesState } from "./modulo9/useReportesState";
+import ReportesDocenteView from "./modulo9/ReportesDocenteView";
+import ReportesRevisorView from "./modulo9/ReportesRevisorView";
+import ReportesAdminView from "./modulo9/ReportesAdminView";
+import ReporteDetallePlanView from "./modulo9/ReporteDetallePlanView";
+import ConsultaHistoricaView from "./modulo9/ConsultaHistoricaView";
+import PlanHistoricoDetalleView from "./modulo9/PlanHistoricoDetalleView";
+import CierrePeriodosView from "./modulo9/CierrePeriodosView";
+import ModalGenerarReporte from "./modulo9/ModalGenerarReporte";
+import ModalVistaPreviaReporte from "./modulo9/ModalVistaPreviaReporte";
+import ModalCompararVersiones from "./modulo9/ModalCompararVersiones";
+import ModalConfirmarCierre from "./modulo9/ModalConfirmarCierre";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -53,7 +66,9 @@ type AppView =
   | "adminFlujos"
   | "adminFeriados"
   | "adminPlantillas"
-  | "adminAuditoria";
+  | "adminAuditoria"
+  | "reportes"
+  | "cierrePeriodos";
 type PlanEstado = "Borrador" | "En revisión" | "Observado" | "Aprobado" | "Devuelto" | "En ejecución";
 type ActividadEstado = "EN CURSO" | "CUMPLIDA" | "PENDIENTE" | "PRÓXIMA A VENCER" | "VENCIDA";
 
@@ -186,6 +201,16 @@ const Ico = {
   history: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>
+    </svg>
+  ),
+  chart: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  ),
+  archive: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
     </svg>
   ),
 };
@@ -737,6 +762,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "planes",         label: "Mis Planes de Trabajo", icon: Ico.file },
     { id: "actividades",    label: "Mis Actividades",       icon: Ico.activity },
     { id: "evidencias",     label: "Evidencias",            icon: Ico.paperclip },
+    { id: "reportes",       label: "Mis Reportes",          icon: Ico.chart },
     { id: "notificaciones", label: "Notificaciones",        icon: Ico.bell },
     { id: "perfil",         label: "Perfil",                icon: Ico.user },
   ];
@@ -746,6 +772,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "bandeja",        label: "Bandeja de revisión (Planes)", icon: Ico.file },
     { id: "planesRevision", label: "Planes de Trabajo",     icon: Ico.home },
     { id: "grupos",         label: "Grupos asignados",      icon: Ico.users },
+    { id: "reportes",       label: "Reportes de Seguimiento", icon: Ico.chart },
     { id: "notificaciones", label: "Notificaciones",        icon: Ico.bell },
     { id: "perfil",         label: "Perfil",                icon: Ico.user },
   ];
@@ -760,6 +787,8 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "adminFeriados",     label: "Feriados y Restricciones",icon: Ico.alert },
     { id: "adminPlantillas",   label: "Plantillas Documentales", icon: Ico.file },
     { id: "adminAuditoria",    label: "Auditoría",               icon: Ico.search },
+    { id: "reportes",          label: "Reportes Institucionales",icon: Ico.chart },
+    { id: "cierrePeriodos",    label: "Cierre de Períodos",      icon: Ico.archive },
     { id: "notificaciones",    label: "Notificaciones",          icon: Ico.bell },
     { id: "perfil",            label: "Perfil",                  icon: Ico.user },
   ];
@@ -975,6 +1004,8 @@ function TopBar({
     adminFeriados: "Feriados y Días Restringidos",
     adminPlantillas: "Plantillas Documentales",
     adminAuditoria: "Auditoría Institucional",
+    reportes: "Reportes y Consulta Histórica",
+    cierrePeriodos: "Cierre de Períodos Académicos",
   };
 
   return (
@@ -5102,6 +5133,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const adminState = useAdminState();
   const notifState = useNotificacionesState(userRole);
   const auditoriaState = useAuditoriaState();
+  const reportesState = useReportesState(userRole);
   const [adminSelectedGrupoId, setAdminSelectedGrupoId] = useState<string | null>(null);
   const [adminSelectedFlujoGrupoId, setAdminSelectedFlujoGrupoId] = useState<string | null>(null);
   const [planInitialObsModal, setPlanInitialObsModal] = useState(false);
@@ -5443,6 +5475,135 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               onOpenTrazabilidad={auditoriaState.abrirTrazabilidadPorId}
             />
           )}
+
+          {/* MÓDULO 9 — REPORTES, CONSULTA HISTÓRICA Y CIERRE DE PERÍODO */}
+          {view === "reportes" && (
+            <div className="p-6 max-w-7xl mx-auto">
+              {reportesState.subView === "detalle" && reportesState.selectedPlan ? (
+                <ReporteDetallePlanView
+                  plan={reportesState.selectedPlan}
+                  onVolver={() => reportesState.setSubView("resumen")}
+                  onGenerarReporte={(plan) => reportesState.handleOpenGenerarReporte(plan)}
+                  onVerEvidencias={() => setView("actividades")}
+                />
+              ) : reportesState.subView === "detalleHistorico" && reportesState.selectedHistorico ? (
+                <PlanHistoricoDetalleView
+                  plan={reportesState.selectedHistorico}
+                  onVolver={() => reportesState.setSubView("historico")}
+                  onCompararVersiones={(plan) => {
+                    reportesState.setSelectedHistoricoId(plan.id);
+                    reportesState.setModalCompararVersionesOpen(true);
+                  }}
+                  onVerTrazabilidadEvidencia={(eviId) => {
+                    auditoriaState.abrirTrazabilidadPorId(eviId);
+                  }}
+                  onGenerarReporte={(plan) => {
+                    const planAsReporte: ReportePlanItem = {
+                      id: plan.id,
+                      nombre: plan.planNombre,
+                      grupo: plan.grupo,
+                      docente: plan.docente,
+                      periodo: plan.periodo,
+                      version: plan.versionVigente,
+                      estado: "FINALIZADO",
+                      actividadesTotal: plan.actividadesTotal,
+                      actividadesCompletas: plan.actividadesTotal,
+                      evidenciasRequeridas: plan.evidenciasRequeridas,
+                      evidenciasCargadas: plan.evidenciasValidadas,
+                      evidenciasValidadas: plan.evidenciasValidadas,
+                      evidenciasObservadas: 0,
+                      evidenciasPendientes: 0,
+                    };
+                    reportesState.handleOpenGenerarReporte(planAsReporte);
+                  }}
+                />
+              ) : reportesState.subView === "historico" ? (
+                <ConsultaHistoricaView
+                  planesHistoricos={reportesState.historicosFiltrados}
+                  periodos={reportesState.periodos}
+                  onSeleccionarPlan={(plan) => {
+                    reportesState.setSelectedHistoricoId(plan.id);
+                    reportesState.setSubView("detalleHistorico");
+                  }}
+                  onGenerarReporte={(plan) => {
+                    const planAsReporte: ReportePlanItem = {
+                      id: plan.id,
+                      nombre: plan.planNombre,
+                      grupo: plan.grupo,
+                      docente: plan.docente,
+                      periodo: plan.periodo,
+                      version: plan.versionVigente,
+                      estado: "FINALIZADO",
+                      actividadesTotal: plan.actividadesTotal,
+                      actividadesCompletas: plan.actividadesTotal,
+                      evidenciasRequeridas: plan.evidenciasRequeridas,
+                      evidenciasCargadas: plan.evidenciasValidadas,
+                      evidenciasValidadas: plan.evidenciasValidadas,
+                      evidenciasObservadas: 0,
+                      evidenciasPendientes: 0,
+                    };
+                    reportesState.handleOpenGenerarReporte(planAsReporte);
+                  }}
+                  onVolver={() => reportesState.setSubView("resumen")}
+                />
+              ) : userRole === "docente" ? (
+                <ReportesDocenteView
+                  planes={reportesState.planesFiltrados}
+                  onSeleccionarPlan={(plan) => {
+                    reportesState.setSelectedPlanId(plan.id);
+                    reportesState.setSubView("detalle");
+                  }}
+                  onGenerarReporte={(plan) => reportesState.handleOpenGenerarReporte(plan)}
+                  onIrAConsultaHistorica={() => reportesState.setSubView("historico")}
+                  onVerEvidencias={() => setView("actividades")}
+                />
+              ) : userRole === "revisor" ? (
+                <ReportesRevisorView
+                  planes={reportesState.planesFiltrados}
+                  onSeleccionarPlan={(plan) => {
+                    reportesState.setSelectedPlanId(plan.id);
+                    reportesState.setSubView("detalle");
+                  }}
+                  onGenerarReporte={(plan) => reportesState.handleOpenGenerarReporte(plan)}
+                  onIrAConsultaHistorica={() => reportesState.setSubView("historico")}
+                />
+              ) : (
+                <ReportesAdminView
+                  planes={reportesState.planesFiltrados}
+                  periodos={reportesState.periodos}
+                  onSeleccionarPlan={(plan) => {
+                    reportesState.setSelectedPlanId(plan.id);
+                    reportesState.setSubView("detalle");
+                  }}
+                  onGenerarReporte={(plan) => reportesState.handleOpenGenerarReporte(plan)}
+                  onGenerarReporteConsolidado={() => {
+                    if (reportesState.planesFiltrados.length > 0) {
+                      reportesState.handleOpenGenerarReporte(reportesState.planesFiltrados[0]);
+                    }
+                  }}
+                  onIrAConsultaHistorica={() => reportesState.setSubView("historico")}
+                  onIrACierrePeriodos={() => setView("cierrePeriodos")}
+                />
+              )}
+            </div>
+          )}
+
+          {view === "cierrePeriodos" && (
+            <div className="p-6 max-w-7xl mx-auto">
+              <CierrePeriodosView
+                periodos={reportesState.periodos}
+                onIniciarCierrePeriodo={(periodo) => {
+                  reportesState.setPeriodoParaCierre(periodo);
+                  reportesState.setModalConfirmarCierreOpen(true);
+                }}
+                onConsultarHistorico={() => {
+                  setView("reportes");
+                  reportesState.setSubView("historico");
+                }}
+                onRestablecerDemo={reportesState.handleRestablecerDemo}
+              />
+            </div>
+          )}
         </main>
       </div>
 
@@ -5455,6 +5616,35 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       <TrazabilidadModal
         objetoInicial={auditoriaState.trazabilidadModal}
         onClose={() => auditoriaState.setTrazabilidadModal(null)}
+      />
+
+      {/* Módulo 9 — Modales de Reportes, Vista Previa A4, Versiones y Cierre */}
+      <ModalGenerarReporte
+        isOpen={reportesState.modalGenerarOpen}
+        onClose={() => reportesState.setModalGenerarOpen(false)}
+        plan={reportesState.planParaReporte}
+        onGenerar={(tipo, formato) => reportesState.handleConfirmGenerar(tipo, formato)}
+      />
+      <ModalVistaPreviaReporte
+        isOpen={reportesState.modalVistaPreviaOpen}
+        onClose={() => reportesState.setModalVistaPreviaOpen(false)}
+        plan={reportesState.configReporteGenerado?.plan || null}
+        tipo={reportesState.configReporteGenerado?.tipo || "resumen_plan"}
+        formato={reportesState.configReporteGenerado?.formato || "PDF"}
+      />
+      <ModalCompararVersiones
+        isOpen={reportesState.modalCompararVersionesOpen}
+        onClose={() => reportesState.setModalCompararVersionesOpen(false)}
+        plan={reportesState.selectedHistorico}
+      />
+      <ModalConfirmarCierre
+        isOpen={reportesState.modalConfirmarCierreOpen}
+        onClose={() => {
+          reportesState.setModalConfirmarCierreOpen(false);
+          reportesState.setPeriodoParaCierre(null);
+        }}
+        periodo={reportesState.periodoParaCierre}
+        onConfirmar={(periodoId) => reportesState.handleCerrarPeriodo(periodoId)}
       />
     </div>
   );

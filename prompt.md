@@ -1,358 +1,401 @@
-CORRECCIONES FINALES DEL MÓDULO 8 — CONSISTENCIA ENTRE NOTIFICACIONES,
-OBJETOS Y TRAZABILIDAD
+CORRECCIÓN VISUAL DEFINITIVA — MÓDULO 9
 
 IMPORTANTE:
 
-NO rediseñar ninguna pantalla.
-NO modificar la arquitectura del módulo.
-NO cambiar estilos.
-NO agregar funcionalidades productivas.
-NO realizar refactors amplios.
+La funcionalidad del Módulo 9 queda APROBADA.
 
-Las pantallas y UX actuales quedan aprobadas.
+NO modificar:
+- datos históricos;
+- filtros;
+- historicosFiltrados;
+- normPer;
+- navegación;
+- estados;
+- cantidades;
+- versiones;
+- lógica de reportes;
+- lógica de cierre;
+- mockData.
 
-Corregir exclusivamente las siguientes inconsistencias detectadas durante
-las pruebas manuales.
+El único objetivo de esta intervención es corregir DEFINITIVAMENTE
+la identidad visual del Módulo 9.
 
 ==========================================================
-1. EVIDENCIA OBSERVADA — NAVEGACIÓN CONTEXTUAL
+PROBLEMA ACTUAL
 ==========================================================
 
-Actualmente existe una inconsistencia crítica.
+El Módulo 9 todavía utiliza una apariencia de "dark theme" que NO
+corresponde con el resto del aplicativo.
 
-La notificación indica:
+Actualmente siguen apareciendo:
 
-Evidencia observada
-Medio: Acta
-Actividad:
-Seguimiento al avance de trabajos de titulación
+- tarjetas con fondo azul casi negro;
+- tablas completas con fondo azul oscuro;
+- buscadores con fondo oscuro;
+- bloques de planes con fondo oscuro;
+- títulos blancos sobre el fondo claro de la página;
+- contraste inconsistente con los módulos 5, 7 y 8.
 
-pero al pulsar:
+Esto debe corregirse.
 
-VER OBSERVACIÓN
+NO basta con cambiar botones.
 
-el modal muestra:
+Hay que eliminar la paleta oscura del ÁREA DE CONTENIDO del Módulo 9.
 
-Medio: Informe
+==========================================================
+REFERENCIA VISUAL OBLIGATORIA
+==========================================================
 
-Esto es incorrecto.
+Tomar como referencia directa la identidad visual ya utilizada en:
 
-La navegación debe abrir EXACTAMENTE la evidencia asociada a la
-notificación.
+- Mis Actividades;
+- Evidencias;
+- Gestión de Usuarios;
+- Grupos Institucionales;
+- Períodos Académicos;
+- Auditoría Institucional;
+- Centro de Notificaciones.
 
-Para este escenario utilizar de manera canónica:
+El Módulo 9 debe parecer parte del MISMO SISTEMA.
 
-Actividad:
-Seguimiento al avance de trabajos de titulación
+==========================================================
+1. FONDO GENERAL
+==========================================================
 
-Grupo:
+Mantener el sidebar azul institucional.
+
+Pero el contenido principal debe utilizar fondo claro:
+
+#F4F7FA
+o el mismo token/color utilizado actualmente en los módulos anteriores.
+
+NO utilizar azul marino oscuro como fondo general del contenido.
+
+==========================================================
+2. TÍTULOS
+==========================================================
+
+Actualmente existen textos blancos prácticamente invisibles sobre fondo
+claro, por ejemplo:
+
+"Mis Reportes de Gestión Docente"
+
+"Planes del Período Académico Actual"
+
+"Consulta Histórica de Períodos Anteriores"
+
+Corregir TODOS los títulos del contenido principal.
+
+Utilizar texto oscuro institucional:
+
+#0F172A
+#16263D
+o el mismo color utilizado en módulos anteriores.
+
+Subtítulos:
+gris azulado legible.
+
+NO utilizar texto blanco sobre fondo claro.
+
+==========================================================
+3. TARJETAS DE MÉTRICAS
+==========================================================
+
+Actualmente:
+
+Planes
+Actividades
+Cargadas
+Validadas
+Observadas
+Pendientes
+
+utilizan tarjetas azul casi negro.
+
+Cambiar a:
+
+- fondo blanco;
+- borde #DCE4EC;
+- sombra muy suave;
+- título gris azulado;
+- cantidad principal azul oscuro.
+
+Utilizar color semántico únicamente en icono o cifra cuando corresponda:
+
+Cargadas → azul
+Validadas → verde
+Observadas → ámbar
+Pendientes → gris/azul
+
+NO colorear toda la tarjeta.
+
+==========================================================
+4. CARDS DE PLANES ACTUALES
+==========================================================
+
+Las cards de:
+
 Unidad de Titulación
 
-Medio:
-Acta
+Comisión de Eventos Académicos
 
-Versión evaluada:
-v1.0
+NO deben tener fondo azul oscuro.
 
-Revisor:
-Ing. Carlos López, Mg.
+Cambiar a cards blancas.
 
-Fecha / Hora:
-07/09/2026 — 10:28
+Estructura:
 
-Plazo:
-18/09/2026 — 23:59
+Título:
+azul oscuro / negro.
 
-El modal "Observación del revisor" debe mostrar esos mismos datos.
+Datos secundarios:
+gris.
 
-No utilizar datos hardcodeados de otra evidencia.
+Badges:
 
-==========================================================
-2. TEXTO DEL MODAL DE OBSERVACIÓN
-==========================================================
+EN EJECUCIÓN → azul suave
+EN CORRECCIÓN → ámbar suave
+Versión 1.0 → gris/azul suave
 
-Actualmente el subtítulo indica:
+Acciones:
 
-"Detalle formal de las observaciones registradas por la comisión."
+Generar Reporte → botón secundario
+Evidencias → botón secundario
+Ver Detalle de Plan → botón azul institucional primario
 
-Cambiar por:
-
-"Detalle de la observación registrada por el revisor."
-
-o:
-
-"Detalle de la observación registrada durante la revisión."
-
-No atribuir la observación genéricamente a una comisión cuando el sistema
-registra al revisor individual.
+Eliminar totalmente el rojo como color principal de estos botones.
 
 ==========================================================
-3. UNIFICAR HORA DE OBSERVACIÓN DEL ACTA
+5. DETALLE DEL REPORTE DEL PLAN
 ==========================================================
 
-Utilizar en todo el Módulo 8:
+El encabezado grande de:
 
-07/09/2026 — 10:28
+Unidad de Titulación
 
-para el evento:
+actualmente utiliza fondo muy oscuro.
 
-EVIDENCIA OBSERVADA — Acta v1.0.
+Convertirlo en tarjeta blanca institucional.
 
-Actualmente algunas vistas muestran 10:25.
+Las tarjetas:
 
-Corregir:
+ACTIVIDADES
+CARGADAS
+VALIDADAS
+OBSERVADAS
+PENDIENTES
 
-- notificación;
-- auditoría;
-- detalle;
-- timeline;
-- modal de observación;
-
-para que todas referencien el mismo evento.
+también deben ser blancas.
 
 ==========================================================
-4. PLAN CORREGIDO REENVIADO
+6. TABLA DE ACTIVIDADES
 ==========================================================
 
-Actualmente Carlos recibe:
+Actualmente:
 
-"Plan corregido reenviado"
+"Desglose de Actividades y Medios de Verificación"
 
-para:
+está dentro de una tabla completamente azul oscura.
 
-Comisión de Eventos Académicos.
+Cambiar a diseño claro igual al resto de tablas del aplicativo:
 
-Sin embargo, el timeline canónico del Plan termina en:
+Contenedor:
+blanco.
 
-CORRECCIÓN INICIADA.
+Encabezado:
+#F4F7FA o gris azulado muy claro.
 
-Para mantener el escenario actualmente validado:
+Texto encabezado:
+gris oscuro / azul institucional.
 
-ELIMINAR temporalmente la notificación:
+Filas:
+blancas.
 
-"Plan corregido reenviado"
+Separadores:
+gris claro.
 
-de la bandeja DEMO de Carlos.
+Texto:
+#1F2937.
 
-NO alterar el Plan actual solamente para justificar esa notificación.
+Mantener únicamente badges semánticos:
 
-Mantener el escenario actual del Plan:
-
-PLAN FIRMADO
-→
-PLAN ENVIADO A REVISIÓN
-→
-OBSERVACIÓN REGISTRADA
-→
-PLAN DEVUELTO
-→
-CORRECCIÓN INICIADA
-
-El reenvío se demostrará posteriormente cuando el flujo de corrección
-avance hasta Firma y Envío.
+OBSERVADA → ámbar
+PENDIENTE → gris/azul
+VALIDADA → verde
 
 ==========================================================
-5. CRONOLOGÍA DEL PLAN
+7. CONSULTA HISTÓRICA
 ==========================================================
 
-Unificar las fechas del mismo Plan.
+NO modificar los datos ni filtros.
 
-Utilizar como secuencia DEMO coherente:
+Visualmente corregir:
 
-05/09/2026 — 23:41
-PLAN FIRMADO ELECTRÓNICAMENTE
+- bloque informativo;
+- buscador;
+- select de período;
+- tabla histórica.
 
-06/09/2026 — 09:15
-PLAN ENVIADO A REVISIÓN
+El buscador y select deben tener:
 
-06/09/2026 — 10:25
-OBSERVACIÓN REGISTRADA
+fondo blanco;
+borde gris claro;
+texto oscuro.
 
-07/09/2026 — 09:35
-PLAN DEVUELTO
-
-07/09/2026 — 09:45
-CORRECCIÓN INICIADA
-
-De esta forma ninguna acción sucede antes de que el Plan haya sido
-devuelto.
-
-Actualizar el timeline y la notificación con estas mismas referencias.
-
-El Plan mantiene:
-
-Versión formal 1.0
-
-La devolución y corrección NO generan automáticamente versión 2.0.
+No fondo azul oscuro.
 
 ==========================================================
-6. CONTADOR DE NOTIFICACIONES
+8. PLANES HISTÓRICOS
 ==========================================================
 
-En la tarjeta superior actualmente aparece:
+La tabla:
 
-"2 pendientes de revisión"
+PLANES HISTÓRICOS REGISTRADOS
 
-debajo de:
+debe utilizar exactamente la misma lógica visual clara de:
 
-NO LEÍDAS
+Gestión de Usuarios
+Grupos Institucionales
+Auditoría
 
-Cambiar por:
+Contenedor:
+blanco.
 
-"2 notificaciones sin leer"
+Cabecera:
+gris/azul muy claro.
 
-o simplemente:
+Filas:
+blancas.
 
-"sin leer"
+CÓDIGO / PERÍODO
+GRUPO DE TRABAJO
+DOCENTE RESPONSABLE
+VERSIÓN FINAL
+EVIDENCIAS
+ESTADO FINAL
+ACCIONES
 
-El contador representa notificaciones no leídas,
-no tareas pendientes de revisión.
+con texto oscuro y legible.
 
-==========================================================
-7. TIPO DE NOTIFICACIÓN DE ASIGNACIÓN
-==========================================================
+Mantener badges:
 
-La notificación:
+v2.0 → azul/violeta suave si ya existe
+CERRADO → gris
+Evidencias validadas → verde
 
-"Asignación a grupo institucional"
-
-actualmente aparece con badge:
-
-"Catálogo actualizado"
-
-Esto es incorrecto.
-
-Cambiar el badge por:
-
-"Asignación a grupo"
-
-o:
-
-"Grupo institucional"
-
-Mantener el mensaje:
-
-"Ha sido asignada como Miembro al grupo Unidad de Titulación..."
+NO usar fondo oscuro para toda la tabla.
 
 ==========================================================
-8. FILTRO DE PERÍODO EN NOTIFICACIONES
+9. BANNERS INFORMATIVOS
 ==========================================================
 
-Agregar al Centro de Notificaciones un filtro visual sencillo:
+El bloque:
 
-Período:
-Julio – Diciembre 2026
+"Criterio de registro histórico..."
 
-Puede ser un select MOCK.
+actualmente tiene fondo gris oscuro.
 
-No implementar lógica compleja.
+Cambiar por banner informativo igual a otros módulos:
 
-Debe coexistir con:
-
-Tipo
-Buscar
-Todas / No leídas / Leídas
+fondo azul muy claro;
+borde azul suave;
+texto azul oscuro.
 
 ==========================================================
-9. FILTROS DE FECHA EN AUDITORÍA
+10. MODALES
 ==========================================================
 
-Agregar los filtros solicitados originalmente:
+Mantener los modales claros ya implementados:
 
-Fecha desde
-Fecha hasta
+- Generar reporte;
+- Vista previa;
+- Comparar versiones;
+- Cierre DEMO.
 
-en formato visual DD/MM/AAAA.
-
-Mantener:
-
-Buscar
-Módulo
-Usuario
-Rol
-Tipo de evento
-Grupo institucional
-
-La lógica puede ser filtrado simple de arrays MOCK.
+No aplicar dark theme.
 
 ==========================================================
-10. IDENTIFICADOR INTERNO DE AUDITORÍA
+11. ROJO
 ==========================================================
 
-En el drawer de detalle actualmente aparece:
+Eliminar rojo como color decorativo o primario del Módulo 9.
 
-ID: aud-03
+Rojo se reserva para:
 
-Ocultarlo de la interfaz.
+- error;
+- bloqueo;
+- acción destructiva;
+- alerta crítica.
 
-Es un identificador interno MOCK y no aporta al usuario institucional.
+"Generar reporte"
+"Ver detalle"
+"Consulta histórica"
 
-Puede mantenerse internamente en los datos React.
-
-Mantener visible:
-
-REGISTRO INMUTABLE
-
-pero no mostrar IDs internos.
-
-==========================================================
-11. VERSIONAMIENTO DE EVIDENCIA
-==========================================================
-
-En el timeline aparece un texto similar a:
-
-"La sustitución de una evidencia observada genera formalmente la
-versión 2.0..."
-
-Cambiar por:
-
-"La sustitución de una evidencia observada genera una nueva versión
-de la evidencia (v2.0), que deberá ser validada nuevamente."
-
-IMPORTANTE:
-
-Versión de evidencia:
-v1.0 → v2.0
-
-NO equivale a:
-
-Versión formal del Plan:
-1.0 → 2.0
-
-Mantener ambas conceptos separados.
+NO son acciones destructivas y NO deben ser rojas.
 
 ==========================================================
-12. NO MODIFICAR
+12. NO TOCAR SIDEBAR
 ==========================================================
 
-Mantener:
+El sidebar azul oscuro actual está correcto.
 
-- campana;
-- dropdown;
-- Centro de Notificaciones;
-- tarjetas;
-- leído/no leído;
-- navegación contextual;
-- cambio de rol;
-- Auditoría;
-- métricas;
-- tabla;
-- drawer;
-- estados anterior/posterior;
-- timeline;
-- datos sensibles ocultos;
-- paginación;
-- botón Restablecer DEMO.
+NO cambiarlo.
 
-No desarrollar backend ni persistencia adicional.
+La corrección afecta el ÁREA DE CONTENIDO del Módulo 9.
 
 ==========================================================
-VERIFICACIÓN
+13. REUTILIZAR TOKENS EXISTENTES
 ==========================================================
+
+Antes de crear nuevos colores, revisar los estilos ya utilizados en:
+
+Modulo 5
+Modulo 7
+Modulo 8
+
+Reutilizar las mismas variables, clases o tokens cuando sea posible.
+
+NO crear otra identidad visual específica para Reportes.
+
+==========================================================
+14. RESULTADO ESPERADO
+==========================================================
+
+Después de la corrección:
+
+Módulo 8 — Auditoría
+y
+Módulo 9 — Reportes
+
+deben verse claramente como pantallas del MISMO aplicativo.
+
+No debe existir sensación de:
+
+"tema oscuro"
+"diferente sistema"
+"dashboard externo"
+
+==========================================================
+15. VALIDACIÓN
+==========================================================
+
+Revisar visualmente al menos:
+
+1. Mis Reportes
+2. Detalle de Plan
+3. Consulta Histórica
+4. Planes Históricos Registrados
+
+Asegurarse de que:
+
+- ningún título quede blanco sobre fondo claro;
+- ninguna tabla principal quede azul casi negra;
+- ninguna card principal quede azul casi negra;
+- no existan botones rojos no destructivos.
 
 Ejecutar:
 
 npx tsc --noEmit
 npm run build
 
-No iniciar el Módulo 9.
+NO realizar cambios funcionales.
