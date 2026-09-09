@@ -1,4 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { useActividadesState } from "./modulo5/useActividadesState";
+import MisActividadesView from "./modulo5/MisActividadesView";
+import DetalleActividadView from "./modulo5/DetalleActividadView";
+import MisEvidenciasView from "./modulo5/MisEvidenciasView";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -294,12 +298,12 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
             <label className="form-label required">Correo institucional</label>
             <div style={{ position: "relative" }}>
               <span style={{
-                position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", pointerEvents: "none",
+                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                color: "#94a3b8", pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center",
               }}>{Ico.mail}</span>
               <input
-                className={`form-input${hasError ? " form-input-error" : ""}`}
-                style={{ paddingLeft: 36, borderColor: hasError ? "#fca5a5" : undefined }}
+                className={`form-input form-input-icon-left${hasError ? " form-input-error" : ""}`}
+                style={{ padding: "8px 12px 8px 38px", borderColor: hasError ? "#fca5a5" : undefined }}
                 type="email"
                 placeholder="usuario@uta.edu.ec"
                 value={email}
@@ -313,12 +317,12 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
             <label className="form-label required">Contraseña</label>
             <div style={{ position: "relative" }}>
               <span style={{
-                position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", pointerEvents: "none",
+                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                color: "#94a3b8", pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center",
               }}>{Ico.lock}</span>
               <input
-                className={`form-input${hasError ? " form-input-error" : ""}`}
-                style={{ paddingLeft: 36, paddingRight: 40, borderColor: hasError ? "#fca5a5" : undefined }}
+                className={`form-input form-input-icon-left${hasError ? " form-input-error" : ""}`}
+                style={{ padding: "8px 40px 8px 38px", borderColor: hasError ? "#fca5a5" : undefined }}
                 type={showPwd ? "text" : "password"}
                 placeholder="••••••••••"
                 value={pwd}
@@ -940,17 +944,65 @@ function EstadoBadge({ estado }: { estado: string }) {
   );
 }
 
-function DashboardInicio() {
+function DashboardInicio({
+  onNavigateActividades,
+  onNavigatePlanes,
+  onSelectActividad,
+  resumen,
+  actividadesData,
+}: {
+  onNavigateActividades?: () => void;
+  onNavigatePlanes?: () => void;
+  onSelectActividad?: (id: string) => void;
+  resumen?: {
+    total: number;
+    enCurso: number;
+    pendientes: number;
+    completas: number;
+    vencidas: number;
+    pct: number;
+  };
+  actividadesData?: any[];
+}) {
+  // Reactive state for Actividades
+  const act1 = actividadesData?.find(a => a.id === "act-1");
+  const act3 = actividadesData?.find(a => a.id === "act-3");
+  const act10 = actividadesData?.find(a => a.id === "act-10");
+
   const actividades = [
-    { nombre: "Seguimiento al avance de trabajos de titulación", hasta: "18 sep. 2026", estado: "EN CURSO" as ActividadEstado, diasRestantes: "Faltan 5 días" },
-    { nombre: "Difusión de normativa interna de titulación", hasta: "25 sep. 2026", estado: "EN CURSO" as ActividadEstado, diasRestantes: "Faltan 12 días" },
-    { nombre: "Consolidación del banco de reactivos", hasta: "10 oct. 2026", estado: "PENDIENTE" as ActividadEstado, diasRestantes: "Faltan 27 días" },
+    {
+      id: "act-1",
+      nombre: act1?.nombre || "Seguimiento al avance de trabajos de titulación",
+      hasta: "18 sep. 2026",
+      estado: (act1?.estado || "EN CURSO") as ActividadEstado,
+      diasRestantes: act1?.estado === "EVIDENCIAS COMPLETAS" ? "Completado" : "Faltan 11 días",
+    },
+    {
+      id: "act-3",
+      nombre: act3?.nombre || "Difusión de normativa interna de titulación",
+      hasta: "03 sep. 2026",
+      estado: (act3?.estado || "EVIDENCIAS COMPLETAS") as ActividadEstado,
+      diasRestantes: "Completado",
+    },
+    {
+      id: "act-10",
+      nombre: act10?.nombre || "Consolidación del banco de reactivos",
+      hasta: "10 oct. 2026",
+      estado: (act10?.estado || "PENDIENTE") as ActividadEstado,
+      diasRestantes: "Faltan 33 días",
+    },
   ];
 
   const notificaciones = [
-    { icono: Ico.clock, texto: "Una actividad vence en 5 días.", detalle: "Seguimiento al avance de trabajos de titulación", hora: "Hoy, 09:14", tipo: "warning" },
-    { icono: Ico.check, texto: "Su solicitud de ampliación fue aprobada.", detalle: "Período: Julio – Diciembre 2026", hora: "Ayer, 16:30", tipo: "success" },
-    { icono: Ico.alert, texto: "Un documento requiere correcciones.", detalle: "Plan de Trabajo — Unidad de Titulación, Versión 1.0", hora: "13 sep., 11:02", tipo: "danger" },
+    {
+      icono: Ico.clock,
+      texto: act1?.estado === "EVIDENCIAS COMPLETAS" ? "Evidencias completadas para la actividad de titulación." : "Una actividad vence en 11 días.",
+      detalle: "Seguimiento al avance de trabajos de titulación",
+      hora: "07/09/2026, 09:14",
+      tipo: act1?.estado === "EVIDENCIAS COMPLETAS" ? "success" : "warning",
+    },
+    { icono: Ico.check, texto: "Su solicitud de ampliación fue aprobada.", detalle: "Período: Julio – Diciembre 2026", hora: "06/09/2026, 16:30", tipo: "success" },
+    { icono: Ico.alert, texto: "Un documento requiere correcciones.", detalle: "Plan de Trabajo — Unidad de Titulación, Versión 1.0", hora: "05/09/2026, 11:02", tipo: "danger" },
   ];
 
   const notiColors: Record<string, { bg: string; color: string }> = {
@@ -959,9 +1011,16 @@ function DashboardInicio() {
     danger:  { bg: "#fee2e2", color: "#991b1b" },
   };
 
-  const progreso = 7;
-  const total = 10;
-  const pct = Math.round((progreso / total) * 100);
+  const progreso = resumen ? resumen.completas : 6;
+  const total = resumen ? resumen.total : 10;
+  const pct = resumen ? resumen.pct : Math.round((progreso / total) * 100);
+
+  const act1Medios = act1 ? act1.medios : [
+    { nombre: "Informe", estado: "CARGADA" },
+    { nombre: "Acta", estado: "PENDIENTE" },
+  ];
+  const act1Cargadas = act1Medios.filter((m: any) => m.estado === "CARGADA").length;
+  const act1Total = act1Medios.length;
 
   return (
     <div style={{ padding: "28px 28px", maxWidth: 1200, margin: "0 auto" }}>
@@ -995,8 +1054,8 @@ function DashboardInicio() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button className="btn btn-secondary btn-sm">{Ico.activity} VER ACTIVIDADES</button>
-            <button className="btn btn-primary btn-sm">{Ico.file} VER PLAN</button>
+            <button className="btn btn-secondary btn-sm" onClick={onNavigateActividades}>{Ico.activity} VER ACTIVIDADES</button>
+            <button className="btn btn-primary btn-sm" onClick={onNavigatePlanes}>{Ico.file} VER PLAN</button>
           </div>
         </div>
 
@@ -1016,9 +1075,9 @@ function DashboardInicio() {
           </div>
           <div style={{ display: "flex", gap: 20, marginTop: 12 }}>
             {[
-              { label: "Cumplidas", value: 7, color: "#166534", bg: "#dcfce7" },
-              { label: "En curso", value: 2, color: "#1e40af", bg: "#dbeafe" },
-              { label: "Pendiente", value: 1, color: "#475569", bg: "#f1f5f9" },
+              { label: "Cumplidas", value: resumen ? resumen.completas : 7, color: "#166534", bg: "#dcfce7" },
+              { label: "En curso", value: resumen ? resumen.enCurso : 2, color: "#1e40af", bg: "#dbeafe" },
+              { label: "Pendiente", value: resumen ? resumen.pendientes : 1, color: "#475569", bg: "#f1f5f9" },
             ].map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{
@@ -1059,7 +1118,7 @@ function DashboardInicio() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
                   <EstadoBadge estado={a.estado} />
-                  <button className="btn btn-ghost btn-xs">Ver actividad</button>
+                  <button className="btn btn-ghost btn-xs" onClick={() => onSelectActividad?.(a.id)}>Ver actividad</button>
                 </div>
               </div>
             ))}
@@ -1078,29 +1137,45 @@ function DashboardInicio() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-              {[
-                { label: "Informe", estado: "CARGADO" },
-                { label: "Acta", estado: "PENDIENTE DE CARGA" },
-              ].map((ev, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "9px 12px", borderRadius: 8,
-                  background: ev.estado === "CARGADO" ? "#f0fdf4" : "#fffbeb",
-                  border: `1.5px solid ${ev.estado === "CARGADO" ? "#bbf7d0" : "#fde68a"}`,
-                }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{ev.label}</span>
-                  <EstadoBadge estado={ev.estado} />
-                </div>
-              ))}
+              {act1Medios.map((ev: any, i: number) => {
+                const cargado = ev.estado === "CARGADA";
+                return (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "9px 12px", borderRadius: 8,
+                    background: cargado ? "#f0fdf4" : "#fffbeb",
+                    border: `1.5px solid ${cargado ? "#bbf7d0" : "#fde68a"}`,
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{ev.nombre}</span>
+                    <EstadoBadge estado={cargado ? "CARGADO" : "PENDIENTE DE CARGA"} />
+                  </div>
+                );
+              })}
             </div>
 
             <div style={{ fontSize: 12, color: "#6b7a8d", marginBottom: 16 }}>
-              <span style={{ fontWeight: 700, color: "#92400e" }}>1 de 2</span> evidencias cargadas
+              <span style={{ fontWeight: 700, color: act1Cargadas === act1Total ? "#166534" : "#92400e" }}>
+                {act1Cargadas} de {act1Total}
+              </span> evidencias cargadas
             </div>
 
-            <button className="btn btn-primary btn-sm" style={{ width: "100%", justifyContent: "center" }}>
-              {Ico.upload} CARGAR EVIDENCIA
-            </button>
+            {act1Cargadas === act1Total ? (
+              <button
+                className="btn btn-sm"
+                style={{ width: "100%", justifyContent: "center", background: "#dcfce7", color: "#166534", border: "1.5px solid #86efac", fontWeight: 700 }}
+                onClick={() => onSelectActividad?.("act-1")}
+              >
+                {Ico.check} EVIDENCIAS COMPLETAS (VER)
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => onSelectActividad?.("act-1")}
+              >
+                {Ico.upload} CARGAR EVIDENCIA
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1391,7 +1466,7 @@ function ExitModal({ onKeep, onSaveAndExit }: { onKeep: () => void; onSaveAndExi
 
 // ─── 01 — Mis Planes de Trabajo (List) ───────────────────────────────────────
 
-function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion }: {
+function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades }: {
   onNew: () => void;
   onContinuar: () => void;
   planEstado: "borrador" | "en-revision" | "devuelto" | "en-correccion";
@@ -1399,6 +1474,7 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
   observacionesRevision?: Observacion[];
   mensajeDevolucion?: string;
   fechaDevolucion?: string;
+  onNavigateActividades?: () => void;
 }) {
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
   const [showObsModal, setShowObsModal] = useState(false);
@@ -1621,7 +1697,7 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
                         </button>
                       )}
                       {p.acciones.includes("actividades") && (
-                        <button className="btn btn-ghost btn-xs">
+                        <button className="btn btn-ghost btn-xs" onClick={onNavigateActividades}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                           Actividades
                         </button>
@@ -3909,7 +3985,7 @@ function loadDraft(): PlanDraft {
   return { ...DEFAULT_DRAFT };
 }
 
-function PlanesView() {
+function PlanesView({ onNavigateActividades }: { onNavigateActividades?: () => void } = {}) {
   const [sub, setSub] = useState<PlanesSubView>("list");
   const [maxReached, setMaxReached] = useState(3);
   const [draft, setDraftState] = useState<PlanDraft>(loadDraft);
@@ -3954,6 +4030,7 @@ function PlanesView() {
           observacionesRevision={draft.observacionesRevision}
           mensajeDevolucion={draft.mensajeDevolucion}
           fechaDevolucion={draft.fechaDevolucion}
+          onNavigateActividades={onNavigateActividades}
         />
       )}
       {sub === "step1" && (
@@ -4861,6 +4938,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userRole, setUserRole] = useState<"docente" | "revisor">("docente");
   const [planesViewKey, setPlanesViewKey] = useState(0);
+  const actividadesState = useActividadesState();
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
@@ -4898,10 +4976,57 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <TopBar view={view} userRole={userRole} />
         <main style={{ flex: 1, overflowY: "auto", background: "#f0f4f8" }}>
-          {view === "inicio" && <DashboardInicio />}
-          {view === "planes" && <PlanesView key={planesViewKey} />}
-          {view === "actividades" && <PlaceholderView label="Mis Actividades" />}
-          {view === "evidencias" && <PlaceholderView label="Evidencias" />}
+          {view === "inicio" && (
+            <DashboardInicio
+              onNavigateActividades={() => {
+                actividadesState.setActividadSeleccionadaId(null);
+                setView("actividades");
+              }}
+              onNavigatePlanes={() => setView("planes")}
+              onSelectActividad={(id) => {
+                actividadesState.setActividadSeleccionadaId(id);
+                setView("actividades");
+              }}
+              resumen={actividadesState.resumen}
+              actividadesData={actividadesState.actividades}
+            />
+          )}
+          {view === "planes" && (
+            <PlanesView
+              key={planesViewKey}
+              onNavigateActividades={() => {
+                actividadesState.setActividadSeleccionadaId(null);
+                setView("actividades");
+              }}
+            />
+          )}
+          {view === "actividades" && (
+            actividadesState.actividadSeleccionada ? (
+              <DetalleActividadView
+                actividad={actividadesState.actividadSeleccionada}
+                onBack={() => actividadesState.setActividadSeleccionadaId(null)}
+                onCargarEvidencia={actividadesState.cargarEvidencia}
+                onReemplazarEvidencia={actividadesState.reemplazarEvidencia}
+              />
+            ) : (
+              <MisActividadesView
+                actividades={actividadesState.actividades}
+                onSelectActividad={actividadesState.setActividadSeleccionadaId}
+                resumen={actividadesState.resumen}
+              />
+            )
+          )}
+          {view === "evidencias" && (
+            <MisEvidenciasView
+              actividades={actividadesState.actividades}
+              onCargarEvidencia={actividadesState.cargarEvidencia}
+              onReemplazarEvidencia={actividadesState.reemplazarEvidencia}
+              onNavigateToActividad={(id) => {
+                actividadesState.setActividadSeleccionadaId(id);
+                setView("actividades");
+              }}
+            />
+          )}
           {view === "notificaciones" && <PlaceholderView label="Notificaciones" />}
           {view === "perfil" && <PlaceholderView label="Perfil" />}
           {(view === "bandeja" || view === "planesRevision" || view === "seguimiento" || view === "grupos") && (
