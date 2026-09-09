@@ -3,11 +3,16 @@ import { useActividadesState } from "./modulo5/useActividadesState";
 import MisActividadesView from "./modulo5/MisActividadesView";
 import DetalleActividadView from "./modulo5/DetalleActividadView";
 import MisEvidenciasView from "./modulo5/MisEvidenciasView";
+import { useSeguimientoState } from "./modulo6/useSeguimientoState";
+import BandejaEvidenciasRevisorView from "./modulo6/BandejaEvidenciasRevisorView";
+import RevisarEvidenciaView from "./modulo6/RevisarEvidenciaView";
+import SeguimientoPlanesView from "./modulo6/SeguimientoPlanesView";
+import DetalleSeguimientoPlanView from "./modulo6/DetalleSeguimientoPlanView";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type AuthScreen = "login" | "changePassword" | "recovery" | "app";
-type AppView = "inicio" | "planes" | "actividades" | "evidencias" | "notificaciones" | "perfil" | "bandeja" | "planesRevision" | "seguimiento" | "grupos";
+type AppView = "inicio" | "planes" | "actividades" | "evidencias" | "notificaciones" | "perfil" | "bandeja" | "planesRevision" | "seguimiento" | "grupos" | "evidenciasValidar";
 type PlanEstado = "Borrador" | "En revisión" | "Observado" | "Aprobado" | "Devuelto" | "En ejecución";
 type ActividadEstado = "EN CURSO" | "CUMPLIDA" | "PENDIENTE" | "PRÓXIMA A VENCER" | "VENCIDA";
 
@@ -676,10 +681,11 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "perfil",         label: "Perfil",                icon: Ico.user },
   ];
   const revisorItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
-    { id: "bandeja",        label: "Bandeja de revisión",   icon: Ico.file },
-    { id: "planesRevision", label: "Planes de Trabajo",     icon: Ico.home },
+    { id: "evidenciasValidar", label: "Evidencias por validar", icon: Ico.paperclip },
     { id: "seguimiento",    label: "Seguimiento",           icon: Ico.activity },
-    { id: "grupos",         label: "Grupos asignados",      icon: Ico.paperclip },
+    { id: "bandeja",        label: "Bandeja de revisión (Planes)", icon: Ico.file },
+    { id: "planesRevision", label: "Planes de Trabajo",     icon: Ico.home },
+    { id: "grupos",         label: "Grupos asignados",      icon: Ico.users },
     { id: "notificaciones", label: "Notificaciones",        icon: Ico.bell },
     { id: "perfil",         label: "Perfil",                icon: Ico.user },
   ];
@@ -859,10 +865,11 @@ function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revi
     evidencias: "Evidencias",
     notificaciones: "Notificaciones",
     perfil: "Perfil",
-    bandeja: "Bandeja de revisión",
+    bandeja: "Bandeja de revisión (Planes)",
     planesRevision: "Planes de Trabajo",
     seguimiento: "Seguimiento",
     grupos: "Grupos asignados",
+    evidenciasValidar: "Evidencias por validar",
   };
 
   return (
@@ -4938,12 +4945,12 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userRole, setUserRole] = useState<"docente" | "revisor">("docente");
   const [planesViewKey, setPlanesViewKey] = useState(0);
-  const actividadesState = useActividadesState();
+  const seguimientoState = useSeguimientoState();
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
       setUserRole("revisor");
-      setView("bandeja");
+      setView("evidenciasValidar");
     } else {
       setUserRole("docente");
       setView("planes");
@@ -4979,57 +4986,87 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "inicio" && (
             <DashboardInicio
               onNavigateActividades={() => {
-                actividadesState.setActividadSeleccionadaId(null);
+                seguimientoState.setActividadSeleccionadaId(null);
                 setView("actividades");
               }}
               onNavigatePlanes={() => setView("planes")}
               onSelectActividad={(id) => {
-                actividadesState.setActividadSeleccionadaId(id);
+                seguimientoState.setActividadSeleccionadaId(id);
                 setView("actividades");
               }}
-              resumen={actividadesState.resumen}
-              actividadesData={actividadesState.actividades}
+              resumen={seguimientoState.resumen}
+              actividadesData={seguimientoState.actividades}
             />
           )}
           {view === "planes" && (
             <PlanesView
               key={planesViewKey}
               onNavigateActividades={() => {
-                actividadesState.setActividadSeleccionadaId(null);
+                seguimientoState.setActividadSeleccionadaId(null);
                 setView("actividades");
               }}
             />
           )}
           {view === "actividades" && (
-            actividadesState.actividadSeleccionada ? (
+            seguimientoState.actividadSeleccionada ? (
               <DetalleActividadView
-                actividad={actividadesState.actividadSeleccionada}
-                onBack={() => actividadesState.setActividadSeleccionadaId(null)}
-                onCargarEvidencia={actividadesState.cargarEvidencia}
-                onReemplazarEvidencia={actividadesState.reemplazarEvidencia}
+                actividad={seguimientoState.actividadSeleccionada}
+                onBack={() => seguimientoState.setActividadSeleccionadaId(null)}
+                onCargarEvidencia={seguimientoState.cargarEvidencia}
+                onReemplazarEvidencia={seguimientoState.reemplazarEvidencia}
               />
             ) : (
               <MisActividadesView
-                actividades={actividadesState.actividades}
-                onSelectActividad={actividadesState.setActividadSeleccionadaId}
-                resumen={actividadesState.resumen}
+                actividades={seguimientoState.actividades}
+                onSelectActividad={seguimientoState.setActividadSeleccionadaId}
+                resumen={seguimientoState.resumen}
               />
             )
           )}
           {view === "evidencias" && (
             <MisEvidenciasView
-              actividades={actividadesState.actividades}
-              onCargarEvidencia={actividadesState.cargarEvidencia}
-              onReemplazarEvidencia={actividadesState.reemplazarEvidencia}
+              actividades={seguimientoState.actividades}
+              onCargarEvidencia={seguimientoState.cargarEvidencia}
+              onReemplazarEvidencia={seguimientoState.reemplazarEvidencia}
               onNavigateToActividad={(id) => {
-                actividadesState.setActividadSeleccionadaId(id);
+                seguimientoState.setActividadSeleccionadaId(id);
                 setView("actividades");
               }}
             />
           )}
+          {view === "evidenciasValidar" && (
+            seguimientoState.evidenciaSeleccionada && seguimientoState.itemEvidenciaActivo ? (
+              <RevisarEvidenciaView
+                item={seguimientoState.itemEvidenciaActivo}
+                onBack={() => seguimientoState.setEvidenciaSeleccionada(null)}
+                onValidar={(actividadId: string, medioId: string) => {
+                  seguimientoState.validarEvidencia(actividadId, medioId);
+                  seguimientoState.setEvidenciaSeleccionada(null);
+                }}
+                onObservar={(actividadId: string, medioId: string, observacion: string) => {
+                  seguimientoState.observarEvidencia(actividadId, medioId, observacion);
+                  seguimientoState.setEvidenciaSeleccionada(null);
+                }}
+              />
+            ) : (
+              <BandejaEvidenciasRevisorView
+                items={seguimientoState.itemsBandejaRevisor}
+                resumen={seguimientoState.resumenBandeja}
+                onSelectEvidencia={(actividadId: string, medioId: string) => {
+                  seguimientoState.setEvidenciaSeleccionada({ actividadId, medioId });
+                }}
+              />
+            )
+          )}
+          {view === "seguimiento" && (
+            <SeguimientoPlanesView
+              planes={seguimientoState.planesSeguimiento}
+              resumenGlobal={seguimientoState.resumenSeguimientoGlobal}
+            />
+          )}
           {view === "notificaciones" && <PlaceholderView label="Notificaciones" />}
           {view === "perfil" && <PlaceholderView label="Perfil" />}
-          {(view === "bandeja" || view === "planesRevision" || view === "seguimiento" || view === "grupos") && (
+          {(view === "bandeja" || view === "planesRevision" || view === "grupos") && (
             <RevisorView onBackToDocente={handleRoleSwitch} onDevolver={handleDevolver} />
           )}
         </main>

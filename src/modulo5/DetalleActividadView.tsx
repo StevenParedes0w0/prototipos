@@ -5,6 +5,7 @@ import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
 import VisorPdfModal from "./VisorPdfModal";
 import ModalAuditoria from "./ModalAuditoria";
+import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
 
 interface DetalleActividadViewProps {
   actividad: ActividadEjecucion;
@@ -23,6 +24,7 @@ export default function DetalleActividadView({
   const [medioParaReemplazar, setMedioParaReemplazar] = useState<MedioVerificacion | null>(null);
   const [medioParaVer, setMedioParaVer] = useState<MedioVerificacion | null>(null);
   const [medioParaAuditoria, setMedioParaAuditoria] = useState<MedioVerificacion | null>(null);
+  const [medioParaObservacion, setMedioParaObservacion] = useState<MedioVerificacion | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -441,7 +443,7 @@ export default function DetalleActividadView({
                       </svg>
                     </div>
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a" }}>
                           {medio.nombre.toUpperCase()}
                         </span>
@@ -455,6 +457,46 @@ export default function DetalleActividadView({
                         }}>
                           ✓ CARGADO
                         </span>
+                        {/* Estado de validación Módulo 6 */}
+                        {(medio.estadoValidacion === "VALIDADA" || medio.estado === "VALIDADA") && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#166534",
+                            background: "#bbf7d0",
+                            padding: "1px 8px",
+                            borderRadius: 99,
+                            border: "1px solid #86efac",
+                          }}>
+                            ✓ VALIDADA
+                          </span>
+                        )}
+                        {(medio.estadoValidacion === "OBSERVADA" || medio.estado === "OBSERVADA") && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#991b1b",
+                            background: "#fee2e2",
+                            padding: "1px 8px",
+                            borderRadius: 99,
+                            border: "1px solid #fca5a5",
+                          }}>
+                            ⚠ OBSERVADA
+                          </span>
+                        )}
+                        {(medio.estadoValidacion === "PENDIENTE DE VALIDACIÓN" || (!medio.estadoValidacion && medio.estado === "CARGADA")) && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#92400e",
+                            background: "#fef3c7",
+                            padding: "1px 8px",
+                            borderRadius: 99,
+                            border: "1px solid #fde68a",
+                          }}>
+                            ⏳ PENDIENTE DE VALIDACIÓN
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#1e40af", marginBottom: 2 }}>
@@ -468,7 +510,7 @@ export default function DetalleActividadView({
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => setMedioParaVer(medio)}
@@ -478,6 +520,21 @@ export default function DetalleActividadView({
                       </svg>
                       VER
                     </button>
+
+                    {(medio.estadoValidacion === "OBSERVADA" || medio.estado === "OBSERVADA") && (
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => setMedioParaObservacion(medio)}
+                        style={{
+                          background: "#fffbeb",
+                          color: "#b45309",
+                          border: "1px solid #fde68a",
+                          fontWeight: 700,
+                        }}
+                      >
+                        VER OBSERVACIÓN
+                      </button>
+                    )}
 
                     <button
                       className="btn btn-ghost btn-sm"
@@ -630,6 +687,20 @@ export default function DetalleActividadView({
           actividad={actividad}
           medio={medioParaAuditoria}
           onClose={() => setMedioParaAuditoria(null)}
+        />
+      )}
+
+      {medioParaObservacion && (
+        <ModalVerObservacionDocente
+          medio={medioParaObservacion}
+          actividad={actividad}
+          puedeReemplazar={!isVencida && esResponsable}
+          onClose={() => setMedioParaObservacion(null)}
+          onReemplazar={() => {
+            const m = medioParaObservacion;
+            setMedioParaObservacion(null);
+            setMedioParaReemplazar(m);
+          }}
         />
       )}
     </div>

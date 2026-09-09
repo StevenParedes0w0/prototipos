@@ -1,5 +1,17 @@
 export type EstadoActividad = "PENDIENTE" | "EN CURSO" | "EVIDENCIAS COMPLETAS" | "VENCIDA";
-export type EstadoEvidencia = "PENDIENTE" | "CARGADA" | "PLAZO VENCIDO";
+export type EstadoEvidencia = "PENDIENTE" | "CARGADA" | "PENDIENTE DE VALIDACIÓN" | "VALIDADA" | "OBSERVADA" | "PLAZO VENCIDO";
+
+export interface EventoAuditoria {
+  id: string;
+  tipo: "CARGA" | "REEMPLAZO" | "VALIDACION" | "OBSERVACION";
+  titulo: string;
+  descripcion?: string;
+  usuario: string;
+  fecha: string;
+  hora: string;
+  version: number;
+  observacionTexto?: string;
+}
 
 export interface VersionArchivoEvidencia {
   version: number;
@@ -9,6 +21,10 @@ export interface VersionArchivoEvidencia {
   cargadoPor: string;
   vigente: boolean;
   motivoReemplazo?: string;
+  estadoRevision?: "PENDIENTE DE VALIDACIÓN" | "VALIDADA" | "OBSERVADA";
+  revisadoPor?: string;
+  fechaRevision?: string;
+  observacion?: string;
 }
 
 export interface MedioVerificacion {
@@ -24,6 +40,13 @@ export interface MedioVerificacion {
     url?: string;
   };
   historialVersiones: VersionArchivoEvidencia[];
+  estadoValidacion?: "PENDIENTE DE VALIDACIÓN" | "VALIDADA" | "OBSERVADA";
+  revisionActual?: {
+    revisadoPor: string;
+    fechaRevision: string;
+    observacion?: string;
+  };
+  eventosAuditoria?: EventoAuditoria[];
 }
 
 export interface ActividadEjecucion {

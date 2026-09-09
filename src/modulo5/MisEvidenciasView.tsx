@@ -4,6 +4,8 @@ import { DOCENTE_ACTUAL } from "./useActividadesState";
 import VisorPdfModal from "./VisorPdfModal";
 import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
+import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
+import ModalTrazabilidadCompleta from "../modulo6/ModalTrazabilidadCompleta";
 
 interface MisEvidenciasViewProps {
   actividades: ActividadEjecucion[];
@@ -31,7 +33,11 @@ export default function MisEvidenciasView({
     actividad: ActividadEjecucion;
     medio: MedioVerificacion;
   } | null>(null);
-  const [modalType, setModalType] = useState<"ver" | "cargar" | "reemplazar" | null>(null);
+  const [modalType, setModalType] = useState<"ver" | "cargar" | "reemplazar" | "observacion" | "trazabilidad" | null>(null);
+  const [itemParaConfirmarReemplazo, setItemParaConfirmarReemplazo] = useState<{
+    actividad: ActividadEjecucion;
+    medio: MedioVerificacion;
+  } | null>(null);
 
   // Flattened evidence items across all activities
   const evidenciasList = useMemo(() => {
@@ -52,6 +58,15 @@ export default function MisEvidenciasView({
     return items;
   }, [actividades]);
 
+  // Helper to compute display validation status
+  const getEstadoVisual = (medio: MedioVerificacion, actividad: ActividadEjecucion): "VALIDADA" | "OBSERVADA" | "PENDIENTE DE VALIDACIÓN" | "PLAZO VENCIDO" | "PENDIENTE DE CARGA" => {
+    if (medio.estadoValidacion === "VALIDADA" || medio.estado === "VALIDADA") return "VALIDADA";
+    if (medio.estadoValidacion === "OBSERVADA" || medio.estado === "OBSERVADA") return "OBSERVADA";
+    if (medio.archivoVigente) return "PENDIENTE DE VALIDACIÓN";
+    if (medio.estado === "PLAZO VENCIDO" || actividad.estado === "VENCIDA") return "PLAZO VENCIDO";
+    return "PENDIENTE DE CARGA";
+  };
+
   // Filtered evidence items
   const evidenciasFiltradas = useMemo(() => {
     return evidenciasList.filter(({ actividad, medio }) => {
@@ -62,11 +77,14 @@ export default function MisEvidenciasView({
       if (filtroPlan !== "Todos los planes" && actividad.planNombre !== filtroPlan) return false;
       if (filtroGrupo !== "Todos" && actividad.grupo !== filtroGrupo) return false;
 
-      // Estado filter (PENDIENTE, CARGADA, PLAZO VENCIDO)
+      // Estado filter
+      const estadoVis = getEstadoVisual(medio, actividad);
       if (filtroEstado !== "Todos") {
-        if (filtroEstado === "PLAZO VENCIDO" && medio.estado !== "PLAZO VENCIDO") return false;
-        if (filtroEstado === "CARGADA" && medio.estado !== "CARGADA") return false;
-        if (filtroEstado === "PENDIENTE" && medio.estado !== "PENDIENTE") return false;
+        if (filtroEstado === "VALIDADA" && estadoVis !== "VALIDADA") return false;
+        if (filtroEstado === "OBSERVADA" && estadoVis !== "OBSERVADA") return false;
+        if (filtroEstado === "PENDIENTE DE VALIDACIÓN" && estadoVis !== "PENDIENTE DE VALIDACIÓN") return false;
+        if (filtroEstado === "PENDIENTE DE CARGA" && estadoVis !== "PENDIENTE DE CARGA") return false;
+        if (filtroEstado === "PLAZO VENCIDO" && estadoVis !== "PLAZO VENCIDO") return false;
       }
 
       // Medio filter
@@ -84,12 +102,14 @@ export default function MisEvidenciasView({
 
       return true;
     });
-  }, [evidenciasList, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, filtroMedio, busqueda]);
+  }, [evidenciasList, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, filtroMedio, busqueda, filtroAlcance]);
 
-  const estadoBadgeStyle: Record<string, { bg: string; color: string; dot: string }> = {
-    "CARGADA":       { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
-    "PENDIENTE":     { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-    "PLAZO VENCIDO": { bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
+  const estadoBadgeStyle: Record<string, { bg: string; color: string; dot: string; icon?: string }> = {
+    "VALIDADA":                 { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
+    "OBSERVADA":                { bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
+    "PENDIENTE DE VALIDACIÓN":  { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+    "PENDIENTE DE CARGA":       { bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
+    "PLAZO VENCIDO":            { bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
   };
 
   return (
@@ -190,8 +210,10 @@ export default function MisEvidenciasView({
             onChange={(e) => setFiltroEstado(e.target.value)}
           >
             <option>Todos</option>
-            <option>CARGADA</option>
-            <option>PENDIENTE</option>
+            <option>VALIDADA</option>
+            <option>OBSERVADA</option>
+            <option>PENDIENTE DE VALIDACIÓN</option>
+            <option>PENDIENTE DE CARGA</option>
             <option>PLAZO VENCIDO</option>
           </select>
         </div>
@@ -245,7 +267,7 @@ export default function MisEvidenciasView({
               <th>Fecha límite</th>
               <th>Archivo</th>
               <th>Estado</th>
-              <th style={{ textAlign: "right" }}>Acción</th>
+              <th style={{ textAlign: "right" }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -257,15 +279,16 @@ export default function MisEvidenciasView({
               </tr>
             ) : (
               evidenciasFiltradas.map(({ actividad, medio }) => {
-                const isCargada = medio.estado === "CARGADA" && medio.archivoVigente;
+                const isCargada = Boolean(medio.archivoVigente);
                 const isVencida = medio.estado === "PLAZO VENCIDO" || actividad.estado === "VENCIDA";
-                const badgeState = isCargada ? "CARGADA" : isVencida ? "PLAZO VENCIDO" : "PENDIENTE";
-                const sBadge = estadoBadgeStyle[badgeState];
+                const esResponsable = actividad.responsables.includes(DOCENTE_ACTUAL);
+                const estadoVis = getEstadoVisual(medio, actividad);
+                const sBadge = estadoBadgeStyle[estadoVis] || estadoBadgeStyle["PENDIENTE DE CARGA"];
 
                 return (
                   <tr key={`${actividad.id}-${medio.id}`}>
                     {/* Actividad */}
-                    <td style={{ maxWidth: 300 }}>
+                    <td style={{ maxWidth: 280 }}>
                       <div
                         onClick={() => onNavigateToActividad(actividad.id)}
                         style={{
@@ -309,11 +332,11 @@ export default function MisEvidenciasView({
                     </td>
 
                     {/* Archivo */}
-                    <td style={{ maxWidth: 220 }}>
+                    <td style={{ maxWidth: 200 }}>
                       {isCargada ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ color: "#dc2626", fontWeight: 700, fontSize: 10 }}>[PDF]</span>
-                          <span style={{ fontSize: 12.5, color: "#1e40af", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: 12.5, color: "#1e40af", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={medio.archivoVigente?.nombre}>
                             {medio.archivoVigente?.nombre}
                           </span>
                         </div>
@@ -337,52 +360,125 @@ export default function MisEvidenciasView({
                         whiteSpace: "nowrap",
                       }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: sBadge.dot }} />
-                        {badgeState}
+                        {estadoVis}
                       </span>
                     </td>
 
-                    {/* Accion */}
+                    {/* Acciones */}
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                      {isCargada ? (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => {
-                            setActiveItem({ actividad, medio });
-                            setModalType("ver");
-                          }}
-                        >
-                          VER
-                        </button>
-                      ) : isVencida ? (
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => onNavigateToActividad(actividad.id)}
-                          style={{ color: "#991b1b" }}
-                        >
-                          VER AVISO
-                        </button>
-                      ) : !actividad.responsables.includes(DOCENTE_ACTUAL) ? (
-                        <span style={{
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          color: "#64748b",
-                          background: "#f1f5f9",
-                          padding: "4px 8px",
-                          borderRadius: 4,
-                        }}>
-                          Solo lectura
-                        </span>
-                      ) : (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => {
-                            setActiveItem({ actividad, medio });
-                            setModalType("cargar");
-                          }}
-                        >
-                          CARGAR
-                        </button>
-                      )}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+                        {isCargada && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              setActiveItem({ actividad, medio });
+                              setModalType("ver");
+                            }}
+                            title="Ver documento PDF"
+                          >
+                            VER
+                          </button>
+                        )}
+
+                        {/* Botón ver observación si está observada */}
+                        {estadoVis === "OBSERVADA" && (
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => {
+                              setActiveItem({ actividad, medio });
+                              setModalType("observacion");
+                            }}
+                            style={{
+                              background: "#fffbeb",
+                              color: "#b45309",
+                              border: "1px solid #fde68a",
+                              fontWeight: 700,
+                            }}
+                            title="Consultar la observación del revisor"
+                          >
+                            VER OBSERVACIÓN
+                          </button>
+                        )}
+
+                        {/* Reemplazar con flujo seguro según estado */}
+                        {isCargada && !isVencida && esResponsable && (
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => {
+                              if (estadoVis === "VALIDADA") {
+                                setItemParaConfirmarReemplazo({ actividad, medio });
+                              } else {
+                                setActiveItem({ actividad, medio });
+                                setModalType("reemplazar");
+                              }
+                            }}
+                            style={{
+                              color: "#475569",
+                              border: "1px solid #e2e8f0",
+                              fontSize: 11.5,
+                            }}
+                            title="Cargar nueva versión del archivo"
+                          >
+                            REEMPLAZAR
+                          </button>
+                        )}
+
+                        {/* Ver Trazabilidad / Auditoría */}
+                        {isCargada && (
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => {
+                              setActiveItem({ actividad, medio });
+                              setModalType("trazabilidad");
+                            }}
+                            style={{
+                              color: "#64748b",
+                              padding: "4px 7px",
+                            }}
+                            title="Historial de versiones y trazabilidad de auditoría"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* Casos sin archivo */}
+                        {!isCargada && isVencida && (
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => onNavigateToActividad(actividad.id)}
+                            style={{ color: "#991b1b" }}
+                          >
+                            VER AVISO
+                          </button>
+                        )}
+
+                        {!isCargada && !isVencida && !esResponsable && (
+                          <span style={{
+                            fontSize: 11.5,
+                            fontWeight: 600,
+                            color: "#64748b",
+                            background: "#f1f5f9",
+                            padding: "4px 8px",
+                            borderRadius: 4,
+                          }}>
+                            Solo lectura
+                          </span>
+                        )}
+
+                        {!isCargada && !isVencida && esResponsable && (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              setActiveItem({ actividad, medio });
+                              setModalType("cargar");
+                            }}
+                          >
+                            CARGAR
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -392,7 +488,109 @@ export default function MisEvidenciasView({
         </table>
       </div>
 
-      {/* Modals */}
+      {/* Modal Advertencia de Reemplazo en Evidencia Validada */}
+      {itemParaConfirmarReemplazo && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15,35,60,0.65)",
+          zIndex: 600,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 12,
+            width: 500,
+            maxWidth: "100%",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
+            border: "1px solid #e2e8f0",
+            overflow: "hidden",
+          }}>
+            <div style={{
+              padding: "18px 24px",
+              background: "#fffbeb",
+              borderBottom: "1px solid #fef3c7",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}>
+              <div style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: "#fef3c7",
+                color: "#b45309",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#92400e", margin: 0 }}>
+                  Advertencia de reemplazo
+                </h3>
+                <p style={{ fontSize: 12.5, color: "#b45309", margin: "2px 0 0" }}>
+                  Evidencia formalmente validada
+                </p>
+              </div>
+            </div>
+
+            <div style={{ padding: "20px 24px" }}>
+              <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.6, margin: "0 0 14px" }}>
+                Esta evidencia ya fue <strong>evaluada y validada favorablemente</strong> por el revisor institucional.
+              </p>
+              <div style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
+                padding: "12px 16px",
+                fontSize: 12.5,
+                color: "#475569",
+                lineHeight: 1.55,
+                marginBottom: 16,
+              }}>
+                <strong>Consecuencias del reemplazo:</strong>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                  <li>La evidencia perderá la condición de <strong>VALIDADA</strong>.</li>
+                  <li>La nueva versión pasará a estado <strong>PENDIENTE DE VALIDACIÓN</strong>.</li>
+                  <li>El revisor institucional deberá evaluar nuevamente el archivo.</li>
+                  <li>La acción quedará registrada en la pista de auditoría.</li>
+                </ul>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setItemParaConfirmarReemplazo(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ background: "#b45309", borderColor: "#b45309" }}
+                  onClick={() => {
+                    setActiveItem(itemParaConfirmarReemplazo);
+                    setItemParaConfirmarReemplazo(null);
+                    setModalType("reemplazar");
+                  }}
+                >
+                  Continuar y reemplazar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Visor PDF */}
       {activeItem && modalType === "ver" && (
         <VisorPdfModal
           actividad={activeItem.actividad}
@@ -401,10 +599,18 @@ export default function MisEvidenciasView({
             setActiveItem(null);
             setModalType(null);
           }}
-          onOpenReemplazar={() => setModalType("reemplazar")}
+          onOpenReemplazar={() => {
+            if (activeItem.medio.estadoValidacion === "VALIDADA" || activeItem.medio.estado === "VALIDADA") {
+              setItemParaConfirmarReemplazo(activeItem);
+              setModalType(null);
+            } else {
+              setModalType("reemplazar");
+            }
+          }}
         />
       )}
 
+      {/* Modal Cargar */}
       {activeItem && modalType === "cargar" && (
         <ModalCargaEvidencia
           actividad={activeItem.actividad}
@@ -421,6 +627,7 @@ export default function MisEvidenciasView({
         />
       )}
 
+      {/* Modal Reemplazar */}
       {activeItem && modalType === "reemplazar" && (
         <ModalReemplazarEvidencia
           actividad={activeItem.actividad}
@@ -431,6 +638,34 @@ export default function MisEvidenciasView({
           }}
           onReemplazar={(archivo, motivo) => {
             onReemplazarEvidencia(activeItem.actividad.id, activeItem.medio.id, archivo, motivo);
+            setActiveItem(null);
+            setModalType(null);
+          }}
+        />
+      )}
+
+      {/* Modal Observación Docente */}
+      {activeItem && modalType === "observacion" && (
+        <ModalVerObservacionDocente
+          medio={activeItem.medio}
+          actividad={activeItem.actividad}
+          puedeReemplazar={!activeItem.actividad.estado.includes("VENCIDA") && activeItem.actividad.responsables.includes(DOCENTE_ACTUAL)}
+          onClose={() => {
+            setActiveItem(null);
+            setModalType(null);
+          }}
+          onReemplazar={() => {
+            setModalType("reemplazar");
+          }}
+        />
+      )}
+
+      {/* Modal Trazabilidad Completa */}
+      {activeItem && modalType === "trazabilidad" && (
+        <ModalTrazabilidadCompleta
+          medio={activeItem.medio}
+          actividad={activeItem.actividad}
+          onClose={() => {
             setActiveItem(null);
             setModalType(null);
           }}
