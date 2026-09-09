@@ -8,11 +8,43 @@ import BandejaEvidenciasRevisorView from "./modulo6/BandejaEvidenciasRevisorView
 import RevisarEvidenciaView from "./modulo6/RevisarEvidenciaView";
 import SeguimientoPlanesView from "./modulo6/SeguimientoPlanesView";
 import DetalleSeguimientoPlanView from "./modulo6/DetalleSeguimientoPlanView";
+import { useAdminState } from "./modulo7/useAdminState";
+import AdminDashboardView from "./modulo7/AdminDashboardView";
+import UsuariosView from "./modulo7/UsuariosView";
+import GruposInstitucionalesView from "./modulo7/GruposInstitucionalesView";
+import GrupoDetalleView from "./modulo7/GrupoDetalleView";
+import PeriodosAcademicosView from "./modulo7/PeriodosAcademicosView";
+import ActividadesInstitucionalesView from "./modulo7/ActividadesInstitucionalesView";
+import CatalogosView from "./modulo7/CatalogosView";
+import FlujosAprobacionView from "./modulo7/FlujosAprobacionView";
+import ConfigurarFlujoView from "./modulo7/ConfigurarFlujoView";
+import FeriadosView from "./modulo7/FeriadosView";
+import PlantillasDocumentalesView from "./modulo7/PlantillasDocumentalesView";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type AuthScreen = "login" | "changePassword" | "recovery" | "app";
-type AppView = "inicio" | "planes" | "actividades" | "evidencias" | "notificaciones" | "perfil" | "bandeja" | "planesRevision" | "seguimiento" | "grupos" | "evidenciasValidar";
+type AppView =
+  | "inicio"
+  | "planes"
+  | "actividades"
+  | "evidencias"
+  | "notificaciones"
+  | "perfil"
+  | "bandeja"
+  | "planesRevision"
+  | "seguimiento"
+  | "grupos"
+  | "evidenciasValidar"
+  | "adminInicio"
+  | "adminUsuarios"
+  | "adminGrupos"
+  | "adminPeriodos"
+  | "adminActividades"
+  | "adminCatalogos"
+  | "adminFlujos"
+  | "adminFeriados"
+  | "adminPlantillas";
 type PlanEstado = "Borrador" | "En revisión" | "Observado" | "Aprobado" | "Devuelto" | "En ejecución";
 type ActividadEstado = "EN CURSO" | "CUMPLIDA" | "PENDIENTE" | "PRÓXIMA A VENCER" | "VENCIDA";
 
@@ -663,13 +695,21 @@ const REVISOR = {
   rol: "Revisor",
 };
 
+const ADMINISTRADOR = {
+  nombre: "Ing. Laura Medina, Mg.",
+  nombreCorto: "Laura Medina",
+  correo: "laura.medina@uta.edu.ec",
+  avatar: "LM",
+  rol: "Administrador",
+};
+
 function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, onRoleSwitch }: {
   view: AppView;
   setView: (v: AppView) => void;
   onLogout: () => void;
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
-  userRole: "docente" | "revisor";
+  userRole: "docente" | "revisor" | "admin";
   onRoleSwitch: () => void;
 }) {
   const docenteItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
@@ -689,8 +729,20 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "notificaciones", label: "Notificaciones",        icon: Ico.bell },
     { id: "perfil",         label: "Perfil",                icon: Ico.user },
   ];
-  const navItems = userRole === "revisor" ? revisorItems : docenteItems;
-  const currentUser = userRole === "revisor" ? REVISOR : DOCENTE;
+  const adminItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
+    { id: "adminInicio",       label: "Panel General",           icon: Ico.home },
+    { id: "adminUsuarios",     label: "Gestión de Usuarios",     icon: Ico.user },
+    { id: "adminGrupos",       label: "Grupos Institucionales",  icon: Ico.users },
+    { id: "adminPeriodos",     label: "Períodos Académicos",     icon: Ico.clock },
+    { id: "adminActividades",  label: "Catálogo Actividades",    icon: Ico.activity },
+    { id: "adminCatalogos",    label: "Recursos y Medios",       icon: Ico.paperclip },
+    { id: "adminFlujos",       label: "Flujos de Aprobación",    icon: Ico.shieldCheck },
+    { id: "adminFeriados",     label: "Feriados y Restricciones",icon: Ico.alert },
+    { id: "adminPlantillas",   label: "Plantillas Documentales", icon: Ico.file },
+  ];
+  const navItems = userRole === "admin" ? adminItems : userRole === "revisor" ? revisorItems : docenteItems;
+  const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
+  const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#2563ab";
 
   const w = collapsed ? 64 : 244;
 
@@ -739,7 +791,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <div style={{
               width: 32, height: 32, borderRadius: "50%",
-              background: userRole === "revisor" ? "#1a6a4a" : "#2563ab", color: "#fff",
+              background: avatarBg, color: "#fff",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700, flexShrink: 0,
             }}>{currentUser.avatar}</div>
@@ -756,7 +808,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
           <div style={{
             width: 32, height: 32, borderRadius: "50%",
-            background: userRole === "revisor" ? "#1a6a4a" : "#2563ab", color: "#fff",
+            background: avatarBg, color: "#fff",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 12, fontWeight: 700,
           }} title={currentUser.nombreCorto}>{currentUser.avatar}</div>
@@ -767,7 +819,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
       <nav style={{ flex: 1, marginTop: 8 }}>
         {!collapsed && (
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4a6d94", padding: "12px 24px 4px" }}>
-            Principal
+            {userRole === "admin" ? "Administración" : "Principal"}
           </div>
         )}
         {navItems.map(n => (
@@ -812,21 +864,22 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
         {/* Role switcher */}
         <div
           onClick={onRoleSwitch}
-          title={collapsed ? (userRole === "revisor" ? "Cambiar a Docente" : "Cambiar a Revisor") : undefined}
+          title={collapsed ? `Modo: ${userRole}` : undefined}
           style={{
             display: "flex", alignItems: "center",
             justifyContent: collapsed ? "center" : "flex-start",
             gap: collapsed ? 0 : 8,
             padding: collapsed ? "10px 0" : "8px 16px",
             borderRadius: 6, cursor: "pointer",
-            fontSize: 12, color: userRole === "revisor" ? "#6adba8" : "#7aaed0",
+            fontSize: 12,
+            color: userRole === "admin" ? "#c4b5fd" : userRole === "revisor" ? "#6adba8" : "#7aaed0",
             marginBottom: 4, transition: "all 0.15s",
           }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          {!collapsed && (userRole === "revisor" ? "Modo: Revisor" : "Modo: Docente")}
+          {!collapsed && (userRole === "admin" ? "Modo: Administrador" : userRole === "revisor" ? "Modo: Revisor" : "Modo: Docente")}
         </div>
         <div
           onClick={onLogout}
@@ -855,9 +908,9 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
   );
 }
 
-function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revisor" }) {
-  const currentUser = userRole === "revisor" ? REVISOR : DOCENTE;
-  const avatarBg = userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
+function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revisor" | "admin" }) {
+  const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
+  const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
   const labels: Record<AppView, string> = {
     inicio: "Inicio",
     planes: "Mis Planes de Trabajo",
@@ -870,6 +923,15 @@ function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revi
     seguimiento: "Seguimiento",
     grupos: "Grupos asignados",
     evidenciasValidar: "Evidencias por validar",
+    adminInicio: "Panel de Administración",
+    adminUsuarios: "Gestión de Usuarios",
+    adminGrupos: "Grupos Institucionales",
+    adminPeriodos: "Períodos Académicos",
+    adminActividades: "Catálogo de Actividades",
+    adminCatalogos: "Catálogos de Recursos y Medios",
+    adminFlujos: "Flujos de Aprobación",
+    adminFeriados: "Feriados y Días Restringidos",
+    adminPlantillas: "Plantillas Documentales",
   };
 
   return (
@@ -4943,14 +5005,20 @@ function RevisorView({ onBackToDocente, onDevolver }: {
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [view, setView] = useState<AppView>("inicio");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userRole, setUserRole] = useState<"docente" | "revisor">("docente");
+  const [userRole, setUserRole] = useState<"docente" | "revisor" | "admin">("docente");
   const [planesViewKey, setPlanesViewKey] = useState(0);
   const seguimientoState = useSeguimientoState();
+  const adminState = useAdminState();
+  const [adminSelectedGrupoId, setAdminSelectedGrupoId] = useState<string | null>(null);
+  const [adminSelectedFlujoGrupoId, setAdminSelectedFlujoGrupoId] = useState<string | null>(null);
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
       setUserRole("revisor");
       setView("evidenciasValidar");
+    } else if (userRole === "revisor") {
+      setUserRole("admin");
+      setView("adminInicio");
     } else {
       setUserRole("docente");
       setView("planes");
@@ -5068,6 +5136,108 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "perfil" && <PlaceholderView label="Perfil" />}
           {(view === "bandeja" || view === "planesRevision" || view === "grupos") && (
             <RevisorView onBackToDocente={handleRoleSwitch} onDevolver={handleDevolver} />
+          )}
+
+          {/* Módulo 7 — Administración y Configuración Institucional */}
+          {view === "adminInicio" && (
+            <AdminDashboardView
+              metricas={{
+                usuariosActivos: adminState.usuarios.filter(u => u.estado === "ACTIVO").length,
+                gruposInstitucionales: adminState.grupos.length,
+                periodoActivo: adminState.periodos.find(p => p.estado === "ACTIVO")?.nombre ?? "Julio – Diciembre 2026",
+                flujosConfigurados: adminState.flujos.length,
+              }}
+              onNavigate={(v) => {
+                if (v === "adminGrupos") setAdminSelectedGrupoId(null);
+                if (v === "adminFlujos") setAdminSelectedFlujoGrupoId(null);
+                setView(v as AppView);
+              }}
+            />
+          )}
+          {view === "adminUsuarios" && (
+            <UsuariosView
+              usuarios={adminState.usuarios}
+              grupos={adminState.grupos}
+              onCrearUsuario={adminState.crearUsuario}
+              onToggleEstadoUsuario={adminState.toggleEstadoUsuario}
+              onAsignarGrupo={adminState.asignarUsuarioAGrupo}
+              onQuitarGrupo={adminState.quitarUsuarioDeGrupo}
+            />
+          )}
+          {view === "adminGrupos" && (
+            adminSelectedGrupoId && adminState.grupos.find(g => g.id === adminSelectedGrupoId) ? (
+              <GrupoDetalleView
+                grupo={adminState.grupos.find(g => g.id === adminSelectedGrupoId)!}
+                usuariosDisponibles={adminState.usuarios}
+                flujo={adminState.flujos.find(f => f.grupoId === adminSelectedGrupoId)}
+                onBack={() => setAdminSelectedGrupoId(null)}
+                onAgregarIntegrante={adminState.asignarUsuarioAGrupo}
+                onQuitarIntegrante={adminState.quitarUsuarioDeGrupo}
+                onToggleObligatoriedad={adminState.toggleObligatoriedadActividadGrupo}
+                onNavigateFlujos={(grupoId) => {
+                  setAdminSelectedFlujoGrupoId(grupoId);
+                  setView("adminFlujos");
+                }}
+              />
+            ) : (
+              <GruposInstitucionalesView
+                grupos={adminState.grupos}
+                onSelectGrupo={(id) => setAdminSelectedGrupoId(id)}
+                onCrearGrupo={adminState.crearGrupo}
+              />
+            )
+          )}
+          {view === "adminPeriodos" && (
+            <PeriodosAcademicosView
+              periodos={adminState.periodos}
+              onCrearPeriodo={adminState.crearPeriodo}
+            />
+          )}
+          {view === "adminActividades" && (
+            <ActividadesInstitucionalesView
+              actividades={adminState.actividadesCatalogo}
+              onAgregarActividad={adminState.agregarActividadCatalogo}
+            />
+          )}
+          {view === "adminCatalogos" && (
+            <CatalogosView
+              recursos={adminState.recursos}
+              medios={adminState.medios}
+              onAgregarRecurso={adminState.agregarRecurso}
+              onToggleEstadoRecurso={adminState.toggleEstadoRecurso}
+              onAgregarMedio={adminState.agregarMedio}
+              onToggleEstadoMedio={adminState.toggleEstadoMedio}
+            />
+          )}
+          {view === "adminFlujos" && (
+            adminSelectedFlujoGrupoId && adminState.flujos.find(f => f.grupoId === adminSelectedFlujoGrupoId) ? (
+              <ConfigurarFlujoView
+                flujo={adminState.flujos.find(f => f.grupoId === adminSelectedFlujoGrupoId)!}
+                usuariosDisponibles={adminState.usuarios}
+                onBack={() => setAdminSelectedFlujoGrupoId(null)}
+                onGuardarFlujo={(grupoId, etapas) => {
+                  adminState.actualizarEtapasFlujo(grupoId, etapas);
+                  setAdminSelectedFlujoGrupoId(null);
+                }}
+              />
+            ) : (
+              <FlujosAprobacionView
+                flujos={adminState.flujos}
+                onConfigurarFlujo={(grupoId) => setAdminSelectedFlujoGrupoId(grupoId)}
+              />
+            )
+          )}
+          {view === "adminFeriados" && (
+            <FeriadosView
+              feriados={adminState.feriados}
+              onAgregarFeriado={adminState.agregarFeriado}
+              onToggleEstadoFeriado={adminState.toggleEstadoFeriado}
+            />
+          )}
+          {view === "adminPlantillas" && (
+            <PlantillasDocumentalesView
+              plantillas={adminState.plantillas}
+            />
           )}
         </main>
       </div>
