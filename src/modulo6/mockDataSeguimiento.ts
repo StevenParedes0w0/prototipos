@@ -666,4 +666,31 @@ export const ACTIVIDADES_SEGUIMIENTO_INICIALES: ActividadEjecucion[] = [
       },
     ],
   },
+
+  // Escenario J: Actividad próxima a vencer en 5 días (vence 12/09/2026 para FECHA_SISTEMA = 07/09/2026)
+  {
+    id: "act-13",
+    nombre: "Presentación de informes mensuales de comisiones",
+    categoria: "POA",
+    tipo: "obligatoria",
+    planNombre: "Plan de Trabajo — Unidad de Titulación",
+    grupo: "Unidad de Titulación",
+    periodo: "Julio – Diciembre 2026",
+    desde: "01/09/2026",
+    hasta: "12/09/2026",
+    fechaLimiteExacta: "12/09/2026 — 23:59",
+    responsables: ["Ing. Andrea Pérez, Mg."],
+    recursos: ["Plantillas institucionales FISEI"],
+    estado: "EN CURSO",
+    medios: [
+      {
+        id: "m-13-1",
+        nombre: "Informe mensual",
+        descripcion: "Informe de avance mensual correspondiente a la comisión.",
+        estado: "PENDIENTE",
+        historialVersiones: [],
+        eventosAuditoria: [],
+      },
+    ],
+  },
 ];

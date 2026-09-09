@@ -12,6 +12,7 @@ interface DetalleActividadViewProps {
   onBack: () => void;
   onCargarEvidencia: (actividadId: string, medioId: string, archivo: { nombre: string; tamano: string }) => void;
   onReemplazarEvidencia: (actividadId: string, medioId: string, archivo: { nombre: string; tamano: string }, motivo?: string) => void;
+  initialModalDirecto?: { tipo: "observacion" | "visor"; medioId: string } | null;
 }
 
 export default function DetalleActividadView({
@@ -19,12 +20,33 @@ export default function DetalleActividadView({
   onBack,
   onCargarEvidencia,
   onReemplazarEvidencia,
+  initialModalDirecto,
 }: DetalleActividadViewProps) {
   const [medioParaCargar, setMedioParaCargar] = useState<MedioVerificacion | null>(null);
   const [medioParaReemplazar, setMedioParaReemplazar] = useState<MedioVerificacion | null>(null);
-  const [medioParaVer, setMedioParaVer] = useState<MedioVerificacion | null>(null);
+  const [medioParaVer, setMedioParaVer] = useState<MedioVerificacion | null>(() => {
+    if (initialModalDirecto?.tipo === "visor") {
+      return actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+    }
+    return null;
+  });
   const [medioParaAuditoria, setMedioParaAuditoria] = useState<MedioVerificacion | null>(null);
-  const [medioParaObservacion, setMedioParaObservacion] = useState<MedioVerificacion | null>(null);
+  const [medioParaObservacion, setMedioParaObservacion] = useState<MedioVerificacion | null>(() => {
+    if (initialModalDirecto?.tipo === "observacion") {
+      return actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    if (initialModalDirecto?.tipo === "observacion") {
+      const target = actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      setMedioParaObservacion(target);
+    } else if (initialModalDirecto?.tipo === "visor") {
+      const target = actividad.medios.find(m => m.id === initialModalDirecto.medioId) || actividad.medios[0] || null;
+      setMedioParaVer(target);
+    }
+  }, [initialModalDirecto, actividad]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {

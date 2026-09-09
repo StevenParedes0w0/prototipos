@@ -20,6 +20,14 @@ import FlujosAprobacionView from "./modulo7/FlujosAprobacionView";
 import ConfigurarFlujoView from "./modulo7/ConfigurarFlujoView";
 import FeriadosView from "./modulo7/FeriadosView";
 import PlantillasDocumentalesView from "./modulo7/PlantillasDocumentalesView";
+import { useNotificacionesState } from "./modulo8/useNotificacionesState";
+import { useAuditoriaState } from "./modulo8/useAuditoriaState";
+import NotificacionesDropdown from "./modulo8/NotificacionesDropdown";
+import NotificacionesView from "./modulo8/NotificacionesView";
+import AuditoriaView from "./modulo8/AuditoriaView";
+import AuditoriaDetalleDrawer from "./modulo8/AuditoriaDetalleDrawer";
+import TrazabilidadModal from "./modulo8/TrazabilidadModal";
+import { NotificacionItem } from "./modulo8/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +52,8 @@ type AppView =
   | "adminCatalogos"
   | "adminFlujos"
   | "adminFeriados"
-  | "adminPlantillas";
+  | "adminPlantillas"
+  | "adminAuditoria";
 type PlanEstado = "Borrador" | "En revisión" | "Observado" | "Aprobado" | "Devuelto" | "En ejecución";
 type ActividadEstado = "EN CURSO" | "CUMPLIDA" | "PENDIENTE" | "PRÓXIMA A VENCER" | "VENCIDA";
 
@@ -167,6 +176,16 @@ const Ico = {
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  search: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
+  history: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>
     </svg>
   ),
 };
@@ -703,7 +722,7 @@ const ADMINISTRADOR = {
   rol: "Administrador",
 };
 
-function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, onRoleSwitch }: {
+function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, onRoleSwitch, noLeidasCount }: {
   view: AppView;
   setView: (v: AppView) => void;
   onLogout: () => void;
@@ -711,6 +730,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
   setCollapsed: (v: boolean) => void;
   userRole: "docente" | "revisor" | "admin";
   onRoleSwitch: () => void;
+  noLeidasCount: number;
 }) {
   const docenteItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
     { id: "inicio",         label: "Inicio",                icon: Ico.home },
@@ -739,6 +759,9 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "adminFlujos",       label: "Flujos de Aprobación",    icon: Ico.shieldCheck },
     { id: "adminFeriados",     label: "Feriados y Restricciones",icon: Ico.alert },
     { id: "adminPlantillas",   label: "Plantillas Documentales", icon: Ico.file },
+    { id: "adminAuditoria",    label: "Auditoría",               icon: Ico.search },
+    { id: "notificaciones",    label: "Notificaciones",          icon: Ico.bell },
+    { id: "perfil",            label: "Perfil",                  icon: Ico.user },
   ];
   const navItems = userRole === "admin" ? adminItems : userRole === "revisor" ? revisorItems : docenteItems;
   const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
@@ -843,13 +866,13 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
           >
             {n.icon}
             {!collapsed && n.label}
-            {!collapsed && n.id === "notificaciones" && (
+            {!collapsed && n.id === "notificaciones" && noLeidasCount > 0 && (
               <span style={{
                 marginLeft: "auto", background: "#ef4444", color: "#fff",
                 borderRadius: 99, fontSize: 10, fontWeight: 700, padding: "0px 6px", lineHeight: "16px",
-              }}>3</span>
+              }}>{noLeidasCount}</span>
             )}
-            {collapsed && n.id === "notificaciones" && (
+            {collapsed && n.id === "notificaciones" && noLeidasCount > 0 && (
               <span style={{
                 position: "absolute", top: 6, right: 6,
                 width: 8, height: 8, borderRadius: "50%", background: "#ef4444",
@@ -908,7 +931,26 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
   );
 }
 
-function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revisor" | "admin" }) {
+function TopBar({
+  view,
+  userRole,
+  noLeidasCount,
+  notificaciones,
+  onMarcarLeida,
+  onMarcarTodasLeidas,
+  onNavigateToNotificaciones,
+  onSelectAction,
+}: {
+  view: AppView;
+  userRole: "docente" | "revisor" | "admin";
+  noLeidasCount: number;
+  notificaciones: NotificacionItem[];
+  onMarcarLeida: (id: string) => void;
+  onMarcarTodasLeidas: () => void;
+  onNavigateToNotificaciones: () => void;
+  onSelectAction: (n: NotificacionItem) => void;
+}) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
   const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
   const labels: Record<AppView, string> = {
@@ -932,6 +974,7 @@ function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revi
     adminFlujos: "Flujos de Aprobación",
     adminFeriados: "Feriados y Días Restringidos",
     adminPlantillas: "Plantillas Documentales",
+    adminAuditoria: "Auditoría Institucional",
   };
 
   return (
@@ -960,15 +1003,44 @@ function TopBar({ view, userRole }: { view: AppView; userRole: "docente" | "revi
           </div>
         )}
 
-        {/* Bell */}
-        <div style={{ position: "relative", cursor: "pointer" }}>
-          <span style={{ color: "#64748b" }}>{Ico.bell}</span>
-          <span style={{
-            position: "absolute", top: -5, right: -5,
-            width: 14, height: 14, borderRadius: "50%", background: "#ef4444",
-            color: "#fff", fontSize: 9, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>3</span>
+        {/* Bell con dropdown interactivo y badge reactivo */}
+        <div style={{ position: "relative" }}>
+          <div
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+            style={{
+              position: "relative",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              padding: 4,
+              borderRadius: 6,
+              background: isDropdownOpen ? "#f1f5f9" : "transparent",
+              transition: "background 0.15s ease",
+            }}
+            title="Notificaciones"
+          >
+            <span style={{ color: isDropdownOpen ? "#1a4f8a" : "#64748b" }}>{Ico.bell}</span>
+            {noLeidasCount > 0 && (
+              <span style={{
+                position: "absolute", top: -3, right: -3,
+                minWidth: 16, height: 16, borderRadius: "50%", background: "#ef4444",
+                color: "#fff", fontSize: 9.5, fontWeight: 800,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 3px",
+              }}>{noLeidasCount}</span>
+            )}
+          </div>
+
+          <NotificacionesDropdown
+            isOpen={isDropdownOpen}
+            onClose={() => setIsDropdownOpen(false)}
+            notificaciones={notificaciones}
+            noLeidasCount={noLeidasCount}
+            onMarcarLeida={onMarcarLeida}
+            onMarcarTodasLeidas={onMarcarTodasLeidas}
+            onNavigateToAll={onNavigateToNotificaciones}
+            onSelectAction={onSelectAction}
+          />
         </div>
 
         {/* User */}
@@ -1535,7 +1607,7 @@ function ExitModal({ onKeep, onSaveAndExit }: { onKeep: () => void; onSaveAndExi
 
 // ─── 01 — Mis Planes de Trabajo (List) ───────────────────────────────────────
 
-function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades }: {
+function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades, initialShowObsModal }: {
   onNew: () => void;
   onContinuar: () => void;
   planEstado: "borrador" | "en-revision" | "devuelto" | "en-correccion";
@@ -1544,9 +1616,16 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
   mensajeDevolucion?: string;
   fechaDevolucion?: string;
   onNavigateActividades?: () => void;
+  initialShowObsModal?: boolean;
 }) {
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
-  const [showObsModal, setShowObsModal] = useState(false);
+  const [showObsModal, setShowObsModal] = useState(initialShowObsModal || false);
+
+  useEffect(() => {
+    if (initialShowObsModal) {
+      setShowObsModal(true);
+    }
+  }, [initialShowObsModal]);
 
   const comisionEstado =
     planEstado === "en-revision" ? "EN REVISIÓN" :
@@ -1601,6 +1680,13 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
     "ARCHIVADO":     { bg: "#f1f5f9", color: "#334155", dot: "#64748b" },
   };
 
+  const listaObs = (observacionesRevision && observacionesRevision.length > 0)
+    ? observacionesRevision
+    : [
+        { id: 1, tipo: "seccion" as const, seccion: "Matriz de actividades", texto: "Ajustar el cronograma y recursos en la sección de ponencias magistrales.", autor: "Ing. Carlos López, Mg.", fecha: "06 sep. 2026 — 10:25" },
+        { id: 2, tipo: "general" as const, seccion: "", texto: "Por favor, especifique medios de verificación y cronograma definitivo antes de reenviar.", autor: "Ing. Carlos López, Mg.", fecha: "06 sep. 2026 — 10:30" },
+      ];
+
   return (
     <div style={{ padding: "28px", maxWidth: 1200 }}>
       {/* Header */}
@@ -1627,15 +1713,11 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Observaciones del revisor</h2>
               <button onClick={() => setShowObsModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 18 }}>✕</button>
             </div>
-            {mensajeDevolucion && (
-              <div style={{ margin: "14px 24px 0", padding: "10px 14px", background: "#fef3c7", borderRadius: 8, fontSize: 13, color: "#92400e", border: "1px solid #fde68a" }}>
-                <b>Mensaje del revisor:</b> {mensajeDevolucion}
-              </div>
-            )}
+            <div style={{ margin: "14px 24px 0", padding: "10px 14px", background: "#fef3c7", borderRadius: 8, fontSize: 13, color: "#92400e", border: "1px solid #fde68a" }}>
+              <b>Mensaje del revisor:</b> {mensajeDevolucion || "Por favor, revise las observaciones registradas y realice las correcciones correspondientes antes de reenviar el documento."}
+            </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 24px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              {(observacionesRevision ?? []).length === 0 ? (
-                <p style={{ fontSize: 13, color: "#94a3b8", textAlign: "center", marginTop: 20 }}>No hay observaciones registradas.</p>
-              ) : (observacionesRevision ?? []).map((o, idx) => (
+              {listaObs.map((o) => (
                 <div key={o.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: o.tipo === "general" ? "#475569" : "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
                     {o.tipo === "general" ? "General" : o.seccion}
@@ -4054,7 +4136,7 @@ function loadDraft(): PlanDraft {
   return { ...DEFAULT_DRAFT };
 }
 
-function PlanesView({ onNavigateActividades }: { onNavigateActividades?: () => void } = {}) {
+function PlanesView({ onNavigateActividades, initialShowObsModal }: { onNavigateActividades?: () => void; initialShowObsModal?: boolean } = {}) {
   const [sub, setSub] = useState<PlanesSubView>("list");
   const [maxReached, setMaxReached] = useState(3);
   const [draft, setDraftState] = useState<PlanDraft>(loadDraft);
@@ -4100,6 +4182,7 @@ function PlanesView({ onNavigateActividades }: { onNavigateActividades?: () => v
           mensajeDevolucion={draft.mensajeDevolucion}
           fechaDevolucion={draft.fechaDevolucion}
           onNavigateActividades={onNavigateActividades}
+          initialShowObsModal={initialShowObsModal}
         />
       )}
       {sub === "step1" && (
@@ -4206,11 +4289,19 @@ const BANDEJA_PLANES = [
   { id: 2, nombre: "Plan de Trabajo", grupo: "Unidad de Titulación",           elaborador: "Ing. María Torres, Mg.",  version: "1.0", recibido: "05 sep. 2026", hora: "16:40", etapa: "Revisión", estado: "PENDIENTE" },
 ];
 
-function RevisorView({ onBackToDocente, onDevolver }: {
+function RevisorView({ onBackToDocente, onDevolver, initialSub = "bandeja" }: {
   onBackToDocente: () => void;
   onDevolver?: (data: { mensaje: string; obs: Observacion[] }) => void;
+  initialSub?: RevisorSub;
 }) {
-  const [sub, setSub] = useState<RevisorSub>("bandeja");
+  const [sub, setSub] = useState<RevisorSub>(initialSub);
+
+  useEffect(() => {
+    if (initialSub) {
+      setSub(initialSub);
+    }
+  }, [initialSub]);
+
   const [selectedPlanIdx, setSelectedPlanIdx] = useState(0);
   const [decisionMade, setDecisionMade] = useState(false);
   const [obs, setObs] = useState<Observacion[]>([
@@ -5009,8 +5100,13 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [planesViewKey, setPlanesViewKey] = useState(0);
   const seguimientoState = useSeguimientoState();
   const adminState = useAdminState();
+  const notifState = useNotificacionesState(userRole);
+  const auditoriaState = useAuditoriaState();
   const [adminSelectedGrupoId, setAdminSelectedGrupoId] = useState<string | null>(null);
   const [adminSelectedFlujoGrupoId, setAdminSelectedFlujoGrupoId] = useState<string | null>(null);
+  const [planInitialObsModal, setPlanInitialObsModal] = useState(false);
+  const [revisorInitialSub, setRevisorInitialSub] = useState<RevisorSub>("bandeja");
+  const [actividadModalDirecto, setActividadModalDirecto] = useState<{ tipo: "observacion" | "visor"; medioId: string } | null>(null);
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
@@ -5041,15 +5137,87 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
     } catch {}
   }
 
+  function handleNotificationAction(notif: NotificacionItem) {
+    const dest = notif.objetoRelacionado.accionDestino as AppView;
+    const modalDirecto = notif.objetoRelacionado.modalDirecto;
+    const actId = notif.objetoRelacionado.actividadId;
+    const medioId = notif.objetoRelacionado.medioId;
+
+    setPlanInitialObsModal(false);
+    setActividadModalDirecto(null);
+
+    // 1. Plan devuelto -> Abre plan y modal de observaciones directamente
+    if (notif.tipo === "PLAN_DEVUELTO" || modalDirecto === "obsPlan") {
+      setPlanInitialObsModal(true);
+      if (userRole !== "docente") setUserRole("docente");
+      setView("planes");
+      return;
+    }
+
+    // 2. Revisión de plan (revisor) -> Abre directamente la revisión del plan
+    if (notif.tipo === "PLAN_PENDIENTE_REVISION" || notif.tipo === "PLAN_CORREGIDO" || modalDirecto === "revisionPlan") {
+      if (userRole !== "revisor") setUserRole("revisor");
+      setRevisorInitialSub("revision");
+      setView("bandeja");
+      return;
+    }
+
+    // 3. Evidencia observada -> Abre actividad y modal de observación docente directamente
+    if (notif.tipo === "EVIDENCIA_OBSERVADA" || modalDirecto === "observacion") {
+      if (actId) seguimientoState.setActividadSeleccionadaId(actId);
+      if (medioId) setActividadModalDirecto({ tipo: "observacion", medioId });
+      if (userRole !== "docente") setUserRole("docente");
+      setView("actividades");
+      return;
+    }
+
+    // 4. Evidencia validada -> Abre actividad y visor PDF directamente
+    if (notif.tipo === "EVIDENCIA_VALIDADA" || modalDirecto === "visor") {
+      if (actId) seguimientoState.setActividadSeleccionadaId(actId);
+      if (medioId) setActividadModalDirecto({ tipo: "visor", medioId });
+      if (userRole !== "docente") setUserRole("docente");
+      setView("actividades");
+      return;
+    }
+
+    // 5. Revisar evidencia (revisor) -> Abre revisión de evidencia pendiente directamente
+    if (notif.tipo === "EVIDENCIA_CARGADA" || notif.tipo === "EVIDENCIA_REEMPLAZADA") {
+      if (userRole !== "revisor") setUserRole("revisor");
+      if (actId && medioId) {
+        seguimientoState.setEvidenciaSeleccionada({ actividadId: actId, medioId });
+      }
+      setView("evidenciasValidar");
+      return;
+    }
+
+    // 6. Actividad u otro destino general
+    if (actId) {
+      seguimientoState.setActividadSeleccionadaId(actId);
+    }
+    if (dest) {
+      setView(dest);
+    }
+  }
+
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
       <Sidebar
         view={view} setView={setView} onLogout={onLogout}
         collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed}
         userRole={userRole} onRoleSwitch={handleRoleSwitch}
+        noLeidasCount={notifState.noLeidasCount}
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <TopBar view={view} userRole={userRole} />
+        <TopBar
+          view={view}
+          userRole={userRole}
+          noLeidasCount={notifState.noLeidasCount}
+          notificaciones={notifState.notificaciones}
+          onMarcarLeida={notifState.marcarLeida}
+          onMarcarTodasLeidas={notifState.marcarTodasLeidas}
+          onNavigateToNotificaciones={() => setView("notificaciones")}
+          onSelectAction={handleNotificationAction}
+        />
         <main style={{ flex: 1, overflowY: "auto", background: "#f0f4f8" }}>
           {view === "inicio" && (
             <DashboardInicio
@@ -5069,6 +5237,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "planes" && (
             <PlanesView
               key={planesViewKey}
+              initialShowObsModal={planInitialObsModal}
               onNavigateActividades={() => {
                 seguimientoState.setActividadSeleccionadaId(null);
                 setView("actividades");
@@ -5079,14 +5248,21 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
             seguimientoState.actividadSeleccionada ? (
               <DetalleActividadView
                 actividad={seguimientoState.actividadSeleccionada}
-                onBack={() => seguimientoState.setActividadSeleccionadaId(null)}
+                onBack={() => {
+                  seguimientoState.setActividadSeleccionadaId(null);
+                  setActividadModalDirecto(null);
+                }}
                 onCargarEvidencia={seguimientoState.cargarEvidencia}
                 onReemplazarEvidencia={seguimientoState.reemplazarEvidencia}
+                initialModalDirecto={actividadModalDirecto}
               />
             ) : (
               <MisActividadesView
                 actividades={seguimientoState.actividades}
-                onSelectActividad={seguimientoState.setActividadSeleccionadaId}
+                onSelectActividad={(id) => {
+                  setActividadModalDirecto(null);
+                  seguimientoState.setActividadSeleccionadaId(id);
+                }}
                 resumen={seguimientoState.resumen}
               />
             )
@@ -5132,10 +5308,24 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               resumenGlobal={seguimientoState.resumenSeguimientoGlobal}
             />
           )}
-          {view === "notificaciones" && <PlaceholderView label="Notificaciones" />}
+          {view === "notificaciones" && (
+            <NotificacionesView
+              notificaciones={notifState.notificaciones}
+              noLeidasCount={notifState.noLeidasCount}
+              onMarcarLeida={notifState.marcarLeida}
+              onToggleLeida={notifState.toggleLeida}
+              onMarcarTodasLeidas={notifState.marcarTodasLeidas}
+              onRestablecerDemo={notifState.restablecerDemo}
+              onActionNavigate={handleNotificationAction}
+            />
+          )}
           {view === "perfil" && <PlaceholderView label="Perfil" />}
           {(view === "bandeja" || view === "planesRevision" || view === "grupos") && (
-            <RevisorView onBackToDocente={handleRoleSwitch} onDevolver={handleDevolver} />
+            <RevisorView
+              onBackToDocente={handleRoleSwitch}
+              onDevolver={handleDevolver}
+              initialSub={revisorInitialSub}
+            />
           )}
 
           {/* Módulo 7 — Administración y Configuración Institucional */}
@@ -5239,8 +5429,33 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               plantillas={adminState.plantillas}
             />
           )}
+
+          {/* Módulo 8 — Auditoría Institucional */}
+          {view === "adminAuditoria" && (
+            <AuditoriaView
+              eventos={auditoriaState.eventos}
+              totalEventosCount={auditoriaState.totalEventosCount}
+              filtros={auditoriaState.filtros}
+              setFiltro={auditoriaState.setFiltro}
+              limpiarFiltros={auditoriaState.limpiarFiltros}
+              metricas={auditoriaState.metricas}
+              onSelectEvento={auditoriaState.setEventoSeleccionado}
+              onOpenTrazabilidad={auditoriaState.abrirTrazabilidadPorId}
+            />
+          )}
         </main>
       </div>
+
+      {/* Módulo 8 — Modales y Drawers Globales de Auditoría */}
+      <AuditoriaDetalleDrawer
+        evento={auditoriaState.eventoSeleccionado}
+        onClose={() => auditoriaState.setEventoSeleccionado(null)}
+        onVerTrazabilidad={auditoriaState.abrirTrazabilidadPorId}
+      />
+      <TrazabilidadModal
+        objetoInicial={auditoriaState.trazabilidadModal}
+        onClose={() => auditoriaState.setTrazabilidadModal(null)}
+      />
     </div>
   );
 }
