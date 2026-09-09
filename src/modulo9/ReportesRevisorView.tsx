@@ -43,7 +43,7 @@ export const ReportesRevisorView: React.FC<ReportesRevisorViewProps> = ({
             Reportes de Seguimiento y Validación
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Supervisión cuantitativa de cumplimiento para grupos de trabajo y comisiones asignadas.
+            Supervisión cuantitativa del estado documental para grupos de trabajo y comisiones asignadas.
           </p>
         </div>
 
@@ -58,49 +58,35 @@ export const ReportesRevisorView: React.FC<ReportesRevisorViewProps> = ({
 
       {/* Aviso de Alcance de Revisión */}
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start sm:items-center gap-3 text-xs text-blue-900">
-        <Info className="w-5 h-5 text-blue-600 shrink-0" />
-        <div>
-          <p className="font-semibold">Alcance institucional asignado:</p>
-          <p className="text-blue-700 mt-0.5">
-            En concordancia con los permisos de revisor, se muestran exclusivamente los planes de trabajo correspondientes a la <strong>Unidad de Titulación</strong> y comisiones formalmente asignadas.
-          </p>
-        </div>
+        <Info className="w-4 h-4 shrink-0 text-blue-600" />
+        <span>
+          <strong>Alcance de Revisión:</strong> Se muestran los planes asignados formalmente para control de evidencias y verificación del estado documental reglamentario.
+        </span>
       </div>
 
-      {/* Métricas Cuantitativas */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      {/* Tarjetas Cuantitativas del Revisor */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Planes</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Planes Asignados</span>
             <Layers className="w-4 h-4 text-slate-400" />
           </div>
           <div className="text-2xl font-bold text-[#16263D]">
             {totalPlanes}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Bajo supervisión</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Grupos bajo supervisión</p>
         </div>
 
         <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Actividades</span>
-            <FileText className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="text-2xl font-bold text-[#16263D]">
-            {totalActividades}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Actividades en curso</p>
-        </div>
-
-        <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Validadas</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Evidencias Validadas</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold text-emerald-600">
             {totalValidadas}{" "}
             <span className="text-xs font-normal text-slate-500">/ {totalRequeridas}</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Evidencias validadas</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Conformidad aprobada</p>
         </div>
 
         <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
@@ -111,22 +97,22 @@ export const ReportesRevisorView: React.FC<ReportesRevisorViewProps> = ({
           <div className="text-2xl font-bold text-amber-600">
             {totalObservadas}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Con observaciones emitidas</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Pendientes de corrección</p>
         </div>
 
         <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Pendientes</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Por Validar</span>
             <Clock className="w-4 h-4 text-slate-500" />
           </div>
-          <div className="text-2xl font-bold text-slate-600">
+          <div className="text-2xl font-bold text-slate-700">
             {totalPendientes}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Por dictaminar</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Cargadas por revisar</p>
         </div>
       </div>
 
-      {/* Tabla de Planes Asignados */}
+      {/* Tabla de Planes del Revisor */}
       <div className="bg-white border border-[#DCE4EC] rounded-xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-bold text-[#0f2f56]">
@@ -141,8 +127,7 @@ export const ReportesRevisorView: React.FC<ReportesRevisorViewProps> = ({
           <table className="w-full text-left text-sm">
             <thead className="bg-[#F4F7FA] border-b border-slate-200 text-xs text-slate-600 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="py-3 px-4 min-w-[140px]">Código</th>
-                <th className="py-3 px-4 min-w-[200px]">Grupo de Trabajo</th>
+                <th className="py-3 px-4 min-w-[220px]">Plan de Trabajo</th>
                 <th className="py-3 px-4 min-w-[180px]">Docente Responsable</th>
                 <th className="py-3 px-4 text-center">Actividades</th>
                 <th className="py-3 px-4 text-center">Evidencias (Val/Req)</th>
@@ -152,19 +137,15 @@ export const ReportesRevisorView: React.FC<ReportesRevisorViewProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {planes.map((plan) => {
-                const codigo = plan.codigo || plan.id;
                 const nombreGrupo = plan.nombreGrupo || plan.grupo;
                 const docenteNombre = plan.docenteNombre || plan.docente;
                 const actTotal = plan.totalActividades ?? plan.actividadesTotal;
 
                 return (
                   <tr key={plan.id} className="hover:bg-[#F4F7FA] transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-semibold text-[#0f2f56] text-xs">
-                      {codigo}
-                    </td>
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-slate-900">
-                        {nombreGrupo}
+                        Plan de Trabajo — {nombreGrupo}
                       </div>
                       <span className="text-[11px] text-slate-400">
                         Versión {plan.version}

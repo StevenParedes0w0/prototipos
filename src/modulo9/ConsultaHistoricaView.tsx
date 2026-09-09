@@ -162,7 +162,7 @@ export const ConsultaHistoricaView: React.FC<ConsultaHistoricaViewProps> = ({
             <table className="w-full text-left text-sm">
               <thead className="bg-[#F4F7FA] border-b border-slate-200 text-xs text-slate-600 uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="py-3 px-4 min-w-[140px]">Código / Período</th>
+                  <th className="py-3 px-4 min-w-[150px]">Plan / Período</th>
                   <th className="py-3 px-4 min-w-[200px]">Grupo de Trabajo</th>
                   <th className="py-3 px-4 min-w-[180px]">Docente Responsable</th>
                   <th className="py-3 px-4 text-center">Versión Final</th>
@@ -173,7 +173,6 @@ export const ConsultaHistoricaView: React.FC<ConsultaHistoricaViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {planesFiltrados.map((p) => {
-                  const codigo = p.codigo || p.id;
                   const nombreGrupo = p.nombreGrupo || p.grupo;
                   const docenteNombre = p.docenteNombre || p.docente;
                   const versionFinal = p.versionFinal || p.versionVigente;
@@ -186,8 +185,8 @@ export const ConsultaHistoricaView: React.FC<ConsultaHistoricaViewProps> = ({
                       className="hover:bg-[#F4F7FA] transition-colors"
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-mono font-semibold text-[#0f2f56] text-xs">
-                          {codigo}
+                        <div className="font-semibold text-[#0f2f56] text-xs">
+                          Plan de Trabajo
                         </div>
                         <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                           <Calendar className="w-3 h-3" />

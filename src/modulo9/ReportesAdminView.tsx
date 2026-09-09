@@ -276,8 +276,7 @@ export const ReportesAdminView: React.FC<ReportesAdminViewProps> = ({
             <table className="w-full text-left text-sm">
               <thead className="bg-[#F4F7FA] border-b border-slate-200 text-xs text-slate-600 uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="py-3 px-4 min-w-[130px]">Código</th>
-                  <th className="py-3 px-4 min-w-[200px]">Grupo de Trabajo</th>
+                  <th className="py-3 px-4 min-w-[220px]">Plan de Trabajo</th>
                   <th className="py-3 px-4 min-w-[170px]">Docente Responsable</th>
                   <th className="py-3 px-4 text-center">Actividades</th>
                   <th className="py-3 px-4 text-center">Evidencias Cargadas</th>
@@ -288,7 +287,6 @@ export const ReportesAdminView: React.FC<ReportesAdminViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {planesFiltrados.map((p) => {
-                  const codigo = p.codigo || p.id;
                   const nombreGrupo = p.nombreGrupo || p.grupo;
                   const docenteNombre = p.docenteNombre || p.docente;
                   const actTotal = p.totalActividades ?? p.actividadesTotal;
@@ -296,13 +294,9 @@ export const ReportesAdminView: React.FC<ReportesAdminViewProps> = ({
 
                   return (
                     <tr key={p.id} className="hover:bg-[#F4F7FA] transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-semibold text-[#0f2f56] text-xs">
-                        {codigo}
-                      </td>
-
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-slate-900">
-                          {nombreGrupo}
+                          Plan de Trabajo — {nombreGrupo}
                         </div>
                         <span className="text-[11px] text-slate-400">
                           v{p.version} · Modif. {fechaMod}

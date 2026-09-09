@@ -36,6 +36,13 @@ export interface ReporteActividadItem {
   estadoDocumental: "EVIDENCIA VALIDADA" | "VALIDACIÓN PENDIENTE" | "OBSERVADA" | "PENDIENTE DE CARGA";
   estadoValidacion?: "VALIDADA" | "OBSERVADA" | "PENDIENTE";
   observaciones?: string;
+  observacionDetalle?: {
+    medio: string;
+    estado: string;
+    revisor: string;
+    fecha: string;
+    observacion: string;
+  };
 }
 
 export interface ReportePlanItem {

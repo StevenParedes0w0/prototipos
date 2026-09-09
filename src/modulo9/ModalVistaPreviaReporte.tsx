@@ -242,7 +242,6 @@ export default function ModalVistaPreviaReporte({
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>Fecha de generación:</div>
                 <div style={{ fontSize: 11, color: "#1e293b", fontWeight: 600 }}>07/09/2026 — 11:30</div>
-                <div style={{ fontSize: 10, color: "#94a3b8" }}>Código: REP-FISEI-2026</div>
               </div>
             </div>
 

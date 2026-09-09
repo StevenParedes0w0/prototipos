@@ -133,10 +133,6 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
             Este plan pertenece al período académico <strong>{plan.periodo}</strong>, el cual se encuentra formalmente cerrado. Las acciones de edición, carga de nuevas evidencias, reemplazo documental y suscripción digital se encuentran deshabilitadas.
           </p>
         </div>
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-amber-200/80 text-amber-900 text-xs font-semibold rounded-full uppercase tracking-wider">
-          <Archive className="w-3.5 h-3.5" />
-          Archivado
-        </span>
       </div>
 
       {/* Cabecera del Plan Histórico */}
@@ -144,8 +140,8 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 pb-6 border-b border-slate-200">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="font-mono text-sm font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded">
-                {codigo}
+              <span className="text-xs font-semibold text-[#0f2f56] bg-blue-50 border border-blue-200 px-2.5 py-1 rounded">
+                Plan de Trabajo
               </span>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-300">
                 {estadoFinal}
@@ -163,7 +159,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
               {nombreGrupo}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Resolución de cierre de período: <span className="font-mono font-medium">{resolucion}</span>
+              Referencia de cierre: <span className="font-mono font-medium">{resolucion}</span>
             </p>
           </div>
 
@@ -222,7 +218,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
           {[
             { id: "info", label: "Información General", icon: Layers },
             { id: "actividades", label: `Actividades (${actividades.length})`, icon: FileText },
-            { id: "evidencias", label: `Evidencias Archivadas (${evidencias.length})`, icon: FileCheck },
+            { id: "evidencias", label: `Evidencias (${evidencias.length})`, icon: FileCheck },
             { id: "versiones", label: `Versiones (${plan.versiones.length})`, icon: GitBranch },
             { id: "historial", label: `Línea de Vida (${historialEventos.length})`, icon: History },
           ].map((tab) => {
@@ -285,28 +281,28 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
                 Observación de Cierre
               </h4>
               <p className="text-sm text-slate-600">
-                Plan finalizado satisfactoriamente al cierre del período {plan.periodo}. Se registraron {plan.evidenciasValidadas} evidencias validadas con trazabilidad institucional.
+                Plan registrado como FINALIZADO al cierre del período {plan.periodo}. Se registraron {plan.evidenciasValidadas} evidencias validadas con trazabilidad institucional.
               </p>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
             <h3 className="font-bold text-slate-900 text-base">
-              Integrantes y Autoridades
+              Responsables históricos
             </h3>
             <div className="space-y-3 text-sm">
               <div className="p-3 border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500">Docente Titular / Responsable</p>
+                <p className="text-xs text-slate-500">Docente responsable</p>
                 <p className="font-medium text-slate-900">{docenteNombre}</p>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                  Docente TC
+                  Docente
                 </span>
               </div>
               <div className="p-3 border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500">Coordinador de Comisión</p>
-                <p className="font-medium text-slate-900">Ing. Roberto Morales, Mg.</p>
+                <p className="text-xs text-slate-500">Coordinador</p>
+                <p className="font-medium text-slate-900">Ing. Carlos López, Mg.</p>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                  Coordinación
+                  Coordinador
                 </span>
               </div>
             </div>
@@ -319,7 +315,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-200">
             <h3 className="font-bold text-slate-900">
-              Actividades Ejecutadas en el Período
+              Actividades Ejecutadas
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Registro histórico de actividades desarrolladas (solo lectura)
@@ -330,10 +326,10 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
               <thead className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="py-3 px-4 w-12 text-center">N°</th>
-                  <th className="py-3 px-4 min-w-[220px]">Actividad</th>
-                  <th className="py-3 px-4 min-w-[180px]">Criterio / Logro</th>
-                  <th className="py-3 px-4 text-center">Evidencias Requeridas</th>
-                  <th className="py-3 px-4 text-center">Estado Final</th>
+                  <th className="py-3 px-4 min-w-[200px]">Nombre de Actividad</th>
+                  <th className="py-3 px-4 min-w-[140px]">Categoría</th>
+                  <th className="py-3 px-4 text-center">Evidencias</th>
+                  <th className="py-3 px-4 text-center">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -350,7 +346,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className="px-2 py-1 bg-slate-100 rounded font-mono text-xs font-medium">
-                        {act.medios?.length || act.evidenciasRequeridas || 1} evidencia(s)
+                        {act.medios?.length || act.evidenciasRequeridas || 1}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-center">
@@ -380,7 +376,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
               </p>
             </div>
             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full w-fit">
-              {evidencias.length} archivos archivados
+              {evidencias.length} evidencias validadas
             </span>
           </div>
 
@@ -441,7 +437,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
                           <button
                             onClick={() => setEvidenciaSeleccionada(evi)}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded text-xs font-medium transition-colors"
-                            title="Ver detalles archivados del documento"
+                            title="Ver detalles del documento"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             Ver
@@ -465,10 +461,10 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                   <GitBranch className="w-5 h-5 text-indigo-600" />
-                  Historial de Versiones Formales
+                  Historial de Versiones
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Diferenciación entre versiones institucionales creadas por resolución vs correcciones operativas
+                  Diferenciación entre versiones institucionales creadas por decisión formal vs ajustes operativos
                 </p>
               </div>
 
@@ -485,18 +481,18 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
 
             <div className="mt-6 space-y-4">
               {plan.versiones.map((ver) => {
-                const esVigente = ver.esVersionVigente || ver.version === versionFinal;
-                const fechaAprobacion = ver.fechaAprobacion || ver.fecha;
-                const motivo = ver.motivo || ver.descripcion || ver.origen;
+                const esVigente = ver.version === versionFinal || ver.esVersionVigente;
+                const motivo = ver.motivo || ver.descripcion;
                 const res = ver.resolucion || resolucion;
+                const fechaAprobacion = ver.fechaAprobacion || ver.fecha;
                 const cambios = ver.cambiosEstructurales || (ver.cambios ? ver.cambios.map(c => `${c.campo}: ${c.v2}`) : []);
 
                 return (
                   <div
                     key={ver.version}
-                    className={`p-5 rounded-xl border ${
+                    className={`border rounded-xl p-5 transition-all ${
                       esVigente
-                        ? "border-purple-300 bg-purple-50/40"
+                        ? "border-purple-200 bg-purple-50/20 shadow-sm"
                         : "border-slate-200 bg-slate-50/60"
                     }`}
                   >
@@ -507,7 +503,7 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
                         </span>
                         {esVigente && (
                           <span className="px-2.5 py-0.5 bg-purple-600 text-white text-xs font-semibold rounded-full">
-                            Versión Final Archivada
+                            Versión Final
                           </span>
                         )}
                         <span className="text-xs text-slate-500">
@@ -515,21 +511,30 @@ export const PlanHistoricoDetalleView: React.FC<PlanHistoricoDetalleViewProps> =
                         </span>
                       </div>
                       <span className="font-mono text-xs text-slate-600 bg-white px-2.5 py-1 rounded border border-slate-200">
-                        Resolución: {res}
+                        Referencia: {res}
                       </span>
                     </div>
 
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-xs font-medium text-slate-500">
-                          Motivo Formal de la Versión:
+                          Motivo de la versión:
                         </p>
                         <p className="text-slate-800 font-medium mt-0.5">
-                          {motivo}
+                          {ver.version === "1.0"
+                            ? "Elaboración inicial."
+                            : (ver.motivo || "Modificación formal autorizada de la planificación del período.")}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Aprobado por: <span className="font-medium text-slate-700">{ver.aprobadoPor || "Actualización formal autorizada — DEMO"}</span>
-                        </p>
+                        {ver.version !== "1.0" && (
+                          <div className="mt-2 space-y-1 text-xs text-slate-500">
+                            <p>
+                              Origen: <span className="font-medium text-slate-700">{ver.origen || "Decisión institucional DEMO"}</span>
+                            </p>
+                            <p>
+                              Referencia: <span className="font-medium text-slate-700">{res || "Decisión institucional DEMO"}</span>
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div>

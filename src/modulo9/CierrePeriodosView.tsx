@@ -237,7 +237,7 @@ export const CierrePeriodosView: React.FC<CierrePeriodosViewProps> = ({
             </p>
           </div>
           <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-            {periodosCerrados.length} períodos archivados
+            {periodosCerrados.length} períodos cerrados
           </span>
         </div>
 

@@ -129,7 +129,7 @@ export default function ModalCompararVersiones({
                 <strong>Fecha:</strong> {v1.fecha}
               </div>
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                <strong>Origen:</strong> {v1.origen}
+                <strong>Motivo de la versión:</strong> {v1.motivo || "Elaboración inicial."}
               </div>
               <div style={{ fontSize: 11.5, color: "#334155", marginTop: 8, fontStyle: "italic" }}>
                 "{v1.descripcion}"
@@ -148,14 +148,20 @@ export default function ModalCompararVersiones({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "#166534" }}>Versión 2.0</span>
                 <span style={{ fontSize: 11, background: "#dcfce7", color: "#15803d", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
-                  VIGENTE FINAL
+                  VERSIÓN FINAL
                 </span>
               </div>
               <div style={{ fontSize: 12, color: "#64748b" }}>
                 <strong>Fecha:</strong> {v2.fecha}
               </div>
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                <strong>Aprobado por:</strong> {v2.aprobadoPor}
+                <strong>Motivo de la versión:</strong> {v2.motivo || "Modificación formal autorizada de la planificación del período."}
+              </div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                <strong>Origen:</strong> {v2.origen || "Decisión institucional DEMO"}
+              </div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                <strong>Referencia:</strong> {v2.resolucion || plan.resolucionAprobacion || "Decisión institucional DEMO"}
               </div>
               <div style={{ fontSize: 11.5, color: "#15803d", marginTop: 8, fontStyle: "italic" }}>
                 "{v2.descripcion}"
@@ -179,8 +185,21 @@ export default function ModalCompararVersiones({
               </thead>
               <tbody>
                 {(v2.cambios || [
-                  { campo: "Cronograma de Actividad 6", v1: "01/05/2026 al 15/05/2026", v2: "10/05/2026 al 30/05/2026" },
-                  { campo: "Recursos asignados", v1: "Aula 204 y laboratorio estándar", v2: "Auditorio FISEI y streaming UTA" },
+                  {
+                    campo: "Cronograma de actividades",
+                    v1: "Planificación inicial.",
+                    v2: "Cronograma actualizado mediante modificación formal.",
+                  },
+                  {
+                    campo: "Recursos",
+                    v1: "Configuración inicial de recursos.",
+                    v2: "Recursos actualizados conforme a la modificación formal.",
+                  },
+                  {
+                    campo: "Medios de verificación",
+                    v1: "Configuración inicial.",
+                    v2: "Medios actualizados conforme a la modificación formal.",
+                  },
                 ]).map((c, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
                     <td style={{ padding: "10px", fontWeight: 700, color: "#1e293b" }}>{c.campo}</td>

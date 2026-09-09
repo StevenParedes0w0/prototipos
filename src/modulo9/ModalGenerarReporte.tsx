@@ -117,7 +117,7 @@ export default function ModalGenerarReporte({
             </label>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[
-                { id: "resumen_plan", label: "Resumen del Plan de Trabajo", desc: "Consolidado de estado, totales documentales y cumplimiento" },
+                { id: "resumen_plan", label: "Resumen del Plan de Trabajo", desc: "Consolidado de estado y totales documentales." },
                 { id: "actividades_evidencias", label: "Actividades y evidencias detalladas", desc: "Matriz completa con medios, fechas límite y estado documental" },
                 { id: "historial_validacion", label: "Historial de validación técnica", desc: "Detalle de evidencias validadas y observaciones registradas" },
               ].map((opt) => (

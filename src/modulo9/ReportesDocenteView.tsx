@@ -48,7 +48,7 @@ export const ReportesDocenteView: React.FC<ReportesDocenteViewProps> = ({
             Mis Reportes de Gestión Docente
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Seguimiento cuantitativo del cumplimiento de actividades y medios de verificación requeridos.
+            Seguimiento cuantitativo del estado documental de actividades y medios de verificación requeridos.
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export const ReportesDocenteView: React.FC<ReportesDocenteViewProps> = ({
             {totalValidadas}{" "}
             <span className="text-xs font-normal text-slate-500">/ {totalRequeridas}</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Aprobadas formalmente</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Evidencias validadas</p>
         </div>
 
         <div className="bg-white border border-[#DCE4EC] rounded-xl p-4 shadow-sm">
@@ -145,7 +145,6 @@ export const ReportesDocenteView: React.FC<ReportesDocenteViewProps> = ({
 
         <div className="grid grid-cols-1 gap-4">
           {planes.map((plan) => {
-            const codigo = plan.codigo || plan.id;
             const nombreGrupo = plan.nombreGrupo || plan.grupo;
             const actTotal = plan.totalActividades ?? plan.actividadesTotal;
 
@@ -157,8 +156,8 @@ export const ReportesDocenteView: React.FC<ReportesDocenteViewProps> = ({
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="space-y-2 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
-                        {codigo}
+                      <span className="text-xs font-semibold text-[#0f2f56] bg-blue-50 border border-blue-200 px-2.5 py-1 rounded">
+                        Plan de Trabajo
                       </span>
                       <span
                         className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
