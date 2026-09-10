@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import logoUta from "./img/Logo UTA-Azul.png";
 import { useActividadesState } from "./modulo5/useActividadesState";
 import MisActividadesView from "./modulo5/MisActividadesView";
 import DetalleActividadView from "./modulo5/DetalleActividadView";
@@ -229,16 +230,19 @@ function FISEILogoMark({ size = 44 }: { size?: number }) {
   const s = size;
   return (
     <div style={{
-      width: s, height: s, borderRadius: Math.round(s * 0.22),
-      background: "#1a4f8a",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      flexShrink: 0, border: "2px solid rgba(255,255,255,0.18)", gap: Math.round(s * 0.04),
+      width: s, height: s, borderRadius: Math.round(s * 0.2),
+      background: "#ffffff",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0, border: "1.5px solid rgba(255,255,255,0.25)",
+      padding: Math.max(2, Math.round(s * 0.06)),
+      overflow: "hidden",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
     }}>
-      {/* Placeholder: stacked lines representing a document/crest */}
-      <div style={{ width: s * 0.55, height: 2, background: "rgba(255,255,255,0.85)", borderRadius: 1 }} />
-      <div style={{ width: s * 0.4, height: 1.5, background: "rgba(255,255,255,0.55)", borderRadius: 1 }} />
-      <div style={{ width: s * 0.5, height: 1.5, background: "rgba(255,255,255,0.55)", borderRadius: 1 }} />
-      <div style={{ width: s * 0.32, height: 1.5, background: "rgba(255,255,255,0.35)", borderRadius: 1 }} />
+      <img
+        src={logoUta}
+        alt="Universidad Técnica de Ambato"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+      />
     </div>
   );
 }
@@ -3605,11 +3609,13 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
                   <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 10, marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div style={{
-                        width: 50, height: 50, borderRadius: 6, background: "#f0f4f8",
+                        width: 50, height: 50, borderRadius: 6, background: "#ffffff",
                         border: "1.5px solid #d1d9e0", flexShrink: 0,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 8, color: "#94a3b8", textAlign: "center", lineHeight: 1.3, fontWeight: 700,
-                      }}>LOGO<br/>UTA</div>
+                        padding: 3,
+                      }}>
+                        <img src={logoUta} alt="UTA" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                      </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
                           Universidad Técnica de Ambato
@@ -5060,7 +5066,9 @@ function RevisorView({ onBackToDocente, onDevolver, initialSub = "bandeja" }: {
                 {/* Institutional header */}
                 <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 12, marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 6, background: "#f0f4f8", border: "1.5px solid #d1d9e0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#94a3b8", textAlign: "center", lineHeight: 1.3 }}>LOGO<br/>UTA</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 6, background: "#ffffff", border: "1.5px solid #d1d9e0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 3 }}>
+                      <img src={logoUta} alt="UTA" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                    </div>
                     <div>
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>Universidad Técnica de Ambato</div>
                       <div style={{ fontSize: 9.5, color: "#475569", marginTop: 1 }}>Facultad de Ingeniería en Sistemas, Electrónica e Industrial</div>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { DocumentArtifact, DocumentObservation, DocumentSignature, FlowStageNode } from "./types";
+import logoUta from "../img/Logo UTA-Azul.png";
 
 interface DocumentPdfPageViewerProps {
   artifact: DocumentArtifact;
@@ -365,9 +366,13 @@ export default function DocumentPdfPageViewer({
                 {/* Institutional SGC Header (Shown on Page 1) */}
                 {currentPage === 1 && (
                   <div style={{ border: "2px solid #1a4f8a", marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 140px", borderBottom: "1.5px solid #1a4f8a" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderRight: "1.5px solid #1a4f8a", padding: 6, fontWeight: 800, color: "#1a4f8a", fontSize: 13, textAlign: "center", lineHeight: 1.2 }}>
-                        UTA
+                    <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 140px", borderBottom: "1.5px solid #1a4f8a" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", borderRight: "1.5px solid #1a4f8a", padding: "4px 8px" }}>
+                        <img
+                          src={logoUta}
+                          alt="Universidad Técnica de Ambato"
+                          style={{ maxHeight: 56, maxWidth: "100%", objectFit: "contain" }}
+                        />
                       </div>
                       <div style={{ padding: "8px 12px", textAlign: "center", borderRight: "1.5px solid #1a4f8a" }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
