@@ -74,7 +74,7 @@ export default function MisDocumentosView({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", margin: "0 0 4px" }}>
-            Mis Documentos
+            Gestión Documental Académica
           </h1>
           <p style={{ fontSize: 13.5, color: "#64748b", margin: 0 }}>
             Consulte, cree y gestione los documentos asociados a sus grupos institucionales y períodos académicos.

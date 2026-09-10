@@ -39,16 +39,19 @@ export default function DetalleDocumentoModal({
           borderRadius: 12,
           width: "95vw",
           maxWidth: 1280,
-          height: "92vh",
+          height: "min(94vh, 940px)",
+          maxHeight: "94vh",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 25px 60px rgba(0,0,0,0.35)",
           overflow: "hidden",
+          minHeight: 0,
         }}
       >
         {/* Modal Header */}
         <div
           style={{
+            flexShrink: 0,
             padding: "14px 22px",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
@@ -126,7 +129,7 @@ export default function DetalleDocumentoModal({
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#fff", padding: "0 22px" }}>
+        <div style={{ flexShrink: 0, display: "flex", borderBottom: "1px solid #e2e8f0", background: "#fff", padding: "0 22px" }}>
           {[
             { id: "documento", label: "Vista Documento Formal (A4)" },
             { id: "revision", label: "Estado del Flujo y Revisión" },
@@ -156,9 +159,9 @@ export default function DetalleDocumentoModal({
         </div>
 
         {/* Modal Body */}
-        <div style={{ flex: 1, overflow: "hidden", background: "#f8fafc" }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", background: "#f8fafc", display: "flex", flexDirection: "column" }}>
           {activeTab === "documento" && (
-            <div style={{ height: "100%" }}>
+            <div style={{ flex: 1, minHeight: 0, height: "100%", display: "flex", flexDirection: "column" }}>
               <DocumentPdfPageViewer
                 artifact={artifact}
                 formalVersion={documento.formalVersion}

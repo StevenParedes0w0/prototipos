@@ -434,7 +434,7 @@ export default function RevisorDocumentEngineView({
       </div>
 
       {/* Embedded 70/30 PDF Viewer */}
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <DocumentPdfPageViewer
           artifact={currentArtifact}
           formalVersion={docMaster.formalVersion}

@@ -771,7 +771,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
 }) {
   const docenteItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
     { id: "inicio",         label: "Inicio",                icon: Ico.home },
-    { id: "planes",         label: "Mis Documentos",        icon: Ico.file },
+    { id: "planes",         label: "Documentación Académica",icon: Ico.file },
     { id: "actividades",    label: "Mis Actividades",       icon: Ico.activity },
     { id: "evidencias",     label: "Evidencias",            icon: Ico.paperclip },
     { id: "reportes",       label: "Mis Reportes",          icon: Ico.chart },
@@ -996,7 +996,7 @@ function TopBar({
   const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
   const labels: Record<AppView, string> = {
     inicio: "Inicio",
-    planes: "Mis Documentos",
+    planes: "Gestión Documental Académica",
     actividades: "Mis Actividades",
     evidencias: "Evidencias",
     notificaciones: "Notificaciones",

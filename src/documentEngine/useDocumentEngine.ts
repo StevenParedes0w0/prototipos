@@ -19,7 +19,7 @@ import {
   FLOW_STAGES_INICIAL,
 } from "./mockDataDocument";
 
-const STORAGE_KEY = "fisei_documents_collection_v5";
+const STORAGE_KEY = "fisei_documents_collection_v6";
 
 export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string) => void) {
   const [documents, setDocuments] = useState<DocumentMasterState[]>(() => {
@@ -95,7 +95,7 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         titulo,
         formalVersion: "1.0",
         reviewRound: 1,
-        pageCount: tipo === "INFORME" ? 3 : 4,
+        pageCount: tipo === "INFORME" ? 3 : 5,
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo,
@@ -316,7 +316,7 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
       const nowHora = "10:15";
       const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
       const matriz = datos.matriz && datos.matriz.length > 0 ? datos.matriz : MATRIZ_INICIAL_DOC;
-      const pageCount = Math.max(3, Math.min(8, Math.ceil((matriz.length + 3) / 2)));
+      const pageCount = Math.max(5, Math.min(8, Math.ceil((matriz.length + 3) / 2)));
 
       const newArtifact: DocumentArtifact = {
         id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
