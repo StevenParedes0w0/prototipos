@@ -38,7 +38,7 @@ export default function DocumentPdfPageViewer({
   readOnly = false,
 }: DocumentPdfPageViewerProps) {
   const isPlan = artifact.documentType === "PLAN_TRABAJO";
-  const totalPages = artifact.pageCount || (isPlan ? 5 : 3);
+  const totalPages = artifact.pageCount || 5;
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,13 +52,25 @@ export default function DocumentPdfPageViewer({
   const [editingObsText, setEditingObsText] = useState("");
 
   // Checklist state
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({
-    "Información general": true,
-    "Justificación y objetivo": true,
-    "Matriz de actividades": false,
-    "Anexos y medios": false,
-    "Firmas de responsabilidad": false,
-  });
+  const [checklist, setChecklist] = useState<Record<string, boolean>>(
+    isPlan
+      ? {
+          "Información general": true,
+          "Justificación y objetivo": true,
+          "Matriz de actividades": false,
+          "Anexos y medios": false,
+          "Firmas de responsabilidad": false,
+        }
+      : {
+          "Información general": true,
+          "Antecedentes": true,
+          "Desarrollo de actividades": false,
+          "Conclusiones y oportunidades de mejora": false,
+          "Registro de contactos, si aplica": false,
+          "Anexos": false,
+          "Firmas de responsabilidad": false,
+        }
+  );
 
   const activeObservations = observations.filter((o) => o.estado === "activa");
   const hasActiveObservations = activeObservations.length > 0;
@@ -163,7 +175,6 @@ export default function DocumentPdfPageViewer({
               border: "1px solid #475569",
               textAlign: "center",
               padding: "6px 8px",
-              background: "#f8fafc",
               fontWeight: 800,
               fontSize: 11,
               color: "#0f172a",
@@ -180,6 +191,7 @@ export default function DocumentPdfPageViewer({
               border: "1px solid #475569",
               textAlign: "center",
               padding: "5px 8px",
+              background: "#f1f5f9",
               fontWeight: 800,
               fontSize: 9.5,
               color: "#1e293b",
@@ -188,7 +200,7 @@ export default function DocumentPdfPageViewer({
           >
             {artifact.documentType === "INFORME"
               ? `INFORME DE: ${artifact.titulo || artifact.grupo}`
-              : `PLAN DE TRABAJO DE: ${artifact.grupo}`}
+              : `PLAN DE TRABAJO: ${artifact.grupo}`}
           </td>
         </tr>
         <tr>
@@ -200,7 +212,6 @@ export default function DocumentPdfPageViewer({
               fontSize: 7.5,
               fontWeight: 700,
               color: "#1e293b",
-              background: "#f8fafc",
             }}
           >
             Unidad académica / administrativa:
@@ -225,7 +236,6 @@ export default function DocumentPdfPageViewer({
               fontSize: 7.5,
               fontWeight: 700,
               color: "#1e293b",
-              background: "#f8fafc",
             }}
           >
             Carrera:
@@ -250,7 +260,7 @@ export default function DocumentPdfPageViewer({
               fontSize: 7.5,
               fontWeight: 700,
               color: "#1e293b",
-              background: "#f8fafc",
+              background: "#f1f5f9",
             }}
           >
             Fecha de elaboración:
@@ -426,7 +436,7 @@ export default function DocumentPdfPageViewer({
               boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
             }}
           >
-            {/* Page Navigation */}
+            {/* Page Navigation Left */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 className="btn btn-ghost btn-xs"
@@ -436,11 +446,11 @@ export default function DocumentPdfPageViewer({
               >
                 ‹ Anterior
               </button>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#e2e8f0" }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#e2e8f0", minWidth: 85, textAlign: "center" }}>
                 Página {currentPage} de {totalPages}
                 {isLandscape && (
                   <span style={{ marginLeft: 6, fontSize: 10, background: "#0ea5e9", color: "#fff", padding: "1px 5px", borderRadius: 3 }}>
-                    Horizontal
+                    Horiz
                   </span>
                 )}
               </span>
@@ -452,31 +462,31 @@ export default function DocumentPdfPageViewer({
               >
                 Siguiente ›
               </button>
+            </div>
 
-              {/* Direct page buttons */}
-              <div style={{ display: "flex", gap: 4, marginLeft: 10 }}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setCurrentPage(num)}
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 4,
-                      border: "none",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      background: currentPage === num ? "#1a4f8a" : "rgba(255,255,255,0.15)",
-                      color: "#fff",
-                      transition: "all 0.15s ease",
-                    }}
-                    title={`Ir a página ${num}`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
+            {/* Direct page buttons Center */}
+            <div style={{ display: "flex", gap: 4 }}>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 4,
+                    border: "none",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: currentPage === num ? "#1a4f8a" : "rgba(255,255,255,0.15)",
+                    color: "#fff",
+                    transition: "all 0.15s ease",
+                  }}
+                  title={`Ir a página ${num}`}
+                >
+                  {num}
+                </button>
+              ))}
             </div>
 
             {/* Document Badges */}
@@ -637,31 +647,19 @@ export default function DocumentPdfPageViewer({
                             textAlign: "center",
                           }}
                         >
-                          <div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 16, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>
-                              UNIDAD ACADÉMICA / ADMINISTRATIVA:
-                            </div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "#334155", marginTop: 4 }}>
-                              {artifact.unidadAcademica}
-                            </div>
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.unidadAcademica}</span>
                           </div>
 
-                          <div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 16, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>
-                              PLAN DE TRABAJO DE:
-                            </div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: 4, textTransform: "uppercase" }}>
-                              {artifact.grupo}
-                            </div>
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>PLAN DE TRABAJO DE: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>{artifact.grupo}</span>
                           </div>
 
-                          <div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 16, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>
-                              PERÍODO:
-                            </div>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "#334155", marginTop: 4 }}>
-                              {artifact.periodo}
-                            </div>
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>PERÍODO: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.periodo}</span>
                           </div>
                         </div>
                       </div>
@@ -947,9 +945,11 @@ export default function DocumentPdfPageViewer({
                           Fuente: Elaborado por: {artifact.generatedBy || "Docente Responsable"}
                         </div>
 
-                        <div style={{ fontSize: 7.5, color: "#64748b", fontStyle: "italic", marginTop: 10, lineHeight: 1.4 }}>
-                          Nota: Conforme a la Ley Orgánica de Protección de Datos Personales, la información y registros generados en el presente plan serán tratados con estricta confidencialidad y para los fines institucionales autorizados.
-                        </div>
+                        {artifact.grupo.includes("Datos Personales") && (
+                          <div style={{ fontSize: 7.5, color: "#64748b", fontStyle: "italic", marginTop: 10, lineHeight: 1.4 }}>
+                            Nota: Conforme a la Ley Orgánica de Protección de Datos Personales, la información y registros generados en el presente plan serán tratados con estricta confidencialidad y para los fines institucionales autorizados.
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -958,17 +958,20 @@ export default function DocumentPdfPageViewer({
                       <div style={{ flex: 1, padding: "4px 0" }}>
                         {/* 4. ANEXOS */}
                         <div style={{ marginBottom: 20 }}>
-                          <div
-                            style={{
-                              fontFamily: "Helvetica, Arial, sans-serif",
-                              fontSize: 14,
-                              fontWeight: 800,
-                              color: "#323E4F",
-                              textTransform: "uppercase",
-                              marginBottom: 8,
-                            }}
-                          >
-                            4. ANEXOS
+                          <div style={{ marginBottom: 12 }}>
+                            <div
+                              style={{
+                                fontFamily: "Helvetica, Arial, sans-serif",
+                                fontSize: 14,
+                                fontWeight: 800,
+                                color: "#323E4F",
+                                textTransform: "uppercase",
+                                marginBottom: 4,
+                              }}
+                            >
+                              4. ANEXOS
+                            </div>
+                            <div style={{ fontSize: 11, color: "#64748b", fontStyle: "italic" }}>(en caso de ser necesario)</div>
                           </div>
                           {artifact.tieneAnexos === "si" && artifact.anexos && artifact.anexos.length > 0 ? (
                             artifact.anexos.map((anexo, idx) => (
@@ -1053,14 +1056,10 @@ export default function DocumentPdfPageViewer({
                                     </td>
                                     <td style={{ border: "1px solid #cbd5e1", padding: "14px 8px", verticalAlign: "middle" }}>
                                       {sig ? (
-                                        <div style={{ fontSize: 7.5, color: "#166534", lineHeight: 1.3 }}>
-                                          <span style={{ fontWeight: 700 }}>✓ Firma electrónica registrada</span>
-                                          <br />
-                                          {sig.fecha} {sig.hora}
-                                          <br />
-                                          <span style={{ fontFamily: "monospace", fontSize: 6.5, color: "#15803d" }}>
-                                            {sig.hashCertificado || "EC-UTA-SGC-SIG-VALID"}
-                                          </span>
+                                        <div style={{ padding: "6px 0" }}>
+                                          <div style={{ fontSize: 14, fontFamily: "cursive", color: "#0f172a", opacity: 0.85, lineHeight: 1 }}>
+                                            {sig.actor}
+                                          </div>
                                         </div>
                                       ) : isCurrentActorCell ? (
                                         <div
@@ -1147,6 +1146,115 @@ export default function DocumentPdfPageViewer({
                      ───────────────────────────────────────────────────────────── */
                   <>
                     {currentPage === 1 && (
+                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 640, justifyContent: "space-between" }}>
+                        <div style={{ textAlign: "center", marginTop: 44, marginBottom: 44 }}>
+                          <div
+                            style={{
+                              fontFamily: "Helvetica, Arial, sans-serif",
+                              fontSize: 36,
+                              fontWeight: 800,
+                              color: "#0f172a",
+                              lineHeight: 1.15,
+                              letterSpacing: -0.5,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            UNIVERSIDAD TÉCNICA<br />DE AMBATO
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 34,
+                            width: "100%",
+                            maxWidth: 620,
+                            margin: "0 auto 40px",
+                            textAlign: "center",
+                          }}
+                        >
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.unidadAcademica}</span>
+                          </div>
+
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>INFORME DE: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>{(artifact.titulo || "").replace(/^INFORME DE:\s*/i, "")}</span>
+                          </div>
+
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>PERÍODO: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.periodo}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentPage === 2 && (
+                      <div style={{ flex: 1, padding: "8px 0" }}>
+                        <div style={{ marginBottom: 24, textAlign: "center" }}>
+                          <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 14, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>
+                            ÍNDICE DE CONTENIDOS
+                          </div>
+                        </div>
+                        <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 10.5, color: "#1e293b", lineHeight: 2, margin: "0 auto", width: "80%" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>1. ANTECEDENTES <span style={{ color: "#94a3b8" }}>...................................................................</span></span>
+                            <span>Pág. 3</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>2. DESARROLLO DE ACTIVIDADES <span style={{ color: "#94a3b8" }}>...........................................</span></span>
+                            <span>Pág. 3</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>3. CONCLUSIONES <span style={{ color: "#94a3b8" }}>....................................................................</span></span>
+                            <span>Pág. 3</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>4. OPORTUNIDADES DE MEJORA <span style={{ color: "#94a3b8" }}>.............................................</span></span>
+                            <span>Pág. 3</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN <span style={{ color: "#94a3b8" }}>....</span></span>
+                            <span>Pág. 4</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>6. ANEXOS <span style={{ color: "#94a3b8" }}>..............................................................................</span></span>
+                            <span>Pág. 4</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>FIRMAS DE RESPONSABILIDAD <span style={{ color: "#94a3b8" }}>................................................</span></span>
+                            <span>Pág. 4</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>CONTROL DE HISTORIAL DE CAMBIOS <span style={{ color: "#94a3b8" }}>......................................</span></span>
+                            <span>Pág. 5</span>
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 40, marginBottom: 24, textAlign: "center" }}>
+                          <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 14, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>
+                            ÍNDICE DE TABLAS
+                          </div>
+                        </div>
+                        <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 10.5, color: "#1e293b", lineHeight: 2, margin: "0 auto", width: "80%" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span>Tabla 1.- Resultados de la matriz de actividades <span style={{ color: "#94a3b8" }}>......................</span></span>
+                            <span>Pág. 3</span>
+                          </div>
+                          {artifact.informeData?.aplicaRegistroContactos && artifact.informeData.contactosDelegacion && artifact.informeData.contactosDelegacion.length > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span>Tabla 2.- Registro de contactos y gestiones de la delegación <span style={{ color: "#94a3b8" }}>..</span></span>
+                              <span>Pág. 4</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {currentPage === 3 && (
                       <div style={{ flex: 1, padding: "8px 0" }}>
                         <div style={{ marginBottom: 22 }}>
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 10 }}>
@@ -1157,52 +1265,43 @@ export default function DocumentPdfPageViewer({
                           </p>
                         </div>
 
-                        {artifact.informeData?.relatedPlanTitulo && (
-                          <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: 4, border: "1px solid #cbd5e1", marginBottom: 20 }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: "#1e293b", textTransform: "uppercase", marginBottom: 2 }}>
-                              Plan de Trabajo de Referencia
-                            </div>
-                            <div style={{ fontSize: 9.5, color: "#334155" }}>
-                              {artifact.informeData.relatedPlanTitulo}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {currentPage > 1 && currentPage < totalPages && (
-                      <div style={{ flex: 1, padding: "4px 0" }}>
                         <div style={{ marginBottom: 20 }}>
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 8 }}>
                             2. DESARROLLO DE ACTIVIDADES
                           </div>
+                          {artifact.informeData?.informeOrigen === "DERIVADO_PLAN" && (
+                            <div style={{ fontSize: 9.5, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
+                              NOTA: Cuando el informe tenga por objeto la ejecución de un Plan de Trabajo... Nota 1: la tabla 1 se debe utilizar en caso de que el informe derive del plan de trabajo.
+                            </div>
+                          )}
+                          
                           {artifact.informeData?.actividadesInforme && artifact.informeData.actividadesInforme.length > 0 ? (
                             <div>
                               <div style={{ fontSize: 9, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
                                 Tabla 1.- Resultados de la matriz de actividades
                               </div>
-                              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #475569", fontSize: 8.5, marginBottom: 16 }}>
+                              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #475569", fontSize: 9, marginBottom: 16 }}>
                                 <thead>
                                   <tr style={{ background: "#f1f5f9", color: "#0f172a" }}>
-                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "34%", fontWeight: 700 }}>Actividades</th>
-                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "30%", fontWeight: 700 }}>Medios de verificación</th>
+                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "center", width: "34%", fontWeight: 700 }}>Actividades</th>
+                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "center", width: "30%", fontWeight: 700 }}>Medios de verificación</th>
                                     <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "center", width: "16%", fontWeight: 700 }}>Porcentaje de ejecución</th>
-                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "20%", fontWeight: 700 }}>Observaciones</th>
+                                    <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "center", width: "20%", fontWeight: 700 }}>Observaciones</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {artifact.informeData.actividadesInforme.map((a, i) => (
-                                    <tr key={a.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                                      <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", fontWeight: 600, color: "#0f172a" }}>
+                                  {artifact.informeData.actividadesInforme.map((a) => (
+                                    <tr key={a.id}>
+                                      <td style={{ border: "1px solid #475569", padding: "6px 8px", color: "#0f172a" }}>
                                         {a.actividad}
                                       </td>
-                                      <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#475569" }}>
+                                      <td style={{ border: "1px solid #475569", padding: "6px 8px", color: "#0f172a" }}>
                                         {a.mediosVerificacion}
                                       </td>
-                                      <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", textAlign: "center", fontWeight: 700, color: "#0f172a" }}>
+                                      <td style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "center", color: "#0f172a" }}>
                                         {a.porcentajeEjecucion}%
                                       </td>
-                                      <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#475569" }}>
+                                      <td style={{ border: "1px solid #475569", padding: "6px 8px", color: "#0f172a" }}>
                                         {a.observaciones || "—"}
                                       </td>
                                     </tr>
@@ -1237,49 +1336,70 @@ export default function DocumentPdfPageViewer({
                       </div>
                     )}
 
-                    {currentPage === totalPages && (
+                    {currentPage === 4 && (
                       <div style={{ flex: 1, padding: "4px 0" }}>
-                        {artifact.informeData?.aplicaRegistroContactos && artifact.informeData.contactosDelegacion && artifact.informeData.contactosDelegacion.length > 0 && (
-                          <div style={{ marginBottom: 18 }}>
-                            <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 4 }}>
-                              5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN
-                            </div>
-                            <div style={{ fontSize: 8.5, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
-                              Tabla 2.- Registro de contactos y gestiones de la delegación
-                            </div>
-                            <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #475569", fontSize: 8, marginBottom: 14 }}>
-                              <thead>
-                                <tr style={{ background: "#f1f5f9", color: "#0f172a" }}>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Nombre delegación</th>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "15%", fontWeight: 700 }}>Ciudad/País</th>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Contacto</th>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "15%", fontWeight: 700 }}>Datos</th>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "16%", fontWeight: 700 }}>Propósito</th>
-                                  <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Acuerdos</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {artifact.informeData.contactosDelegacion.map((c, ci) => (
-                                  <tr key={c.id} style={{ background: ci % 2 === 0 ? "#fff" : "#fafafa" }}>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", fontWeight: 600 }}>{c.nombreDelegacion}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>{c.ciudadPaisInstitucion}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>
-                                      <div><strong>{c.institucion || c.entidadPersonaContacto}</strong></div>
-                                      <div>{c.nombreCargo}</div>
-                                    </td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#475569" }}>{c.datosContacto}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>{c.temaTratado || c.temaProposito}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>{c.compromisoResponsablePlazo || c.acuerdoSeguimiento}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                        <div style={{ marginBottom: 18 }}>
+                          <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 4 }}>
+                            5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN
                           </div>
-                        )}
+                          <div style={{ fontSize: 9.5, color: "#475569", marginBottom: 6 }}>
+                            Complete únicamente para delegaciones, visitas técnicas o comisiones...
+                          </div>
+                          {artifact.informeData?.aplicaRegistroContactos && artifact.informeData.contactosDelegacion && artifact.informeData.contactosDelegacion.length > 0 ? (
+                            <>
+                              <div style={{ fontSize: 8.5, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
+                                Tabla 2.- Registro de contactos y gestiones de la delegación
+                              </div>
+                              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #475569", fontSize: 8, marginBottom: 14 }}>
+                                <thead>
+                                  <tr style={{ background: "#f1f5f9", color: "#0f172a" }}>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Nombre delegación</th>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "15%", fontWeight: 700 }}>Ciudad/País</th>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Contacto</th>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "15%", fontWeight: 700 }}>Datos</th>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "16%", fontWeight: 700 }}>Propósito</th>
+                                    <th style={{ border: "1px solid #475569", padding: "5px 6px", textAlign: "left", width: "18%", fontWeight: 700 }}>Acuerdos</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {artifact.informeData.contactosDelegacion.map((c, ci) => (
+                                    <tr key={c.id}>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>{c.nombreDelegacion}</td>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>{c.ciudadPaisInstitucion}</td>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>
+                                        <div><strong>{c.institucion || c.entidadPersonaContacto}</strong></div>
+                                        <div>{c.nombreCargo}</div>
+                                      </td>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>{c.datosContacto}</td>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>{c.temaTratado || c.temaProposito}</td>
+                                      <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#0f172a" }}>{c.compromisoResponsablePlazo || c.acuerdoSeguimiento}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 9.5, color: "#64748b", fontStyle: "italic" }}>
+                              No aplica.
+                            </div>
+                          )}
+                        </div>
 
                         <div style={{ marginBottom: 18 }}>
-                          <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 6 }}>
-                            6. ANEXOS
+                          <div style={{ marginBottom: 12 }}>
+                            <div
+                              style={{
+                                fontFamily: "Helvetica, Arial, sans-serif",
+                                fontSize: 13.5,
+                                fontWeight: 800,
+                                color: "#323E4F",
+                                textTransform: "uppercase",
+                                marginBottom: 4,
+                              }}
+                            >
+                              6. ANEXOS
+                            </div>
+                            <div style={{ fontSize: 11, color: "#64748b", fontStyle: "italic" }}>(en caso de ser necesario)</div>
                           </div>
                           {artifact.tieneAnexos === "si" && artifact.anexos && artifact.anexos.length > 0 ? (
                             artifact.anexos.map((anexo, idx) => (
@@ -1294,7 +1414,7 @@ export default function DocumentPdfPageViewer({
                           )}
                         </div>
 
-                        {/* FIRMAS DE RESPONSABILIDAD */}
+                        {/* FIRMAS DE RESPONSABILIDAD (Página 4: Elaborado y Revisado) */}
                         <div style={{ marginBottom: 18 }}>
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 6 }}>
                             FIRMAS DE RESPONSABILIDAD
@@ -1309,19 +1429,13 @@ export default function DocumentPdfPageViewer({
                               </tr>
                             </thead>
                             <tbody>
-                              {flowStages.map((stage, idx) => {
+                              {flowStages.slice(0, 2).map((stage, idx) => {
                                 const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
                                 const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
 
                                 let accionTitulo = "Elaborado por:";
                                 let accionSub = "(Delegado técnico de la unidad académica o administrativa)";
-                                if (stage.actionLabel === "APROBADO_POR") {
-                                  accionTitulo = "Aprobado por:";
-                                  accionSub = "(órgano colegiado correspondiente según la procedencia del plan)";
-                                } else if (stage.actionLabel === "VALIDADO_POR" || stage.actorRole === "validador" || stage.stageName.includes("Validación")) {
-                                  accionTitulo = "Validado por:";
-                                  accionSub = "(Líder de la unidad académica o administrativa según la procedencia del plan)";
-                                } else if (stage.actionLabel === "REVISADO_POR" || stage.actorRole === "revisor" || stage.stageName.includes("Revisión")) {
+                                if (stage.actionLabel === "REVISADO_POR" || stage.actorRole === "revisor" || stage.stageName.includes("Revisión")) {
                                   accionTitulo = "Revisado por:";
                                   accionSub = "(jefe inmediato superior según la procedencia del plan)";
                                 }
@@ -1330,26 +1444,93 @@ export default function DocumentPdfPageViewer({
                                   <tr
                                     key={stage.id}
                                     style={{
-                                      background: isCurrentActorCell ? "#eff6ff" : idx % 2 === 0 ? "#fff" : "#fafafa",
-                                      border: isCurrentActorCell ? "2px solid #3b82f6" : "1px solid #cbd5e1",
+                                      background: isCurrentActorCell ? "#eff6ff" : "#fff",
+                                      border: isCurrentActorCell ? "2px solid #3b82f6" : "1px solid #475569",
                                     }}
                                   >
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "14px 8px", verticalAlign: "middle" }}>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle" }}>
                                       <div style={{ fontWeight: 700, color: "#0f172a" }}>{accionTitulo}</div>
                                       <div style={{ fontSize: 7, color: "#64748b", marginTop: 2, lineHeight: 1.2 }}>{accionSub}</div>
                                     </td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "14px 8px", verticalAlign: "middle", fontWeight: 700, color: "#0f172a" }}>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle", fontWeight: 700, color: "#0f172a" }}>
                                       {stage.actorName}
                                     </td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "14px 8px", verticalAlign: "middle", color: "#475569", fontSize: 8 }}>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle", color: "#475569", fontSize: 8 }}>
                                       {stage.actorCargo}
                                     </td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "14px 8px", verticalAlign: "middle" }}>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle" }}>
                                       {sig ? (
-                                        <div style={{ fontSize: 7.5, color: "#166534", lineHeight: 1.3 }}>
-                                          <span style={{ fontWeight: 700 }}>✓ Firma electrónica registrada</span>
-                                          <br />
-                                          {sig.fecha} {sig.hora}
+                                        <div style={{ padding: "6px 0" }}>
+                                          <div style={{ fontSize: 14, fontFamily: "cursive", color: "#0f172a", opacity: 0.85, lineHeight: 1 }}>
+                                            {sig.actor}
+                                          </div>
+                                        </div>
+                                      ) : isCurrentActorCell ? (
+                                        <div style={{ background: "#dbeafe", border: "1px dashed #2563eb", borderRadius: 4, padding: "6px 8px", textAlign: "center" }}>
+                                          <span style={{ fontSize: 7.5, fontWeight: 800, color: "#1e40af" }}>[ Su firma aquí ]</span>
+                                        </div>
+                                      ) : (
+                                        <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: 8 }}>Pendiente de firma</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentPage === 5 && (
+                      <div style={{ flex: 1, padding: "4px 0" }}>
+                        {/* FIRMAS DE RESPONSABILIDAD (Página 5: Validado/Aprobado) */}
+                        <div style={{ marginBottom: 24 }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #475569", fontSize: 8.5 }}>
+                            <thead>
+                              <tr style={{ background: "#f1f5f9", color: "#0f172a" }}>
+                                <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "24%", fontWeight: 700 }}>ACCIONES</th>
+                                <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "28%", fontWeight: 700 }}>NOMBRE</th>
+                                <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "24%", fontWeight: 700 }}>CARGO</th>
+                                <th style={{ border: "1px solid #475569", padding: "6px 8px", textAlign: "left", width: "24%", fontWeight: 700 }}>FIRMA</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {flowStages.slice(2).map((stage, idx) => {
+                                const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
+                                const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
+
+                                let accionTitulo = "Validado por:";
+                                let accionSub = "(Líder de la unidad académica o administrativa según la procedencia del plan)";
+                                if (stage.actionLabel === "APROBADO_POR") {
+                                  accionTitulo = "Aprobado por:";
+                                  accionSub = "(órgano colegiado correspondiente según la procedencia del plan)";
+                                }
+
+                                return (
+                                  <tr
+                                    key={stage.id}
+                                    style={{
+                                      background: isCurrentActorCell ? "#eff6ff" : "#fff",
+                                      border: isCurrentActorCell ? "2px solid #3b82f6" : "1px solid #475569",
+                                    }}
+                                  >
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle" }}>
+                                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{accionTitulo}</div>
+                                      <div style={{ fontSize: 7, color: "#64748b", marginTop: 2, lineHeight: 1.2 }}>{accionSub}</div>
+                                    </td>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle", fontWeight: 700, color: "#0f172a" }}>
+                                      {stage.actorName}
+                                    </td>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle", color: "#475569", fontSize: 8 }}>
+                                      {stage.actorCargo}
+                                    </td>
+                                    <td style={{ border: "1px solid #475569", padding: "32px 8px", verticalAlign: "middle" }}>
+                                      {sig ? (
+                                        <div style={{ padding: "6px 0" }}>
+                                          <div style={{ fontSize: 14, fontFamily: "cursive", color: "#0f172a", opacity: 0.85, lineHeight: 1 }}>
+                                            {sig.actor}
+                                          </div>
                                         </div>
                                       ) : isCurrentActorCell ? (
                                         <div style={{ background: "#dbeafe", border: "1px dashed #2563eb", borderRadius: 4, padding: "6px 8px", textAlign: "center" }}>
@@ -1382,17 +1563,17 @@ export default function DocumentPdfPageViewer({
                             <tbody>
                               {artifact.historialCambios && artifact.historialCambios.length > 0 ? (
                                 artifact.historialCambios.map((h, i) => (
-                                  <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", fontWeight: 700 }}>v{h.version}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>{h.descripcion}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#64748b" }}>{h.fecha}</td>
+                                  <tr key={i} style={{ background: "#fff" }}>
+                                    <td style={{ border: "1px solid #475569", padding: "5px 6px", fontWeight: 700 }}>v{h.version}</td>
+                                    <td style={{ border: "1px solid #475569", padding: "5px 6px" }}>{h.descripcion}</td>
+                                    <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{h.fecha}</td>
                                   </tr>
                                 ))
                               ) : (
                                 <tr>
-                                  <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", fontWeight: 700 }}>v{formalVersion}</td>
-                                  <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>Elaboración inicial de Informe institucional</td>
-                                  <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#64748b" }}>{artifact.generatedAt.split(" ")[0]}</td>
+                                  <td style={{ border: "1px solid #475569", padding: "5px 6px", fontWeight: 700 }}>v{formalVersion}</td>
+                                  <td style={{ border: "1px solid #475569", padding: "5px 6px" }}>Elaboración inicial de Informe institucional</td>
+                                  <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{artifact.generatedAt.split(" ")[0]}</td>
                                 </tr>
                               )}
                             </tbody>

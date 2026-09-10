@@ -9,6 +9,11 @@ import {
   AnexoDoc,
   InformeDataDoc,
 } from "./types";
+
+export function normalizeInformeTitle(titulo: string): string {
+  if (!titulo) return "";
+  return titulo.replace(/^INFORME DE:\s*/i, "").trim().toUpperCase();
+}
 import {
   FECHA_SISTEMA,
   INITIAL_DOCUMENT_MASTER,
@@ -84,6 +89,7 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
       const carrera = datosBasicos?.carrera || "Ingeniería de Software";
       const periodo = datosBasicos?.periodo || "Julio – Diciembre 2026";
       const titulo = datosBasicos?.titulo || (tipo === "INFORME" ? `Informe de actividades — ${grupo}` : `Plan de Trabajo: ${grupo}`);
+      const normalizedTitulo = tipo === "INFORME" ? normalizeInformeTitle(titulo) : titulo;
       const id = tipo === "INFORME" ? `doc-inf-${Date.now()}` : `doc-plan-${Date.now()}`;
       const codigo = tipo === "INFORME" ? `INF-FISEI-2026-${Math.floor(100 + Math.random() * 900)}` : `PT-FISEI-2026-${Math.floor(100 + Math.random() * 900)}`;
       const codigoFormatoOficial = tipo === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1";
@@ -92,10 +98,10 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         id: `art-${id}-v1_0-r1`,
         documentType: tipo,
         codigoFormatoOficial,
-        titulo,
+        titulo: normalizedTitulo,
         formalVersion: "1.0",
         reviewRound: 1,
-        pageCount: tipo === "INFORME" ? 3 : 5,
+        pageCount: 5,
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo,
@@ -226,10 +232,10 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         id: `art-inf-${docMaster.id}-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
         documentType: "INFORME",
         codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-        titulo: datos.titulo || docMaster.nombre,
+        titulo: normalizeInformeTitle(datos.titulo || docMaster.nombre),
         formalVersion: docMaster.formalVersion,
         reviewRound: docMaster.reviewRound,
-        pageCount: 3,
+        pageCount: 5,
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo: datos.grupo || docMaster.grupo,
@@ -703,7 +709,7 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
   const validarYFirmarFinal = useCallback(
     (
       validadorNombre: string = "Ing. Patricia Salazar, Mg.",
-      validadorCargo: string = "Coordinadora de Comisión / Autoridad",
+      validadorCargo: string = "Coordinadora de Unidad",
       ubicacion: string = "Página 4 — Firmas de Responsabilidad: Validado por"
     ) => {
       const nowHora = "11:50";

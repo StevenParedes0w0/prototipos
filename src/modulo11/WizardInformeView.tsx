@@ -186,10 +186,10 @@ export default function WizardInformeView({
     id: "art-informe-preview",
     documentType: "INFORME",
     codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-    titulo,
+    titulo: titulo.replace(/^INFORME DE:\\s*/i, ""),
     formalVersion: "1.0",
     reviewRound: 1,
-    pageCount: 3,
+    pageCount: 5,
     generatedAt: `${fecha} 09:30`,
     generatedBy: "Ing. Andrea Pérez, Mg.",
     grupo,
@@ -281,7 +281,7 @@ export default function WizardInformeView({
     { num: 4, label: "Conclusiones y Oportunidades" },
     { num: 5, label: "Registro de Contactos" },
     { num: 6, label: "Anexos" },
-    { num: 7, label: "Previsualización T2" },
+    { num: 7, label: "Previsualización" },
     { num: 8, label: "Firma y Envío" },
   ];
 
@@ -345,10 +345,10 @@ export default function WizardInformeView({
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 4 }}>
                   Versión Mejorada
                 </div>
-                <div style={{ fontSize: 13, color: "#1e2a3a", background: "#f5f3ff", border: "1.5px solid #c4b5fd", borderRadius: 8, padding: "12px 14px", lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: "#1e2a3a", background: "#eff6ff", border: "1.5px solid #93c5fd", borderRadius: 8, padding: "12px 14px", lineHeight: 1.6 }}>
                   {aiModalData.suggestion}
                 </div>
               </div>
@@ -357,7 +357,7 @@ export default function WizardInformeView({
               <button className="btn btn-ghost" onClick={() => setAiModalData(null)}>
                 Descartar
               </button>
-              <button className="btn btn-primary" style={{ background: "#7c3aed", border: "none" }} onClick={handleApplyAi}>
+              <button className="btn btn-primary" style={{ background: "#1a4f8a", border: "none" }} onClick={handleApplyAi}>
                 Aplicar Sugerencia
               </button>
             </div>
@@ -365,19 +365,39 @@ export default function WizardInformeView({
         </div>
       )}
 
-      {/* Stepper Header (Compact) */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "12px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1100, margin: "0 auto", overflowX: "auto" }}>
-          {stepLabels.map((s, idx) => (
-            <React.Fragment key={s.num}>
+      {/* New Header & Stepper */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "24px 24px" }}>
+        <div style={{ maxWidth: 1150, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1e2a3a", margin: "0 0 4px", fontFamily: "'DM Sans', sans-serif" }}>Crear Informe</h1>
+              <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>Formato UTA-SGC-A-2-1-P7-T2</div>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a4f8a" }}>
+              Paso {step} de 8
+            </div>
+          </div>
+          
+          {/* Progress bar */}
+          <div style={{ width: "100%", height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ width: `${(step / 8) * 100}%`, height: "100%", background: "#1a4f8a", transition: "width 0.3s ease" }} />
+          </div>
+          
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 28 }}>
+            {stepLabels.find(s => s.num === step)?.label}
+          </div>
+
+          {/* Stepper Grid */}
+          <div className="stepper-grid" style={{ display: "grid", gap: "16px 24px" }}>
+            {stepLabels.map((s) => (
               <div
+                key={s.num}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 10,
                   cursor: s.num <= maxReached ? "pointer" : "default",
                   opacity: s.num <= maxReached ? 1 : 0.45,
-                  flexShrink: 0,
                 }}
                 onClick={() => {
                   if (s.num <= maxReached) setStep(s.num);
@@ -388,38 +408,40 @@ export default function WizardInformeView({
                     width: 24,
                     height: 24,
                     borderRadius: "50%",
-                    background: step === s.num ? "#7e22ce" : s.num < step ? "#16a34a" : "#f1f5f9",
+                    background: step === s.num ? "#1a4f8a" : s.num < step ? "#16a34a" : "#f1f5f9",
                     color: step === s.num || s.num < step ? "#fff" : "#64748b",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontWeight: 700,
                     fontSize: 11,
+                    flexShrink: 0
                   }}
                 >
                   {s.num < step ? "✓" : s.num}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#7e22ce" : "#475569" }}>
+                <div style={{ fontSize: 12.5, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#1a4f8a" : "#475569", lineHeight: 1.3 }}>
                   {s.label}
                 </div>
               </div>
-              {idx < stepLabels.length - 1 && (
-                <div style={{ width: 20, height: 1.5, background: s.num < step ? "#16a34a" : "#e2e8f0", margin: "0 6px", flexShrink: 0 }} />
-              )}
-            </React.Fragment>
-          ))}
+            ))}
+          </div>
+          <style>{`
+            .stepper-grid { grid-template-columns: repeat(4, 1fr); }
+            @media (max-width: 999px) { .stepper-grid { grid-template-columns: repeat(2, 1fr); } }
+          `}</style>
         </div>
       </div>
 
       {/* Content Area */}
       <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ maxWidth: step === 7 ? "100%" : 1000, margin: "0 auto", transition: "max-width 0.3s ease" }}>
           
           {/* PASO 1: INFORMACIÓN GENERAL */}
           {step === 1 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 1 de 8 · Formato Oficial UTA-SGC-A-2-1-P7-T2
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -486,14 +508,14 @@ export default function WizardInformeView({
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
                     <label
                       style={{
-                        border: `2px solid ${informeOrigen === "DERIVADO_PLAN" ? "#7e22ce" : "#e2e8f0"}`,
+                        border: `2px solid ${informeOrigen === "DERIVADO_PLAN" ? "#1a4f8a" : "#e2e8f0"}`,
                         borderRadius: 8,
                         padding: "12px 14px",
                         display: "flex",
                         alignItems: "flex-start",
                         gap: 10,
                         cursor: "pointer",
-                        background: informeOrigen === "DERIVADO_PLAN" ? "#faf5ff" : "#fff",
+                        background: informeOrigen === "DERIVADO_PLAN" ? "#eff6ff" : "#fff",
                       }}
                     >
                       <input
@@ -501,7 +523,7 @@ export default function WizardInformeView({
                         name="origen"
                         checked={informeOrigen === "DERIVADO_PLAN"}
                         onChange={() => setInformeOrigen("DERIVADO_PLAN")}
-                        style={{ marginTop: 2, accentColor: "#7e22ce" }}
+                        style={{ marginTop: 2, accentColor: "#1a4f8a" }}
                       />
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
@@ -515,14 +537,14 @@ export default function WizardInformeView({
 
                     <label
                       style={{
-                        border: `2px solid ${informeOrigen === "INDEPENDIENTE" ? "#7e22ce" : "#e2e8f0"}`,
+                        border: `2px solid ${informeOrigen === "INDEPENDIENTE" ? "#1a4f8a" : "#e2e8f0"}`,
                         borderRadius: 8,
                         padding: "12px 14px",
                         display: "flex",
                         alignItems: "flex-start",
                         gap: 10,
                         cursor: "pointer",
-                        background: informeOrigen === "INDEPENDIENTE" ? "#faf5ff" : "#fff",
+                        background: informeOrigen === "INDEPENDIENTE" ? "#eff6ff" : "#fff",
                       }}
                     >
                       <input
@@ -530,7 +552,7 @@ export default function WizardInformeView({
                         name="origen"
                         checked={informeOrigen === "INDEPENDIENTE"}
                         onChange={() => setInformeOrigen("INDEPENDIENTE")}
-                        style={{ marginTop: 2, accentColor: "#7e22ce" }}
+                        style={{ marginTop: 2, accentColor: "#1a4f8a" }}
                       />
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
@@ -557,7 +579,7 @@ export default function WizardInformeView({
                           </option>
                         ))}
                       </select>
-                      <span style={{ fontSize: 11.5, color: "#7e22ce", marginTop: 4, display: "block", fontWeight: 600 }}>
+                      <span style={{ fontSize: 11.5, color: "#1a4f8a", marginTop: 4, display: "block", fontWeight: 600 }}>
                         ✓ Las actividades y medios de verificación se sincronizarán desde este Plan.
                       </span>
                     </div>
@@ -571,7 +593,7 @@ export default function WizardInformeView({
           {step === 2 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 2 de 8 · Sección 1
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -589,8 +611,8 @@ export default function WizardInformeView({
                   </label>
                   <div style={{ position: "relative" }}>
                     <button
-                      className="btn btn-ghost btn-xs"
-                      style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
+                      className="btn btn-secondary btn-xs"
+                      style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                       onClick={() => setAiMenuField(aiMenuField === "antecedentes" ? null : "antecedentes")}
                     >
                       ✨ Mejorar redacción
@@ -625,7 +647,7 @@ export default function WizardInformeView({
           {step === 3 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 3 de 8 · Sección 2
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -717,7 +739,7 @@ export default function WizardInformeView({
           {step === 4 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 4 de 8 · Secciones 3 y 4
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -738,7 +760,7 @@ export default function WizardInformeView({
                     <div style={{ position: "relative" }}>
                       <button
                         className="btn btn-ghost btn-xs"
-                        style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
+                        style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                         onClick={() => setAiMenuField(aiMenuField === "conclusiones" ? null : "conclusiones")}
                       >
                         ✨ Mejorar redacción
@@ -775,7 +797,7 @@ export default function WizardInformeView({
                     <div style={{ position: "relative" }}>
                       <button
                         className="btn btn-ghost btn-xs"
-                        style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
+                        style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                         onClick={() => setAiMenuField(aiMenuField === "oportunidades" ? null : "oportunidades")}
                       >
                         ✨ Mejorar redacción
@@ -810,7 +832,7 @@ export default function WizardInformeView({
           {step === 5 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 5 de 8 · Sección 5
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -833,7 +855,7 @@ export default function WizardInformeView({
                         name="contactosRadio"
                         checked={aplicaRegistroContactos === true}
                         onChange={() => setAplicaRegistroContactos(true)}
-                        style={{ accentColor: "#7e22ce" }}
+                        style={{ accentColor: "#1a4f8a" }}
                       />
                       <span style={{ fontSize: 13, fontWeight: 600 }}>Sí, registrar contactos y gestiones</span>
                     </label>
@@ -843,7 +865,7 @@ export default function WizardInformeView({
                         name="contactosRadio"
                         checked={aplicaRegistroContactos === false}
                         onChange={() => setAplicaRegistroContactos(false)}
-                        style={{ accentColor: "#7e22ce" }}
+                        style={{ accentColor: "#1a4f8a" }}
                       />
                       <span style={{ fontSize: 13, fontWeight: 600 }}>No (Se marcará como: No aplica en el documento oficial)</span>
                     </label>
@@ -879,7 +901,7 @@ export default function WizardInformeView({
                       {contactosDelegacion.map((c, idx) => (
                         <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, padding: "14px", position: "relative" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#7e22ce" }}>Contacto #{idx + 1}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a" }}>Contacto #{idx + 1}</span>
                             {contactosDelegacion.length > 1 && (
                               <button
                                 style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
@@ -970,7 +992,7 @@ export default function WizardInformeView({
           {step === 6 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 6 de 8 · Sección 6
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -990,7 +1012,7 @@ export default function WizardInformeView({
                       name="anexosRadio"
                       checked={tieneAnexos === "si"}
                       onChange={() => setTieneAnexos("si")}
-                      style={{ accentColor: "#7e22ce" }}
+                      style={{ accentColor: "#1a4f8a" }}
                     />
                     <span style={{ fontSize: 13, fontWeight: 600 }}>Sí, adjuntar anexos</span>
                   </label>
@@ -1003,7 +1025,7 @@ export default function WizardInformeView({
                         setTieneAnexos("no");
                         setAnexos([]);
                       }}
-                      style={{ accentColor: "#7e22ce" }}
+                      style={{ accentColor: "#1a4f8a" }}
                     />
                     <span style={{ fontSize: 13, fontWeight: 600 }}>No (Se mostrará como: No aplica en el documento oficial)</span>
                   </label>
@@ -1075,7 +1097,7 @@ export default function WizardInformeView({
           {step === 7 && (
             <div>
               <div style={{ marginBottom: 14 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 7 de 8 · Previsualización Oficial
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "4px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -1112,7 +1134,7 @@ export default function WizardInformeView({
           {step === 8 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
                   Paso 8 de 8 · Firma y Envío
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -1126,7 +1148,7 @@ export default function WizardInformeView({
               <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "28px", display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 22px" }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", textTransform: "uppercase" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase" }}>
                       Documento Listo para Firma
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", marginTop: 2 }}>
@@ -1144,7 +1166,7 @@ export default function WizardInformeView({
                   ) : (
                     <button
                       className="btn btn-primary"
-                      style={{ background: "#7e22ce", border: "none", padding: "10px 18px", fontSize: 13, fontWeight: 700 }}
+                      style={{ background: "#1a4f8a", border: "none", padding: "10px 18px", fontSize: 13, fontWeight: 700 }}
                       onClick={() => setShowFirmaModal(true)}
                     >
                       ✍️ FIRMAR DOCUMENTO ELECTRÓNICAMENTE
@@ -1192,7 +1214,7 @@ export default function WizardInformeView({
           )}
 
           {step < 8 && (
-            <button className="btn btn-primary" style={{ background: "#7e22ce", border: "none" }} onClick={handleNextStep}>
+            <button className="btn btn-primary" style={{ background: "#1a4f8a", border: "none" }} onClick={handleNextStep}>
               Siguiente →
             </button>
           )}

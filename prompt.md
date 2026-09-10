@@ -1,718 +1,537 @@
-CORRECCIÓN VISUAL DE ALTA FIDELIDAD T1 + SCROLL DEL VISOR DOCUMENTAL
+REFACCIÓN UX — CREACIÓN DOCUMENTAL Y WIZARD DEL INFORME
 
 IMPORTANTE:
 
-La lógica documental ya está aprobada.
+La lógica funcional ya está aprobada.
 
 NO modificar:
 - documentEngine;
+- T1;
+- estructura documental T2;
 - formalVersion;
 - reviewRound;
-- firmas;
-- revisión;
-- observaciones;
-- auditoría;
-- flujo multinivel;
-- estados;
-- navegación funcional.
+- approvalFlow;
+- datos del Informe;
+- firma;
+- generación de páginas;
+- formatos A4.
 
-Esta tarea es exclusivamente:
-
-1. hacer que la representación visual del documento T1 reproduzca
-   fielmente el DOCX suministrado;
-2. corregir el scroll del modal/visor documental;
-3. mantener la interfaz exterior del sistema intacta.
+Esta tarea es exclusivamente UX/UI del proceso de creación.
 
 ==========================================================
-1. PRINCIPIO VISUAL FUNDAMENTAL
+1. PROBLEMA ACTUAL
 ==========================================================
 
-Diferenciar:
+El wizard del Informe funciona, pero visualmente está demasiado
+comprimido y amontonado.
 
-INTERFAZ DEL SISTEMA
-vs.
-DOCUMENTO INSTITUCIONAL.
+Problemas observados:
 
-La interfaz puede mantener:
+- 8 pasos intentan mostrarse en una sola fila.
+- el último paso todavía aparece truncado como "7 P".
+- demasiados elementos compiten en la parte superior.
+- el usuario no identifica rápidamente dónde está.
+- la previsualización queda comprimida.
+- existen demasiados acentos visuales.
+- el flujo parece más complejo de lo que realmente es.
 
-- azul institucional;
-- botones modernos;
-- badges;
-- panel lateral;
-- navegación de páginas.
+NO solucionar reduciendo simplemente el tamaño de fuente.
 
-Pero la hoja renderizada dentro del visor NO debe heredar el
-design system visual de la aplicación.
-
-El documento debe parecer el DOCX original.
-
-NO utilizar encabezados azules de aplicación dentro de las tablas
-del documento si el formato fuente utiliza gris/blanco/negro.
+Reorganizar la jerarquía.
 
 ==========================================================
-2. RESTAURAR LA ESTRUCTURA REAL DE PÁGINAS T1
+2. MODAL "CREAR NUEVO DOCUMENTO"
 ==========================================================
 
-El escenario actual muestra:
-
-Página 1 de 4.
-
-Esto no reproduce el formato suministrado.
-
-Para el contenido DEMO actual generar como mínimo:
-
-PÁGINA 1
-PORTADA
-
-PÁGINA 2
-ÍNDICE DE CONTENIDO
-ÍNDICE DE TABLAS
-
-PÁGINA 3
-1. JUSTIFICACIÓN
-2. OBJETIVO
-
-PÁGINA 4
-3. MATRIZ DE ACTIVIDADES
-
-PÁGINA 5
-4. ANEXOS
-FIRMAS DE RESPONSABILIDAD
-CONTROL DE HISTORIAL DE CAMBIOS
-
-El pageCount sigue siendo dinámico para documentos reales.
-
-NO hardcodear siempre cinco páginas.
-
-Pero el contenido DEMO actual, por su tamaño, debe reproducir la
-estructura base de cinco páginas del formato suministrado.
-
-==========================================================
-3. PÁGINA 1 — PORTADA T1
-==========================================================
-
-La primera página NO debe contener:
-
-- índices;
-- justificación;
-- objetivo.
-
-Debe reproducir la portada.
-
-Después del encabezado mostrar con el espaciado amplio del documento:
-
-UNIVERSIDAD TÉCNICA
-DE AMBATO
-
-centrado, grande y en dos líneas visuales cuando corresponda.
-
-Debajo:
-
-UNIDAD ACADÉMICA / ADMINISTRATIVA:
-<valor>
-
-PLAN DE TRABAJO DE:
-<grupo/documento>
-
-PERÍODO:
-Julio – Diciembre 2026
-
-Respetar los grandes espacios verticales de la plantilla.
-
-NO compactar la portada.
-
-==========================================================
-4. TIPOGRAFÍA DE LA PORTADA
-==========================================================
-
-Reproducir las medidas del DOCX fuente.
-
-Referencia:
-
-UNIVERSIDAD TÉCNICA DE AMBATO
-- Helvetica
-- 36 pt
-- Bold
-- centrado
-
-UNIDAD ACADÉMICA / ADMINISTRATIVA
-PLAN DE TRABAJO DE
-PERÍODO
-- Helvetica
-- 18 pt
-- Bold
-
-No reducir estos tamaños para hacer caber más contenido.
-
-La finalidad es reproducir el formato fuente.
-
-==========================================================
-5. ENCABEZADO T1 — RECONSTRUIR
-==========================================================
-
-El encabezado actual es incorrecto.
-
-NO utilizar:
-
-[Escudo]
-[SISTEMA DE GESTIÓN DE LA CALIDAD /
- UNIVERSIDAD TÉCNICA DE AMBATO /
- PLAN DE TRABAJO]
-[Formato Nº]
-
-Recrear la estructura tabular del DOCX.
-
-Conceptualmente:
-
-┌──────────────────────┬──────────────────────────┬───────────────┐
-│                      │ UNIVERSIDAD TÉCNICA DE AMBATO           │
-│      ESCUDO          ├──────────────────────────────────────────┤
-│                      │ PLAN DE TRABAJO: <valor>                 │
-│ SISTEMA DE GESTIÓN   ├──────────────────────────┬───────────────┤
-│ DE LA CALIDAD        │ Unidad académica /       │ <valor>       │
-│                      │ administrativa:          │               │
-│                      ├──────────────────────────┼───────────────┤
-│                      │ Fecha de elaboración:    │ <valor>       │
-└──────────────────────┴──────────────────────────┴───────────────┘
-
-La celda izquierda debe abarcar verticalmente todo el encabezado.
-
-Dentro de ella:
-
-ESCUDO UTA
-
-y debajo:
-
-SISTEMA DE GESTIÓN
-DE LA CALIDAD
-
-NO colocar "SISTEMA DE GESTIÓN DE LA CALIDAD" sobre
-"UNIVERSIDAD TÉCNICA DE AMBATO" en la columna central.
-
-==========================================================
-6. FORMATO Nº NO VA EN EL ENCABEZADO
-==========================================================
-
-Eliminar:
-
-Formato Nº: UTA-SGC-A-2-1-P7-T1
-
-de la caja superior derecha del encabezado.
-
-El Formato Nº pertenece al pie de página.
-
-==========================================================
-7. ESTILO DEL ENCABEZADO
-==========================================================
-
-Reproducir visualmente:
-
-UNIVERSIDAD TÉCNICA DE AMBATO
-- aproximadamente 11 pt
-- negrita
-- centrado
-
-SISTEMA DE GESTIÓN DE LA CALIDAD
-- aproximadamente 7 pt
-- negrita
-- azul oscuro del documento fuente
-
-Unidad académica / administrativa
-Fecha de elaboración
-- aproximadamente 7 pt
-- negrita
-- respetar el azul/gris del formato fuente
-
-PLAN DE TRABAJO
-- respetar estilo de la plantilla original.
-
-Reproducir también:
-
-- bordes finos oscuros;
-- celdas grises donde corresponda;
-- proporciones de columnas;
-- alturas aproximadas.
-
-==========================================================
-8. CARRERA
-==========================================================
-
-Carrera es una adaptación solicitada durante la revisión con el
-profesor.
-
-Mantenerla.
-
-Pero integrarla sin destruir la estructura del encabezado original.
-
-Puede agregarse conceptualmente como una fila adicional inmediatamente
-después de Unidad académica / administrativa y antes de Fecha de
-elaboración, manteniendo exactamente el mismo estilo visual de las
-filas institucionales.
-
-No ubicar Carrera horizontalmente junto a Unidad si eso altera
-completamente la plantilla.
-
-==========================================================
-9. ENCABEZADO REPETIDO
-==========================================================
-
-El formato T1 muestra el encabezado institucional nuevamente en las
-páginas interiores.
-
-Por tanto:
-
-Página 2
-Página 3
-Página 4
-Página 5
-
-deben mostrar la misma tabla de encabezado institucional,
-salvo que la fuente indique otro comportamiento.
-
-NO sustituirlo por una línea pequeña con:
-
-UNIVERSIDAD TÉCNICA DE AMBATO      Formato Nº ...
-
-como ocurre actualmente en las páginas interiores.
-
-==========================================================
-10. PÁGINA 2 — ÍNDICES
-==========================================================
-
-Crear una página específica para:
-
-ÍNDICE DE CONTENIDO
-
-y debajo, con amplio espacio:
-
-ÍNDICE DE TABLAS
-
-No colocar Justificación en esa misma página.
-
-Mantener el espaciado amplio visible en la plantilla.
-
-Los contenidos del índice pueden generarse dinámicamente.
-
-==========================================================
-11. PÁGINA 3 — JUSTIFICACIÓN Y OBJETIVO
-==========================================================
-
-Mostrar:
-
-1. JUSTIFICACIÓN
-
-texto justificado
-
-2. OBJETIVO
-
-texto justificado
-
-Referencia visual:
-
-Títulos:
-- aproximadamente 14 pt;
-- bold;
-- color oscuro similar a #323E4F.
-
-Cuerpo:
-- aproximadamente 10 pt;
-- Helvetica/estilo equivalente de la plantilla;
-- alineación JUSTIFICADA;
-- interlineado y espaciado similares al documento fuente.
-
-NO usar líneas horizontales azules debajo de cada título si no aparecen
-en la plantilla original.
-
-==========================================================
-12. PÁGINA 4 — ORIENTACIÓN HORIZONTAL
-==========================================================
-
-CORRECCIÓN MUY IMPORTANTE:
-
-La página:
-
-3. MATRIZ DE ACTIVIDADES
-
-del DOCX original está en orientación HORIZONTAL / LANDSCAPE.
-
-El visor actual la muestra en vertical y comprime toda la tabla.
-
-Implementar orientación por página dentro del artefacto.
-
-Ejemplo conceptual:
-
-artifact.pages[n].orientation =
-"portrait" | "landscape"
-
-Para la matriz T1:
-
-orientation = "landscape"
-
-El visor debe adaptar automáticamente el contenedor de la hoja.
-
-NO girar la interfaz completa.
-
-Solo la página/documento.
-
-==========================================================
-13. MATRIZ — ESTILO VISUAL
-==========================================================
+Mantener modal centrado.
 
 Título:
 
-3. MATRIZ DE ACTIVIDADES
+Crear nuevo documento
 
 Subtítulo:
 
-Tabla 1.- Matriz de actividades
+Seleccione el tipo de documento institucional que desea elaborar.
 
-La tabla NO debe utilizar un encabezado azul sólido como actualmente.
+Mostrar dos tarjetas iguales:
 
-Reproducir el estilo del DOCX:
+PLAN DE TRABAJO
 
-- fondo blanco;
-- encabezados claros/grises;
-- bordes negros/grises;
-- texto negro;
-- estructura sobria de Word.
+Descripción:
+Planifique actividades, objetivos y medios de verificación
+para un grupo y período académico.
 
-Columnas:
+Formato:
+UTA-SGC-A-2-1-P7-T1
 
-Actividades
+Botón:
+CREAR PLAN DE TRABAJO
 
-Cronograma
-  Desde
-  Hasta
+----------------------------------
 
-Responsable
+INFORME
 
-Recursos
-(humano, tecnológico, económico, material)
+Descripción:
+Documente la ejecución, resultados y seguimiento de las
+actividades institucionales.
 
-Medios de verificación
+Formato:
+UTA-SGC-A-2-1-P7-T2
+
+Botón:
+CREAR INFORME
+
+Eliminar el badge:
+
+DEMO
+
+porque T2 ya corresponde a un formato institucional suministrado.
+
+==========================================================
+3. COLOR DEL MODAL
+==========================================================
+
+Ambos documentos pertenecen al mismo sistema.
+
+Usar azul institucional como color principal de ambos botones.
+
+La diferenciación entre:
+
+Plan
+Informe
+
+debe realizarse mediante:
+
+- icono;
+- nombre;
+- código T1/T2;
+
+NO mediante dos identidades cromáticas completamente diferentes.
+
+==========================================================
+4. NUEVA CABECERA DEL WIZARD
+==========================================================
+
+No mostrar los 8 nombres comprimidos en una única línea.
+
+Crear una cabecera limpia:
+
+Crear Informe
+
+Formato UTA-SGC-A-2-1-P7-T2
+
+                                   Paso X de 8
 
 Debajo:
 
-Fuente:
-Elaborado por:
-
-==========================================================
-14. NOTA DE PROTECCIÓN DE DATOS T1
-==========================================================
-
-El formato fuente incluye debajo de la matriz una nota condicional
-sobre tratamiento de datos personales.
-
-Mantener soporte para esta nota.
-
-Mostrarla únicamente cuando el contenido del Plan recopile datos
-personales conforme al criterio de la plantilla.
-
-Para el escenario DEMO se puede visualizar si ayuda a reproducir
-la página fuente.
-
-NO convertirla en regla automática si todavía no se ha definido cómo
-detectarlo.
-
-==========================================================
-15. PÁGINA FINAL — FIRMAS
-==========================================================
-
-La tabla actual también utiliza un encabezado azul.
-
-Cambiar para reproducir el formato fuente:
-
-FIRMAS DE RESPONSABILIDAD
-
-Tabla:
-
-ACCIONES | NOMBRE | CARGO | FIRMA
-
-- fondo de encabezado gris claro;
-- texto negro;
-- bordes oscuros;
-- filas con altura mayor;
-- sin fondo azul institucional.
-
-Las celdas de firma deben tener suficiente altura física para la
-representación de la firma.
-
-NO compactar las firmas como una tabla de datos normal.
-
-==========================================================
-16. DESCRIPCIONES DE LAS ACCIONES
-==========================================================
-
-En la primera columna respetar conceptualmente los textos del formato:
-
-Elaborado por:
-(Delegado técnico de la unidad académica o administrativa)
-
-Revisado por:
-(jefe inmediato superior según la procedencia del plan)
-
-Validado por:
-(Líder de la unidad académica o administrativa según la procedencia
-del plan)
-
-ó
-
-Aprobado por:
-(órgano colegiado correspondiente según la procedencia del plan)
-
-El flujo determinará si corresponde Validado por o Aprobado por.
-
-No mostrar ambos simultáneamente como dos firmantes si el flujo solo
-requiere uno.
-
-==========================================================
-17. HISTORIAL
-==========================================================
-
-Mantener:
-
-CONTROL DE HISTORIAL DE CAMBIOS
-
-Tabla:
-
-Versión
-Descripción del Cambio
-Fecha de Actualización
-
-Cambiar el encabezado azul actual por el estilo gris/claro del DOCX.
-
-==========================================================
-18. PIE DE PÁGINA
-==========================================================
-
-Incorporar visualmente en cada página el pie de la plantilla:
-
-izquierda:
-Documento de uso interno controlado por la Universidad Técnica de Ambato
-
-centro/derecha:
-Formato Nº: UTA-SGC-A-2-1-P7-T1
-
-extremo derecho:
-número de página
+barra horizontal de progreso.
 
 Ejemplo:
 
-Documento de uso interno...     Formato Nº: UTA-SGC-A-2-1-P7-T1    4
+Paso 3 de 8
 
-No poner el código de formato en la cabecera para compensar su ausencia
-en el pie.
+[████████████░░░░░░░░░░░]
 
-==========================================================
-19. DIMENSIONES POR PÁGINA
-==========================================================
-
-El renderer NO debe asumir una única orientación/dimensión para todo
-el documento.
-
-Debe soportar:
-
-portrait
-landscape
-
-por página.
-
-El T1 suministrado utiliza orientación vertical en las páginas de
-contenido general y orientación horizontal en la matriz.
-
-Reproducir ese comportamiento.
+Desarrollo de actividades
 
 ==========================================================
-20. SCROLL DEL MODAL — ERROR ACTUAL
+5. NAVEGACIÓN DE PASOS
 ==========================================================
 
-El modal de detalle documental actualmente no permite desplazarse
-verticalmente para ver la totalidad de la página/documento cuando
-la ventana es más pequeña que el contenido.
+Debajo de la barra mostrar los pasos en GRID.
 
-Corregir obligatoriamente.
+Desktop:
 
-El modal debe ocupar como máximo el viewport.
+4 columnas x 2 filas.
 
-Estructura recomendada:
+Fila 1:
 
-Modal overlay:
-position: fixed;
-inset: 0;
+1 Información general
+2 Antecedentes
+3 Desarrollo de actividades
+4 Conclusiones y oportunidades
 
-Modal container:
-height: min(94vh, ...);
-max-height: 94vh;
-display: flex;
-flex-direction: column;
-overflow: hidden;
+Fila 2:
 
-Header del modal:
-flex-shrink: 0;
+5 Registro de contactos
+6 Anexos
+7 Previsualización
+8 Firma y envío
 
-Tabs:
-flex-shrink: 0;
+Estados:
 
-Área central:
-flex: 1;
-min-height: 0;
-overflow: hidden;
+COMPLETADO:
+check verde.
 
-Zona del visor documental:
-overflow: auto;
-min-height: 0;
+ACTUAL:
+círculo azul institucional + texto destacado.
 
-Panel lateral:
-overflow-y: auto;
-min-height: 0;
+PENDIENTE:
+gris.
 
-Footer:
-flex-shrink: 0;
+Nunca truncar textos como:
 
-IMPORTANTE:
+7 P
 
-Debe ser posible hacer scroll con:
+Si un nombre necesita dos líneas:
+permitir dos líneas.
 
-- rueda del mouse;
-- touchpad;
-- scrollbar visible cuando corresponda.
-
-El scroll debe afectar principalmente el área del documento/panel,
-NO desplazar fuera de pantalla el header principal del modal.
+NO utilizar nowrap para forzar ocho pasos dentro de una sola fila.
 
 ==========================================================
-21. SCROLL DE LA HOJA
+6. COMPORTAMIENTO RESPONSIVE DEL STEPPER
 ==========================================================
 
-Si la página A4/A4-landscape supera el área visible:
+>= 1400px:
+4 columnas x 2 filas.
 
-permitir scroll vertical y horizontal dentro del visor.
+1000–1399px:
+4 columnas x 2 filas con labels compactos.
 
-No recortar la hoja.
+< 1000px:
+2 columnas x 4 filas.
 
-No esconder la parte inferior.
+Nunca cortar el texto horizontalmente.
 
-El botón:
-
-Ajustar
-
-debe hacer que la página completa quepa en el área visible cuando
-sea posible.
-
-100%
-
-debe representar aproximadamente su tamaño de visualización normal y
-permitir scroll.
+Nunca reducir los labels hasta hacerlos ilegibles.
 
 ==========================================================
-22. MODAL RESPONSIVE
+7. CONTENEDOR PRINCIPAL
 ==========================================================
 
-Probar al menos:
+Cada paso debe tener una única tarjeta de contenido principal.
 
-1920x1080
-1600x900
-1366x768
+Ejemplo:
 
-En todas:
+[Título de sección]
+[Descripción breve]
 
-- debe verse el header del modal;
-- debe poder accederse a todas las páginas;
-- el footer no debe bloquear el documento;
-- el panel lateral debe poder desplazarse;
-- la hoja no debe quedar cortada permanentemente.
+-----------------------------------
+
+campos / contenido
+
+-----------------------------------
+
+No distribuir información funcional en múltiples contenedores
+innecesarios.
+
+Usar aproximadamente:
+
+max-width: 1100px–1200px
+
+centrado.
 
 ==========================================================
-23. NO CAMBIAR EL VISOR EXTERIOR
+8. PASO 1 — INFORMACIÓN GENERAL
 ==========================================================
 
-Mantener:
+Mantener los campos existentes.
+
+Organización visual:
+
+FILA 1
+Unidad Académica / Administrativa
+Carrera
+
+FILA 2
+Informe de
+Período Académico
+
+FILA 3
+Grupo Institucional / Comisión
+Fecha de Elaboración
+
+DIVISOR
+
+Origen del Informe
+
+[ Derivado de un Plan ] [ Informe independiente ]
+
+Si deriva:
+
+Plan de Trabajo relacionado
+
+Mantener esta estructura.
+
+No agregar campos.
+
+==========================================================
+9. TARJETAS DE ORIGEN
+==========================================================
+
+Reducir altura visual.
+
+Cada tarjeta:
+
+radio
+título
+una sola descripción breve
+
+Activo:
+
+borde azul institucional
+fondo azul muy claro
+
+Inactivo:
+
+borde gris
+fondo blanco
+
+No convertirlas en grandes bloques decorativos.
+
+==========================================================
+10. PASOS DE EDICIÓN TEXTUAL
+==========================================================
+
+Para:
+
+Antecedentes
+Conclusiones
+Oportunidades
+
+usar:
+
+Título de sección
+Descripción breve
+
+Textarea amplio
+
+botón secundario:
+✨ Mejorar redacción
+
+El botón de IA debe ser secundario.
+
+No debe competir visualmente con:
+
+Siguiente
+
+==========================================================
+11. FOOTER FIJO DEL WIZARD
+==========================================================
+
+Mantener footer inferior consistente.
+
+Izquierda:
+
+Cancelar
+
+Centro opcional:
+
+Guardado automáticamente
+
+Derecha:
+
+← Anterior
+Siguiente →
+
+En Paso 1:
+
+Cancelar                     Siguiente →
+
+En Paso 8:
+
+← Anterior                   Finalizar / Enviar
+
+No cambiar la lógica existente.
+
+==========================================================
+12. PREVISUALIZACIÓN — PASO 7
+==========================================================
+
+Este paso requiere más espacio que los formularios.
+
+Al entrar en Paso 7:
+
+colapsar automáticamente el Sidebar si ya existe esa capacidad.
+
+Permitir que el visor utilice prácticamente todo el ancho disponible.
+
+No encerrar la previsualización dentro de una tarjeta estrecha.
+
+==========================================================
+13. TOOLBAR DEL VISOR EN PASO 7
+==========================================================
+
+La barra actual se comprime demasiado.
+
+Agrupar controles:
+
+IZQUIERDA:
 
 Anterior
-Siguiente
 Página X de N
-botones de página
-zoom
+Siguiente
+
+CENTRO:
+
+[1][2][3][4][5]
+
+DERECHA:
+
+v1.0 · Ronda 1
+
+[-] 100% [+]
 Ajustar
-panel de flujo/revisión
 
-La corrección es de comportamiento y fidelidad del documento,
-no un rediseño completo del visor.
+No permitir que:
 
-==========================================================
-24. APLICAR EL MISMO PRINCIPIO AL T2
-==========================================================
+Versión formal 1.0 · Ronda 1
 
-No rehacer T2 en esta tarea.
+se divida en 3 o 4 líneas.
 
-Pero las correcciones genéricas deben beneficiar también al Informe:
+Mostrarlo como pill compacto:
 
-- scroll;
-- footer;
-- encabezado repetido;
-- tipografía del documento;
-- tablas sin design system web;
-- orientación por página cuando corresponda.
-
-NO asumir que T1 y T2 tienen necesariamente exactamente las mismas
-dimensiones o estructura.
+v1.0 · Ronda 1
 
 ==========================================================
-25. NAVEGACIÓN
+14. CORREGIR TÍTULO DUPLICADO EN PREVISUALIZACIÓN
 ==========================================================
 
-Si aún aparece:
+Todavía existe inconsistencia.
 
-Mis Documentos
+En el modal general se muestra correctamente:
 
-en el Sidebar del DOCENTE, cambiar a:
+INFORME DE:
+SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
 
-Documentación Académica
+Pero en la previsualización del wizard todavía puede mostrarse:
 
-Título de pantalla:
+INFORME DE:
+INFORME DE SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
 
-Gestión Documental Académica
+Corregir.
+
+Crear UNA ÚNICA función compartida, por ejemplo:
+
+normalizeInformeTitle(titulo)
+
+Debe eliminar del inicio, ignorando mayúsculas/minúsculas:
+
+"Informe de:"
+"Informe de"
+
+Ejemplo entrada:
+
+Informe de seguimiento de actividades de titulación
+
+Salida:
+
+SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
+
+La misma función debe ser utilizada por:
+
+- previewArtifact;
+- artifact final;
+- DocumentPdfPageViewer.
+
+NO mantener tres normalizaciones separadas.
+
+==========================================================
+15. PAGECOUNT — NO VOLVER A HARDCODEAR
+==========================================================
+
+El escenario DEMO actual tiene cinco páginas.
+
+Correcto.
+
+Pero técnicamente no mantener:
+
+pageCount = 5
+
+como fuente de verdad.
+
+La fuente de verdad debe ser:
+
+artifact.pages.length
+
+Por tanto:
+
+artifact.pageCount = artifact.pages.length
+
+El escenario DEMO actual produce 5 porque contiene 5 páginas.
+
+Un Informe futuro con más contenido puede generar N páginas.
 
 Mantener:
 
-+ NUEVO DOCUMENTO
-
-Dentro siguen existiendo:
-
-Plan de Trabajo
-Informe
-
-No cambiar rutas internas si no es necesario.
+Página X de N.
 
 ==========================================================
-26. VERIFICACIÓN VISUAL OBLIGATORIA
+16. REDUCCIÓN DEFINITIVA DEL MORADO
 ==========================================================
 
-Comparar la previsualización del Plan con el DOCX fuente.
+No utilizar morado como color de interacción principal.
 
-Revisar explícitamente:
+Usar:
 
-[ ] Página 1 = portada real
-[ ] Página 2 = índices
-[ ] Página 3 = Justificación / Objetivo
-[ ] Matriz en horizontal
-[ ] encabezado tabular correcto
-[ ] encabezado repetido
-[ ] Helvetica/tamaños aproximados
-[ ] tablas grises/no azul web
-[ ] firmas con altura suficiente
-[ ] footer visible
-[ ] número de página
-[ ] código del formato en footer
-[ ] modal permite scroll
-[ ] 100% permite scroll
-[ ] Ajustar permite ver página completa
+AZUL:
+acciones y selección.
+
+VERDE:
+completado.
+
+AMARILLO:
+borrador/advertencia.
+
+GRIS:
+pendiente/neutro.
+
+ROJO:
+error/destructivo.
+
+El badge "INFORME" puede utilizar azul suave o neutro.
+
+No morado fuerte.
 
 ==========================================================
-27. VERIFICACIÓN TÉCNICA
+17. NO TOCAR EL A4
 ==========================================================
 
-Ejecutar:
+Esta refacción corresponde a la INTERFAZ.
+
+NO modificar:
+
+- encabezado T2;
+- portada;
+- índices;
+- tablas;
+- firmas;
+- footer;
+- tipografía del documento.
+
+==========================================================
+18. VERIFICACIÓN VISUAL
+==========================================================
+
+Probar:
+
+Nuevo Documento
+Paso 1
+Paso 2
+Paso 3
+Paso 7
+Paso 8
+
+Comprobar:
+
+[ ] modal de selección limpio
+[ ] sin badge DEMO en Informe
+[ ] wizard no se siente amontonado
+[ ] 8 pasos completamente legibles
+[ ] ningún "7 P"
+[ ] actual azul
+[ ] completados verdes
+[ ] pendientes grises
+[ ] contenido centrado y jerarquizado
+[ ] footer consistente
+[ ] previsualización tiene espacio
+[ ] v1.0 · Ronda 1 no se parte
+[ ] no existe "INFORME DE: INFORME DE..."
+[ ] A4 no sufrió cambios
+
+==========================================================
+19. VERIFICACIÓN TÉCNICA
+==========================================================
 
 npx tsc --noEmit
 npm run build

@@ -89,7 +89,7 @@ export default function MisDocumentosView({
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          + NUEVO DOCUMENTO
+          NUEVO DOCUMENTO
         </button>
       </div>
 
@@ -451,7 +451,10 @@ export default function MisDocumentosView({
                     Plan de Trabajo
                   </h3>
                   <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, margin: 0 }}>
-                    Planifique actividades, objetivos y justificación institucional para un grupo y período académico.
+                    Planifique actividades, objetivos y medios de verificación para un grupo y período académico.
+                  </p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginTop: 8 }}>
+                    Formato UTA-SGC-A-2-1-P7-T1
                   </p>
                 </div>
                 <button className="btn btn-primary btn-sm" style={{ marginTop: 16, width: "100%", justifyContent: "center" }}>
@@ -473,8 +476,8 @@ export default function MisDocumentosView({
                   transition: "border-color 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#7e22ce";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 20px rgba(126,34,206,0.1)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "#1a4f8a";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 20px rgba(26,79,138,0.1)";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0";
@@ -487,23 +490,23 @@ export default function MisDocumentosView({
               >
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 10, background: "#f3e8ff", color: "#7e22ce", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#1a4f8a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                       📑
                     </div>
-                    <span style={{ fontSize: 9.5, fontWeight: 700, color: "#92400e", background: "#fef3c7", padding: "2px 6px", borderRadius: 4 }}>
-                      DEMO
-                    </span>
                   </div>
                   <h3 style={{ fontSize: 15, fontWeight: 800, color: "#1e2a3a", margin: "0 0 6px" }}>
                     Informe
                   </h3>
                   <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, margin: 0 }}>
-                    Documente la ejecución, avances y resultados vinculados a sus actividades o Plan de Trabajo.
+                    Documente la ejecución, resultados y seguimiento de las actividades institucionales.
+                  </p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginTop: 8 }}>
+                    Formato UTA-SGC-A-2-1-P7-T2
                   </p>
                 </div>
                 <button
                   className="btn btn-primary btn-sm"
-                  style={{ marginTop: 16, width: "100%", justifyContent: "center", background: "#7e22ce", border: "none" }}
+                  style={{ marginTop: 16, width: "100%", justifyContent: "center" }}
                 >
                   CREAR INFORME
                 </button>

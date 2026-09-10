@@ -83,7 +83,7 @@ export const FLOW_STAGES_INICIAL: FlowStageNode[] = [
     stageName: "ETAPA 3 — Validación final",
     subLevelName: "Validación y Aprobación",
     actorName: "Ing. Patricia Salazar, Mg.",
-    actorCargo: "Coordinadora de Comisión / Autoridad",
+    actorCargo: "Coordinadora de Unidad",
     actorRole: "validador",
     estado: "PENDIENTE",
   },
@@ -97,38 +97,38 @@ export const CARRERAS_USUARIO_ANDREA = [
 export const ACTIVIDADES_INFORME_TITULACION_INICIAL: ActividadInformeDoc[] = [
   {
     id: 1,
-    actividad: "Elaboración de cronograma de eventos académicos del período",
-    mediosVerificacion: "Cronograma oficial aprobado en PDF",
+    actividad: "Seguimiento al avance de trabajos de titulación",
+    mediosVerificacion: "Reporte de seguimiento",
     porcentajeEjecucion: 100,
-    observaciones: "Cronograma ejecutado en su totalidad según las fechas planificadas.",
+    observaciones: "Seguimiento completado en las fechas establecidas.",
   },
   {
     id: 2,
-    actividad: "Coordinación y gestión de ponentes para conferencias magistrales",
-    mediosVerificacion: "Cartas de invitación y confirmación de ponentes",
-    porcentajeEjecucion: 90,
-    observaciones: "Ponentes confirmados; recepción de resúmenes de ponencias al 90%.",
+    actividad: "Jornada informativa para estudiantes",
+    mediosVerificacion: "Registro de asistencia",
+    porcentajeEjecucion: 100,
+    observaciones: "Alta participación estudiantil, se cubrieron todas las dudas.",
   },
   {
     id: 3,
-    actividad: "Revisión técnica de proyectos de grado para jornada científica",
-    mediosVerificacion: "Actas de evaluación de proyectos",
-    porcentajeEjecucion: 85,
-    observaciones: "Actas suscritas y archivadas en el repositorio institucional.",
+    actividad: "Difusión de normativa interna de titulación",
+    mediosVerificacion: "Capturas de difusión",
+    porcentajeEjecucion: 100,
+    observaciones: "Normativa difundida por canales oficiales.",
   },
   {
     id: 4,
-    actividad: "Ejecución de la Semana Técnica de Software e Innovación",
-    mediosVerificacion: "Registro de asistencia y fotografías del evento",
-    porcentajeEjecucion: 80,
-    observaciones: "Jornadas técnicas realizadas con alta participación estudiantil.",
+    actividad: "Revisión de planes de grado cohorte 2025",
+    mediosVerificacion: "Actas de revisión",
+    porcentajeEjecucion: 85,
+    observaciones: "En proceso de ajustes finales por parte de estudiantes.",
   },
   {
     id: 5,
-    actividad: "Informe final de resultados y evaluación de eventos del período",
-    mediosVerificacion: "Informe final de actividades firmado electrónicamente",
-    porcentajeEjecucion: 70,
-    observaciones: "En consolidación final de indicadores de impacto académico.",
+    actividad: "Taller de inducción metodológica para tutores",
+    mediosVerificacion: "Registro de asistencia",
+    porcentajeEjecucion: 100,
+    observaciones: "Taller ejecutado con éxito.",
   },
 ];
 
@@ -268,7 +268,7 @@ export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
       stageName: "ETAPA 3 — Validación final",
       subLevelName: "Validación y Aprobación",
       actorName: "Ing. Patricia Salazar, Mg.",
-      actorCargo: "Coordinadora de Comisión / Autoridad",
+      actorCargo: "Coordinadora de Unidad",
       actorRole: "validador",
       estado: "PENDIENTE",
       actionLabel: "VALIDADO_POR",
@@ -283,10 +283,10 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
   id: "art-inf-titulacion-v1-r1",
   documentType: "INFORME",
   codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-  titulo: "Informe de seguimiento de actividades de titulación",
+  titulo: "SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN",
   formalVersion: "1.0",
   reviewRound: 1,
-  pageCount: 3,
+  pageCount: 5,
   generatedAt: "07/09/2026 10:00",
   generatedBy: "Ing. Andrea Pérez, Mg.",
   grupo: "Unidad de Titulación",
@@ -331,7 +331,7 @@ export const INITIAL_INFORME_MASTER: DocumentMasterState = {
   id: "doc-inf-titulacion-2026",
   codigo: "INF-FISEI-2026-012",
   codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-  nombre: "Informe de seguimiento de actividades de titulación",
+  nombre: "SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN",
   documentType: "INFORME",
   grupo: "Unidad de Titulación",
   carrera: "Ingeniería de Software",
@@ -373,7 +373,7 @@ export const INITIAL_INFORME_MASTER: DocumentMasterState = {
       stageName: "ETAPA 3 — Validación final",
       subLevelName: "Validación y Aprobación",
       actorName: "Ing. Patricia Salazar, Mg.",
-      actorCargo: "Coordinadora de Comisión / Autoridad",
+      actorCargo: "Coordinadora de Unidad",
       actorRole: "validador",
       estado: "PENDIENTE",
       actionLabel: "VALIDADO_POR",
@@ -383,6 +383,16 @@ export const INITIAL_INFORME_MASTER: DocumentMasterState = {
   documentoRelacionadoId: "doc-plan-titulacion-2026",
   documentoRelacionadoTitulo: "Plan de Trabajo — Unidad de Titulación — Versión 1.0",
 };
+
+export const JUSTIFICACION_TITULACION = 'La Unidad de Titulación coordina, supervisa y evalúa los procesos de graduación de los estudiantes de la Facultad, asegurando el cumplimiento de la normativa institucional y los estándares de calidad académica en la revisión de proyectos de grado y sustentaciones.';
+export const OBJETIVO_TITULACION = 'Planificar y ejecutar las actividades relacionadas con los procesos de titulación de los estudiantes durante el período Julio – Diciembre 2026, garantizando la correcta asignación de tribunales, revisión de proyectos y cumplimiento del cronograma académico.';
+export const MATRIZ_TITULACION_DOC = [
+  { id: 1, nombre: 'Seguimiento al avance de trabajos de titulación', desde: '02/09/2026', hasta: '18/09/2026', responsables: ['Ing. Andrea Pérez, Mg.'], recursos: ['Sistema Institucional'], medios: ['Reporte de seguimiento'] },
+  { id: 2, nombre: 'Jornada informativa para estudiantes', desde: '03/09/2026', hasta: '06/09/2026', responsables: ['Ing. Andrea Pérez, Mg.'], recursos: ['Material digital'], medios: ['Registro de asistencia'] },
+  { id: 3, nombre: 'Difusión de normativa interna de titulación', desde: '01/09/2026', hasta: '03/09/2026', responsables: ['Ing. Andrea Pérez, Mg.'], recursos: ['Medios digitales'], medios: ['Capturas de difusión'] },
+  { id: 4, nombre: 'Revisión de planes de grado cohorte 2025', desde: '15/08/2026', hasta: '28/08/2026', responsables: ['Ing. Carlos López, Mg.'], recursos: ['Documentación física'], medios: ['Actas de revisión'] },
+  { id: 5, nombre: 'Taller de inducción metodológica para tutores', desde: '05/08/2026', hasta: '15/08/2026', responsables: ['Ing. Andrea Pérez, Mg.'], recursos: ['Material didáctico'], medios: ['Registro de asistencia'] }
+];
 
 export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   id: "doc-plan-titulacion-2026",
@@ -407,6 +417,17 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
     titulo: "Plan de Trabajo: Unidad de Titulación",
     grupo: "Unidad de Titulación",
     carrera: "Ingeniería de Software",
+    justificacion: JUSTIFICACION_TITULACION,
+    objetivo: OBJETIVO_TITULACION,
+    matriz: MATRIZ_TITULACION_DOC,
+    anexos: [
+      {
+        id: 1,
+        nombre: "Normativa interna de titulación",
+        archivo: "normativa_titulacion_2026.pdf",
+        tamano: "2.1 MB",
+      },
+    ],
     signatures: [
       {
         actorId: "usr-andrea-01",
@@ -429,7 +450,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
       {
         actorId: "usr-patricia-03",
         actor: "Ing. Patricia Salazar, Mg.",
-        cargo: "Coordinadora de Comisión / Autoridad",
+        cargo: "Coordinadora de Unidad",
         role: "validador",
         fecha: "06/09/2026",
         hora: "15:00",
@@ -474,7 +495,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
       stageName: "ETAPA 3 — Validación final",
       subLevelName: "Validación y Aprobación",
       actorName: "Ing. Patricia Salazar, Mg.",
-      actorCargo: "Coordinadora de Comisión / Autoridad",
+      actorCargo: "Coordinadora de Unidad",
       actorRole: "validador",
       estado: "FIRMADO",
       actionLabel: "VALIDADO_POR",
