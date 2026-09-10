@@ -30,11 +30,55 @@ const FILTROS_INICIALES: FiltrosAuditoria = {
   busqueda: "",
 };
 
+const AUDITORIA_STORAGE_KEY = "fisei_auditoria_custom_events";
+
 export function useAuditoriaState() {
-  const [eventos] = useState<AuditoriaEvento[]>(AUDITORIA_EVENTOS_DEMO);
+  const [eventos, setEventos] = useState<AuditoriaEvento[]>(() => {
+    try {
+      const saved = localStorage.getItem(AUDITORIA_STORAGE_KEY);
+      if (saved) {
+        const custom = JSON.parse(saved);
+        if (Array.isArray(custom)) return [...custom, ...AUDITORIA_EVENTOS_DEMO];
+      }
+    } catch {}
+    return AUDITORIA_EVENTOS_DEMO;
+  });
   const [filtros, setFiltros] = useState<FiltrosAuditoria>(FILTROS_INICIALES);
   const [eventoSeleccionado, setEventoSeleccionado] = useState<AuditoriaEvento | null>(null);
   const [trazabilidadModal, setTrazabilidadModal] = useState<TrazabilidadObjeto | null>(null);
+
+  const registrarEvento = (
+    tipoEvento: string,
+    objeto: string,
+    accion: string,
+    descripcion: string,
+    usuario: string,
+    rol: string
+  ) => {
+    const horaActual = new Date().toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const newEv: AuditoriaEvento = {
+      id: `ev-${Date.now()}`,
+      fechaHora: `07/09/2026 — ${horaActual}`,
+      fecha: "07/09/2026",
+      hora: horaActual,
+      usuario,
+      rol: (rol === "Docente" || rol === "Revisor" || rol === "Administrador" ? rol : "Docente"),
+      modulo: "Planes de Trabajo",
+      tipoEvento: (tipoEvento.includes("FIRMAD") ? "Firma" : tipoEvento.includes("DEVUELT") ? "Devolución" : tipoEvento.includes("APROBAD") ? "Aprobación" : tipoEvento.includes("OBSERV") ? "Observación" : "Modificación") as any,
+      accion,
+      objeto,
+      grupo: "Comisión de Eventos Académicos",
+      periodo: "Julio – Diciembre 2026",
+      descripcion,
+    };
+    setEventos((prev) => {
+      const updated = [newEv, ...prev];
+      try {
+        localStorage.setItem(AUDITORIA_STORAGE_KEY, JSON.stringify(updated.slice(0, 40)));
+      } catch {}
+      return updated;
+    });
+  };
 
   // Actualizar un filtro individual
   const setFiltro = (campo: keyof FiltrosAuditoria, valor: string) => {
@@ -165,6 +209,7 @@ function parseFechaToNum(f: string): number {
     trazabilidadModal,
     setTrazabilidadModal,
     abrirTrazabilidadPorId,
+    registrarEvento,
     // Objetos de trazabilidad predeterminados disponibles
     trazabilidadPlan: TRAZABILIDAD_PLAN_EVENTOS,
     trazabilidadEvidencia: TRAZABILIDAD_EVIDENCIA_ACTA,

@@ -41,6 +41,14 @@ import ModalGenerarReporte from "./modulo9/ModalGenerarReporte";
 import ModalVistaPreviaReporte from "./modulo9/ModalVistaPreviaReporte";
 import ModalCompararVersiones from "./modulo9/ModalCompararVersiones";
 import ModalConfirmarCierre from "./modulo9/ModalConfirmarCierre";
+import PerfilView from "./modulo10/PerfilView";
+import { useDocumentEngine } from "./documentEngine/useDocumentEngine";
+import DocumentPdfPageViewer from "./documentEngine/DocumentPdfPageViewer";
+import ModalFirmaDocumental from "./documentEngine/ModalFirmaDocumental";
+import ModalDevolverDocumental from "./documentEngine/ModalDevolverDocumental";
+import RevisorDocumentEngineView from "./documentEngine/RevisorDocumentEngineView";
+import MisDocumentosView from "./modulo11/MisDocumentosView";
+import WizardInformeView from "./modulo11/WizardInformeView";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -759,7 +767,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
 }) {
   const docenteItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
     { id: "inicio",         label: "Inicio",                icon: Ico.home },
-    { id: "planes",         label: "Mis Planes de Trabajo", icon: Ico.file },
+    { id: "planes",         label: "Mis Documentos",        icon: Ico.file },
     { id: "actividades",    label: "Mis Actividades",       icon: Ico.activity },
     { id: "evidencias",     label: "Evidencias",            icon: Ico.paperclip },
     { id: "reportes",       label: "Mis Reportes",          icon: Ico.chart },
@@ -769,7 +777,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
   const revisorItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
     { id: "evidenciasValidar", label: "Evidencias por validar", icon: Ico.paperclip },
     { id: "seguimiento",    label: "Seguimiento",           icon: Ico.activity },
-    { id: "bandeja",        label: "Bandeja de revisión (Planes)", icon: Ico.file },
+    { id: "bandeja",        label: "Bandeja de revisión (Documentos)", icon: Ico.file },
     { id: "planesRevision", label: "Planes de Trabajo",     icon: Ico.home },
     { id: "grupos",         label: "Grupos asignados",      icon: Ico.users },
     { id: "reportes",       label: "Reportes de Seguimiento", icon: Ico.chart },
@@ -984,12 +992,12 @@ function TopBar({
   const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
   const labels: Record<AppView, string> = {
     inicio: "Inicio",
-    planes: "Mis Planes de Trabajo",
+    planes: "Mis Documentos",
     actividades: "Mis Actividades",
     evidencias: "Evidencias",
     notificaciones: "Notificaciones",
     perfil: "Perfil",
-    bandeja: "Bandeja de revisión (Planes)",
+    bandeja: "Bandeja de revisión (Documentos)",
     planesRevision: "Planes de Trabajo",
     seguimiento: "Seguimiento",
     grupos: "Grupos asignados",
@@ -1434,7 +1442,7 @@ function PlaceholderView({ label }: { label: string }) {
 // MÓDULO 2 — PLANES DE TRABAJO (DOCENTE)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type PlanesSubView = "list" | "step1" | "step2" | "step3edit" | "step3review" | "step4" | "step5" | "step6" | "step7" | "step8";
+type PlanesSubView = "list" | "step1" | "step2" | "step3edit" | "step3review" | "step4" | "step5" | "step6" | "step7" | "step8" | "wizardInforme";
 
 // ─── Catalog data ─────────────────────────────────────────────────────────────
 
@@ -1638,12 +1646,14 @@ function ExitModal({ onKeep, onSaveAndExit }: { onKeep: () => void; onSaveAndExi
 
 // ─── 01 — Mis Planes de Trabajo (List) ───────────────────────────────────────
 
-function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades, initialShowObsModal }: {
+function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", reviewRound = 1, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades, initialShowObsModal }: {
   onNew: () => void;
   onContinuar: () => void;
-  planEstado: "borrador" | "en-revision" | "devuelto" | "en-correccion";
+  planEstado: "borrador" | "en-revision" | "devuelto" | "en-correccion" | "validado";
+  formalVersion?: string;
+  reviewRound?: number;
   onCorregir?: () => void;
-  observacionesRevision?: Observacion[];
+  observacionesRevision?: any[];
   mensajeDevolucion?: string;
   fechaDevolucion?: string;
   onNavigateActividades?: () => void;
@@ -1661,10 +1671,12 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
   const comisionEstado =
     planEstado === "en-revision" ? "EN REVISIÓN" :
     planEstado === "devuelto" ? "DEVUELTO" :
+    planEstado === "validado" ? "VALIDADO" :
     planEstado === "en-correccion" ? "EN CORRECCIÓN" : "BORRADOR";
   const comisionAcciones =
     planEstado === "en-revision" ? ["ver", "ver-estado"] :
     planEstado === "devuelto" ? ["ver-obs", "corregir"] :
+    planEstado === "validado" ? ["ver"] :
     planEstado === "en-correccion" ? ["ver-obs", "continuar"] : ["continuar"];
   const comisionActualizado =
     planEstado === "devuelto" || planEstado === "en-correccion"
@@ -1675,7 +1687,7 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
 
   const TODOS_LOS_PLANES = [
     { nombre: "Plan de Trabajo", grupo: "Unidad de Titulación",           periodo: "Julio – Diciembre 2026", version: "Versión 1.0", estado: "EN EJECUCIÓN",  actualizado: "05 sep. 2026",      acciones: ["ver", "actividades"] },
-    { nombre: "Plan de Trabajo", grupo: "Comisión de Eventos Académicos", periodo: "Julio – Diciembre 2026", version: "Versión 1.0", estado: comisionEstado,   actualizado: comisionActualizado, acciones: comisionAcciones },
+    { nombre: "Plan de Trabajo", grupo: "Comisión de Eventos Académicos", periodo: "Julio – Diciembre 2026", version: `Versión ${formalVersion} (Ronda ${reviewRound})`, estado: comisionEstado,   actualizado: comisionActualizado, acciones: comisionAcciones },
     { nombre: "Plan de Trabajo", grupo: "Club Académico de Software",     periodo: "Enero – Junio 2026",    version: "Versión 1.0", estado: "ARCHIVADO",      actualizado: "30 jun. 2026",      acciones: ["ver"] },
   ];
 
@@ -1707,6 +1719,7 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
     "DEVUELTO":      { bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
     "EN CORRECCIÓN": { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
     "APROBADO":      { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
+    "VALIDADO":      { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
     "EN EJECUCIÓN":  { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
     "ARCHIVADO":     { bg: "#f1f5f9", color: "#334155", dot: "#64748b" },
   };
@@ -1714,8 +1727,8 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
   const listaObs = (observacionesRevision && observacionesRevision.length > 0)
     ? observacionesRevision
     : [
-        { id: 1, tipo: "seccion" as const, seccion: "Matriz de actividades", texto: "Ajustar el cronograma y recursos en la sección de ponencias magistrales.", autor: "Ing. Carlos López, Mg.", fecha: "06 sep. 2026 — 10:25" },
-        { id: 2, tipo: "general" as const, seccion: "", texto: "Por favor, especifique medios de verificación y cronograma definitivo antes de reenviar.", autor: "Ing. Carlos López, Mg.", fecha: "06 sep. 2026 — 10:30" },
+        { id: 1, pagina: 3, tipo: "seccion" as const, seccion: "Matriz de actividades", texto: "Ajustar el cronograma y recursos en la sección de ponencias magistrales.", autor: "Ing. Carlos López, Mg.", fecha: "07/09/2026 — 10:25" },
+        { id: 2, pagina: 3, tipo: "general" as const, seccion: "", texto: "Por favor, especifique medios de verificación y cronograma definitivo antes de reenviar.", autor: "Ing. Carlos López, Mg.", fecha: "07/09/2026 — 10:30" },
       ];
 
   return (
@@ -1748,13 +1761,13 @@ function PlanesListado({ onNew, onContinuar, planEstado, onCorregir, observacion
               <b>Mensaje del revisor:</b> {mensajeDevolucion || "Por favor, revise las observaciones registradas y realice las correcciones correspondientes antes de reenviar el documento."}
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 24px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              {listaObs.map((o) => (
+              {listaObs.map((o: any) => (
                 <div key={o.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: o.tipo === "general" ? "#475569" : "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
-                    {o.tipo === "general" ? "General" : o.seccion}
+                    {o.pagina ? `PÁGINA ${o.pagina} · ` : ""}{o.tipo === "general" ? "General" : (o.seccion || "Sección")}
                   </div>
                   <p style={{ fontSize: 13, color: "#334155", lineHeight: 1.55, marginBottom: 4 }}>"{o.texto}"</p>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{o.autor} — {o.fecha}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{o.autor || o.revisor} — {o.fecha}</div>
                 </div>
               ))}
             </div>
@@ -3456,12 +3469,16 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
 
 // ─── Step 6 — Previsualización ────────────────────────────────────────────────
 
-function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, objetivo, tieneAnexos, anexos, fechaElaboracion }: {
+function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, objetivo, tieneAnexos, anexos, fechaElaboracion, formalVersion = "1.0", reviewRound = 1 }: {
   onPrev: () => void; onNext: () => void; maxReached?: number;
   matriz: ActividadMatriz[]; justificacion: string; objetivo: string;
   tieneAnexos: "si" | "no" | null; anexos: Anexo[];
   fechaElaboracion: string;
+  formalVersion?: string;
+  reviewRound?: number;
 }) {
+  const totalPages = Math.max(3, Math.min(8, Math.ceil((matriz.length + 3) / 2)));
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoom, setZoom] = useState(100);
   const LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -3497,7 +3514,7 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
           Previsualizar Plan de Trabajo
         </h1>
         <p style={{ fontSize: 13, color: "#6b7a8d" }}>
-          Revise el documento completo antes de firmarlo y enviarlo al flujo de aprobación.
+          Revise el documento completo página por página antes de firmarlo y enviarlo al flujo de aprobación.
         </p>
       </div>
 
@@ -3509,9 +3526,48 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
             {/* Toolbar */}
             <div style={{
               background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0",
-              padding: "8px 14px", display: "flex", alignItems: "center", gap: 14,
+              padding: "8px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap",
             }}>
-              <span style={{ fontSize: 12.5, color: "#475569" }}>Página 1 de 4</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className="btn btn-ghost btn-xs"
+                  style={{ opacity: currentPage <= 1 ? 0.4 : 1 }}
+                >
+                  ← Anterior
+                </button>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1e2a3a", padding: "0 4px" }}>
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="btn btn-ghost btn-xs"
+                  style={{ opacity: currentPage >= totalPages ? 0.4 : 1 }}
+                >
+                  Siguiente →
+                </button>
+              </div>
+
+              {/* Page pills */}
+              <div style={{ display: "flex", gap: 4 }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    style={{
+                      padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
+                      background: currentPage === p ? "#1a4f8a" : "#f1f5f9",
+                      color: currentPage === p ? "#fff" : "#475569",
+                      border: "none", cursor: "pointer",
+                    }}
+                  >
+                    Pág {p}
+                  </button>
+                ))}
+              </div>
+
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
                 <button onClick={() => setZoom(z => Math.max(60, z - 10))} className="btn btn-ghost btn-xs" style={{ padding: "2px 8px", fontSize: 14 }}>−</button>
                 <span style={{ fontSize: 12.5, color: "#475569", minWidth: 44, textAlign: "center" }}>{zoom}%</span>
@@ -3530,173 +3586,251 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
               display: "flex", flexDirection: "column", gap: 16, alignItems: "center",
             }}>
               <div style={{
-                width: `${Math.min(100, zoom)}%`, maxWidth: 760,
+                width: `${Math.min(100, zoom)}%`, maxWidth: 760, minHeight: 680,
                 background: "#fff", borderRadius: 4,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
-                padding: "48px 52px", fontFamily: "'Times New Roman', serif",
-                position: "relative", overflow: "hidden",
+                padding: "40px 48px", fontFamily: "'Times New Roman', serif",
+                position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between",
               }}>
                 {/* BORRADOR watermark */}
                 <div style={{
                   position: "absolute", top: "50%", left: "50%",
                   transform: "translate(-50%,-50%) rotate(-35deg)",
-                  fontSize: 72, fontWeight: 800, color: "rgba(200,50,50,0.07)",
+                  fontSize: 72, fontWeight: 800, color: "rgba(200,50,50,0.06)",
                   letterSpacing: 8, userSelect: "none", pointerEvents: "none", whiteSpace: "nowrap",
                 }}>BORRADOR</div>
 
-                {/* Institutional header */}
-                <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 12, marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    {/* Logo */}
-                    <div style={{
-                      width: 56, height: 56, borderRadius: 6, background: "#f0f4f8",
-                      border: "1.5px solid #d1d9e0", flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 8, color: "#94a3b8", textAlign: "center", lineHeight: 1.3,
-                    }}>LOGO<br/>UTA</div>
-                    {/* Institution info */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        Universidad Técnica de Ambato
-                      </div>
-                      <div style={{ fontSize: 9.5, color: "#475569", marginTop: 1 }}>
-                        Facultad de Ingeniería en Sistemas, Electrónica e Industrial
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "#1e2a3a", marginTop: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        Plan de Trabajo: Comisión de Eventos Académicos
-                      </div>
-                    </div>
-                  </div>
-                  {/* Metadata row */}
-                  <div style={{ display: "flex", gap: 0, marginTop: 10, borderTop: "1px solid #e2e8f0", paddingTop: 8 }}>
-                    {[
-                      { label: "Unidad académica", val: "FISEI – UTA" },
-                      { label: "Período", val: "Julio – Diciembre 2026" },
-                      { label: "Fecha de elaboración", val: fechaElaboracion },
-                      { label: "Versión", val: "1.0" },
-                    ].map((item, i) => (
-                      <div key={i} style={{ flex: 1, paddingRight: 10, borderRight: i < 3 ? "1px solid #e2e8f0" : "none", paddingLeft: i > 0 ? 10 : 0 }}>
-                        <div style={{ fontSize: 7.5, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.3 }}>{item.label}</div>
-                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "#1e2a3a", marginTop: 1 }}>{item.val}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 1. Justificación */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                    1. Justificación
-                  </div>
-                  <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
-                    {justificacion || "—"}
-                  </p>
-                </div>
-
-                {/* 2. Objetivo */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                    2. Objetivo
-                  </div>
-                  <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
-                    {objetivo || "—"}
-                  </p>
-                </div>
-
-                {/* 3. Matriz */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                    3. Matriz de Actividades
-                  </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9.5 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Actividad", "Desde", "Hasta", "Responsable", "Recursos", "Medios"].map(h => (
-                          <th key={h} style={{ padding: "5px 7px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 9 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {matrizRows.map((r, i) => (
-                        <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                          <td style={{ padding: "5px 7px", color: "#334155", borderBottom: "1px solid #f1f5f9", lineHeight: 1.4 }}>{r.act}</td>
-                          <td style={{ padding: "5px 7px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.desde}</td>
-                          <td style={{ padding: "5px 7px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.hasta}</td>
-                          <td style={{ padding: "5px 7px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.resp}</td>
-                          <td style={{ padding: "5px 7px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.rec}</td>
-                          <td style={{ padding: "5px 7px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.med}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* 4. Anexos — solo si el plan los tiene */}
-                {tieneAnexos === "si" && (
-                  <div style={{ marginBottom: 18 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                      4. Anexos
-                    </div>
-                    {anexos.length > 0 ? anexos.map((a, idx) => (
-                      <p key={a.id} style={{ fontSize: 10, color: "#475569" }}>Anexo {LETRAS[idx]} — {a.nombre}</p>
-                    )) : (
-                      <p style={{ fontSize: 10, color: "#94a3b8" }}>No se han agregado anexos.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* 5. Firmas de Responsabilidad */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                    5. Firmas de Responsabilidad
-                  </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Acciones", "Nombre", "Cargo", "Firma"].map(h => (
-                          <th key={h} style={{ padding: "5px 7px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { accion: "Elaborado por:", nombre: "Ing. Andrea Pérez, Mg.", cargo: "Docente elaborador", firma: "Pendiente" },
-                        { accion: "Revisado por:", nombre: "Responsable de revisión", cargo: "Responsable de revisión", firma: "Pendiente" },
-                        { accion: "Revisado por:", nombre: "Coordinador/a", cargo: "Coordinador/a académico", firma: "Pendiente" },
-                        { accion: "Validado por:", nombre: "Autoridad correspondiente", cargo: "Autoridad académica", firma: "Pendiente" },
-                      ].map((row, i) => (
-                        <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                          <td style={{ padding: "6px 7px", color: "#1a4f8a", fontWeight: 700, borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{row.accion}</td>
-                          <td style={{ padding: "6px 7px", color: "#1e2a3a", borderBottom: "1px solid #e2e8f0" }}>{row.nombre}</td>
-                          <td style={{ padding: "6px 7px", color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{row.cargo}</td>
-                          <td style={{ padding: "6px 7px", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", fontStyle: "italic" }}>{row.firma}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* 6. Control de historial de cambios */}
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
-                    6. Control de Historial de Cambios
+                  {/* Institutional header */}
+                  <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                      <div style={{
+                        width: 50, height: 50, borderRadius: 6, background: "#f0f4f8",
+                        border: "1.5px solid #d1d9e0", flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 8, color: "#94a3b8", textAlign: "center", lineHeight: 1.3, fontWeight: 700,
+                      }}>LOGO<br/>UTA</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Universidad Técnica de Ambato
+                        </div>
+                        <div style={{ fontSize: 9, color: "#475569", marginTop: 1 }}>
+                          Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+                        </div>
+                        <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1e2a3a", marginTop: 4, textTransform: "uppercase" }}>
+                          Plan de Trabajo: Comisión de Eventos Académicos
+                        </div>
+                      </div>
+                    </div>
+                    {/* Metadata row */}
+                    <div style={{ display: "flex", gap: 0, marginTop: 8, borderTop: "1px solid #e2e8f0", paddingTop: 6 }}>
+                      {[
+                        { label: "Unidad académica", val: "FISEI – UTA" },
+                        { label: "Período", val: "Julio – Diciembre 2026" },
+                        { label: "Fecha de elaboración", val: fechaElaboracion || "07/09/2026" },
+                        { label: "Versión formal", val: `v${formalVersion}` },
+                        { label: "Ronda", val: `Ronda ${reviewRound}` },
+                      ].map((item, i) => (
+                        <div key={i} style={{ flex: 1, paddingRight: 6, borderRight: i < 4 ? "1px solid #e2e8f0" : "none", paddingLeft: i > 0 ? 6 : 0 }}>
+                          <div style={{ fontSize: 7, color: "#94a3b8", textTransform: "uppercase" }}>{item.label}</div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#1e2a3a", marginTop: 1 }}>{item.val}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9.5 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Versión", "Descripción del Cambio", "Fecha de Actualización"].map(h => (
-                          <th key={h} style={{ padding: "5px 7px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "5px 7px", color: "#334155", fontSize: 9.5 }}>1.0</td>
-                        <td style={{ padding: "5px 7px", color: "#334155", fontSize: 9.5 }}>Elaboración inicial del Plan de Trabajo</td>
-                        <td style={{ padding: "5px 7px", color: "#475569", fontSize: 9.5 }}>{fechaElaboracion}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+
+                  {/* Page 1 Content */}
+                  {currentPage === 1 && (
+                    <div>
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                          1. Información General del Grupo y Planificación
+                        </div>
+                        <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.6, textAlign: "justify" }}>
+                          El presente Plan de Trabajo institucional establece los objetivos, actividades, responsables, cronogramas y medios de verificación correspondientes a la Comisión de Eventos Académicos para el período académico Julio – Diciembre 2026 en el marco de la normativa vigente de la Universidad Técnica de Ambato.
+                        </p>
+                      </div>
+
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                          2. Justificación
+                        </div>
+                        <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.6, textAlign: "justify" }}>
+                          {justificacion || "La Comisión de Eventos Académicos planifica y desarrolla actividades de difusión científica, vinculación y fortalecimiento del perfil profesional en la Facultad de Ingeniería en Sistemas, Electrónica e Industrial."}
+                        </p>
+                      </div>
+
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                          3. Objetivos
+                        </div>
+                        <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.6, textAlign: "justify" }}>
+                          {objetivo || "Organizar y ejecutar eventos académicos institucionales de alto impacto durante el período Julio – Diciembre 2026, garantizando la participación de docentes, investigadores y estudiantes."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Page 2 Content */}
+                  {currentPage === 2 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                        4. Matriz de Actividades Planificadas (Sección Principal)
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}>
+                        <thead>
+                          <tr style={{ background: "#1a4f8a" }}>
+                            {["Actividad", "Desde", "Hasta", "Responsable", "Recursos", "Medios"].map(h => (
+                              <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {matrizRows.slice(0, 3).map((r, i) => (
+                            <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                              <td style={{ padding: "5px 6px", color: "#334155", borderBottom: "1px solid #f1f5f9", lineHeight: 1.3 }}>{r.act}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.desde}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.hasta}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.resp}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.rec}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.med}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Page 3 Content */}
+                  {currentPage === 3 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                        4. Matriz de Actividades (Continuación) y 5. Anexos
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9, marginBottom: 16 }}>
+                        <thead>
+                          <tr style={{ background: "#1a4f8a" }}>
+                            {["Actividad", "Desde", "Hasta", "Responsable", "Recursos", "Medios"].map(h => (
+                              <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {matrizRows.slice(3).map((r, i) => (
+                            <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                              <td style={{ padding: "5px 6px", color: "#334155", borderBottom: "1px solid #f1f5f9", lineHeight: 1.3 }}>{r.act}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.desde}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.hasta}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.resp}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.rec}</td>
+                              <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9" }}>{r.med}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {tieneAnexos === "si" && (
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                            5. Anexos del Documento
+                          </div>
+                          {anexos.length > 0 ? anexos.map((a, idx) => (
+                            <p key={a.id} style={{ fontSize: 9.5, color: "#475569", margin: "3px 0" }}>Anexo {LETRAS[idx]} — {a.nombre}</p>
+                          )) : (
+                            <p style={{ fontSize: 9.5, color: "#94a3b8" }}>No se han agregado anexos.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Page 4 Content */}
+                  {currentPage === 4 && (
+                    <div>
+                      {/* Firmas de Responsabilidad */}
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                          6. Firmas de Responsabilidad
+                        </div>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}>
+                          <thead>
+                            <tr style={{ background: "#1a4f8a" }}>
+                              {["Acciones", "Nombre y Cargo", "Estado de Firma"].map(h => (
+                                <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Andrea Pérez - Highlighted for current user */}
+                            <tr style={{ background: "#eff6ff", border: "1.5px solid #3b82f6" }}>
+                              <td style={{ padding: "6px 7px", color: "#1a4f8a", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                Elaborado por:
+                              </td>
+                              <td style={{ padding: "6px 7px", color: "#1e2a3a" }}>
+                                <b>Ing. Andrea Pérez, Mg.</b><br/>
+                                <span style={{ fontSize: 8, color: "#64748b" }}>Docente elaborador</span>
+                              </td>
+                              <td style={{ padding: "6px 7px" }}>
+                                <span style={{
+                                  display: "inline-block", background: "#dbeafe", color: "#1e40af",
+                                  border: "1px solid #93c5fd", borderRadius: 4, padding: "3px 7px",
+                                  fontSize: 8.5, fontWeight: 800,
+                                }}>
+                                  [ SU FIRMA AQUÍ ] — Paso siguiente
+                                </span>
+                              </td>
+                            </tr>
+                            <tr style={{ background: "#fff" }}>
+                              <td style={{ padding: "6px 7px", color: "#1a4f8a", fontWeight: 700, borderBottom: "1px solid #e2e8f0" }}>Revisado por:</td>
+                              <td style={{ padding: "6px 7px", color: "#1e2a3a", borderBottom: "1px solid #e2e8f0" }}>
+                                Ing. Carlos López, Mg.<br/><span style={{ fontSize: 8, color: "#64748b" }}>Revisor Nivel 1</span>
+                              </td>
+                              <td style={{ padding: "6px 7px", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", fontStyle: "italic" }}>Pendiente de flujo</td>
+                            </tr>
+                            <tr style={{ background: "#f8fafc" }}>
+                              <td style={{ padding: "6px 7px", color: "#1a4f8a", fontWeight: 700, borderBottom: "1px solid #e2e8f0" }}>Validado por:</td>
+                              <td style={{ padding: "6px 7px", color: "#1e2a3a", borderBottom: "1px solid #e2e8f0" }}>
+                                Ing. Patricia Salazar, Mg.<br/><span style={{ fontSize: 8, color: "#64748b" }}>Coordinación / Validador Final</span>
+                              </td>
+                              <td style={{ padding: "6px 7px", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", fontStyle: "italic" }}>Pendiente de flujo</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Historial de cambios */}
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>
+                          7. Control de Historial de Cambios
+                        </div>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}>
+                          <thead>
+                            <tr style={{ background: "#1a4f8a" }}>
+                              {["Versión", "Ronda", "Descripción del Cambio", "Fecha"].map(h => (
+                                <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8.5 }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: "4px 6px", color: "#334155", fontWeight: 700 }}>v{formalVersion}</td>
+                              <td style={{ padding: "4px 6px", color: "#334155" }}>Ronda {reviewRound}</td>
+                              <td style={{ padding: "4px 6px", color: "#334155" }}>
+                                {reviewRound > 1 ? "Corrección de observaciones del revisor" : "Elaboración inicial del Plan de Trabajo"}
+                              </td>
+                              <td style={{ padding: "4px 6px", color: "#475569" }}>{fechaElaboracion || "07/09/2026"}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer page number inside PDF */}
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 8, color: "#94a3b8" }}>
+                  <span>FISEI — Universidad Técnica de Ambato</span>
+                  <span>Página {currentPage} de {totalPages}</span>
                 </div>
               </div>
             </div>
@@ -3724,9 +3858,6 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
                 <button className="btn btn-ghost btn-sm" onClick={onPrev} style={{ justifyContent: "center" }}>
                   Volver a editar contenido
                 </button>
-                <button className="btn btn-ghost btn-sm" style={{ justifyContent: "center" }}>
-                  Revisar matriz
-                </button>
               </div>
             </div>
           </div>
@@ -3752,12 +3883,14 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, matriz, justificacion, o
 
 // ─── Step 7 — Firma y Envío ───────────────────────────────────────────────────
 
-function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
+function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngine }: {
   onPrev: () => void; onNext: () => void; maxReached?: number;
   onEnviarRevision: () => void;
+  docEngine?: ReturnType<typeof useDocumentEngine>;
 }) {
-  const [certFile, setCertFile] = useState("certificado_firma.p12");
+  const [certFile, setCertFile] = useState("andrea_perez_cert.p12");
   const [certPass, setCertPass] = useState("••••••••");
+  const [ubicacionDocumento, setUbicacionDocumento] = useState("Página 4 — Firmas de Responsabilidad: Elaborado por");
   const [showPass, setShowPass] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -3766,11 +3899,23 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
   const canSign = certFile.length > 0 && certPass.length > 0 && confirmed;
 
   const flowSteps = [
-    { num: 1, label: "Elaborador",  name: "Ing. Andrea Pérez, Mg.",   estado: signed ? "✓ Firmado" : "Firma pendiente",  done: signed,  active: !signed },
-    { num: 2, label: "Revisión",    name: "Responsable de revisión",   estado: "Pendiente",                               done: false,   active: signed  },
-    { num: 3, label: "Coordinación", name: "Coordinador/a",            estado: "Pendiente",                               done: false,   active: false   },
-    { num: 4, label: "Validación",  name: "Autoridad correspondiente", estado: "Pendiente",                               done: false,   active: false   },
+    { num: 1, label: "Elaborador",  name: "Ing. Andrea Pérez, Mg.",   estado: signed ? "✓ Firmado digitalmente" : "Firma pendiente",  done: signed,  active: !signed },
+    { num: 2, label: "Revisión N1", name: "Ing. Carlos López, Mg.",   estado: "Pendiente",                                            done: false,   active: signed  },
+    { num: 3, label: "Validación N2", name: "Ing. Patricia Salazar, Mg.", estado: "Pendiente",                                       done: false,   active: false   },
   ];
+
+  function handleFirmar() {
+    if (docEngine) {
+      docEngine.firmarComoElaborador(certFile, ubicacionDocumento);
+    }
+    setSigned(true);
+  }
+
+  function handleConfirmarEnvio() {
+    setShowSendModal(false);
+    onEnviarRevision();
+    onNext();
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -3779,13 +3924,14 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
           <div style={{ background: "#fff", borderRadius: 12, width: 460, padding: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>Enviar Plan de Trabajo</h2>
             <p style={{ fontSize: 13, color: "#6b7a8d", marginBottom: 20 }}>
-              El documento firmado será enviado al primer paso del flujo de revisión. Mientras permanezca en revisión no podrá modificar esta versión.
+              El documento firmado electrónicamente será enviado a Carlos López (Revisor Nivel 1). Mientras permanezca en revisión no podrá modificar esta versión.
             </p>
             <div style={{ background: "#f8fafc", borderRadius: 8, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
               {[
-                { label: "Grupo", val: "Unidad de Titulación" },
-                { label: "Versión", val: "1.0" },
-                { label: "Siguiente etapa", val: "Revisión" },
+                { label: "Grupo", val: "Comisión de Eventos Académicos" },
+                { label: "Versión formal", val: `v${docEngine?.docMaster.formalVersion || "1.0"}` },
+                { label: "Ronda de revisión", val: `Ronda ${docEngine?.docMaster.reviewRound || 1}` },
+                { label: "Siguiente etapa", val: "Revisión Nivel 1 (Carlos López)" },
               ].map(r => (
                 <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                   <span style={{ color: "#6b7a8d" }}>{r.label}</span>
@@ -3795,7 +3941,7 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button className="btn btn-ghost" onClick={() => setShowSendModal(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={() => { setShowSendModal(false); onEnviarRevision(); onNext(); }}>CONFIRMAR ENVÍO</button>
+              <button className="btn btn-primary" onClick={handleConfirmarEnvio}>CONFIRMAR ENVÍO</button>
             </div>
           </div>
         </div>
@@ -3825,18 +3971,18 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 6 }}>Plan de Trabajo</div>
                   <div style={{ fontSize: 12.5, color: "#6b7a8d", display: "flex", flexDirection: "column", gap: 3 }}>
-                    <span>Unidad de Titulación</span>
+                    <span>Comisión de Eventos Académicos</span>
                     <span>Período: Julio – Diciembre 2026</span>
-                    <span>Versión: 1.0</span>
+                    <span>Versión formal: v{docEngine?.docMaster.formalVersion || "1.0"} (Ronda {docEngine?.docMaster.reviewRound || 1})</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                   <span style={{
                     display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999,
-                    fontSize: 11.5, fontWeight: 700, background: "#dcfce7", color: "#166534",
+                    fontSize: 11.5, fontWeight: 700, background: signed ? "#dcfce7" : "#eff6ff", color: signed ? "#166534" : "#1e40af",
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
-                    LISTO PARA FIRMA
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: signed ? "#22c55e" : "#3b82f6" }} />
+                    {signed ? "FIRMADO ELECTRÓNICAMENTE" : "LISTO PARA FIRMA"}
                   </span>
                   <button className="btn btn-ghost btn-sm" onClick={onPrev}>Previsualizar nuevamente</button>
                 </div>
@@ -3849,17 +3995,17 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a4f8a" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a" }}>Firma electrónica</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a" }}>Firma electrónica institucional</h3>
               </div>
 
               {!signed ? (
                 <>
                   <p style={{ fontSize: 12.5, color: "#6b7a8d", marginBottom: 16 }}>
-                    Para firmar el documento seleccione su certificado de firma electrónica e ingrese la contraseña correspondiente.
+                    Para firmar el documento seleccione su certificado de firma electrónica (.p12 / .pfx) e ingrese la contraseña correspondiente.
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div>
-                      <label className="form-label required">Certificado de firma</label>
+                      <label className="form-label required">Archivo del Certificado de Firma (.p12 o .pfx)</label>
                       <div style={{ display: "flex", gap: 8 }}>
                         <input className="form-input" value={certFile} onChange={e => setCertFile(e.target.value)} style={{ flex: 1 }} />
                         <button className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap" }}>
@@ -3869,7 +4015,7 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                       </div>
                     </div>
                     <div>
-                      <label className="form-label required">Contraseña del certificado</label>
+                      <label className="form-label required">Contraseña del Certificado</label>
                       <div style={{ position: "relative" }}>
                         <input
                           className="form-input"
@@ -3878,7 +4024,7 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                           onChange={e => setCertPass(e.target.value)}
                           style={{ paddingRight: 40 }}
                         />
-                        <button onClick={() => setShowPass(v => !v)} style={{
+                        <button type="button" onClick={() => setShowPass(v => !v)} style={{
                           position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                           background: "none", border: "none", cursor: "pointer", color: "#64748b",
                         }}>
@@ -3889,21 +4035,32 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                         </button>
                       </div>
                     </div>
+                    <div>
+                      <label className="form-label">Ubicación de la firma en el documento</label>
+                      <input className="form-input" value={ubicacionDocumento} onChange={e => setUbicacionDocumento(e.target.value)} style={{ background: "#f8fafc", color: "#334155" }} />
+                    </div>
 
-                    <div className="alert alert-info" style={{ fontSize: 12, gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      El certificado y su contraseña se utilizarán únicamente durante el proceso de firma y no serán almacenados permanentemente por el sistema.
+                    <div style={{
+                      padding: "10px 12px", background: "#eff6ff", borderRadius: 8,
+                      border: "1px solid #bfdbfe", fontSize: 12, color: "#1e40af", display: "flex", gap: 8, alignItems: "center",
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      El certificado y su contraseña se utilizan únicamente durante el proceso de firma y no se almacenan permanentemente.
                     </div>
 
                     <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                       <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
                         style={{ accentColor: "#1a4f8a", marginTop: 2, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.55 }}>
-                        Confirmo que he revisado el contenido del documento y deseo firmar esta versión.
+                      <span style={{ fontSize: 12.5, color: "#334155", lineHeight: 1.55 }}>
+                        Confirmo haber revisado el contenido completo del documento.
                       </span>
                     </label>
 
-                    <button className="btn btn-primary" disabled={!canSign} onClick={() => setSigned(true)} style={{ alignSelf: "flex-start" }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic", textAlign: "right" }}>
+                      Mecanismo de firma sujeto a integración institucional.
+                    </div>
+
+                    <button className="btn btn-primary" disabled={!canSign} onClick={handleFirmar} style={{ alignSelf: "flex-start" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
                       FIRMAR DOCUMENTO
                     </button>
@@ -3911,31 +4068,28 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
                 </>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", background: "#dcfce7", borderRadius: 8, border: "1px solid #bbf7d0" }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px", background: "#dcfce7", borderRadius: 8, border: "1.5px solid #86efac" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "#166534" }}>Documento firmado electrónicamente</div>
-                      <div style={{ fontSize: 12, color: "#15803d", marginTop: 2 }}>
-                        Firmado por: Ing. Andrea Pérez, Mg. · 05/09/2026 · 23:41
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#166534" }}>Documento firmado electrónicamente</div>
+                      <div style={{ fontSize: 12.5, color: "#15803d", marginTop: 3, lineHeight: 1.5 }}>
+                        <b>Firmante:</b> Ing. Andrea Pérez, Mg. (Docente Elaborador)<br/>
+                        <b>Fecha y hora:</b> 07/09/2026 — 10:30<br/>
+                        <b>Posición en documento:</b> {ubicacionDocumento}<br/>
+                        <b>Mecanismo:</b> Firma electrónica institucional (Mecanismo sujeto a integración institucional)
                       </div>
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Ver detalles de firma
+
+                  <button className="btn btn-primary" onClick={() => setShowSendModal(true)} style={{ alignSelf: "flex-start" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    ENVIAR A REVISIÓN
                   </button>
                 </div>
               )}
             </div>
-
-            {signed && (
-              <button className="btn btn-primary" onClick={() => setShowSendModal(true)} style={{ alignSelf: "flex-start" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                ENVIAR A REVISIÓN
-              </button>
-            )}
           </div>
 
           {/* Right — flow */}
@@ -3943,7 +4097,7 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "18px" }}>
               <h3 style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a", marginBottom: 6 }}>Flujo de aprobación</h3>
               <p style={{ fontSize: 12, color: "#6b7a8d", marginBottom: 16, lineHeight: 1.55 }}>
-                Este documento seguirá el flujo de aprobación configurado para la Unidad de Titulación.
+                Este documento seguirá el flujo de aprobación configurado para la Comisión de Eventos Académicos.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {flowSteps.map((s, i) => (
@@ -3999,9 +4153,8 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision }: {
 function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () => void; onBackToList: () => void }) {
   const timelineItems = [
     { label: "Elaborado y firmado", done: true,  active: false },
-    { label: "En revisión",         done: false, active: true  },
-    { label: "Coordinación",        done: false, active: false },
-    { label: "Validación final",    done: false, active: false },
+    { label: "Revisión Nivel 1 (Carlos López)", done: false, active: true  },
+    { label: "Validación Nivel 2 (Patricia Salazar)", done: false, active: false },
   ];
 
   return (
@@ -4029,7 +4182,7 @@ function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () =>
               Plan de Trabajo enviado a revisión
             </h1>
             <p style={{ fontSize: 13.5, color: "#6b7a8d", lineHeight: 1.6 }}>
-              Su Plan de Trabajo fue enviado correctamente al primer paso del flujo de aprobación.
+              Su Plan de Trabajo fue firmado electrónicamente y enviado correctamente a Carlos López (Revisor Nivel 1).
             </p>
           </div>
 
@@ -4038,7 +4191,7 @@ function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () =>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a" }}>Plan de Trabajo</div>
-                <div style={{ fontSize: 13, color: "#6b7a8d", marginTop: 2 }}>Unidad de Titulación</div>
+                <div style={{ fontSize: 13, color: "#6b7a8d", marginTop: 2 }}>Comisión de Eventos Académicos</div>
               </div>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999,
@@ -4050,9 +4203,9 @@ function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () =>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
               {[
-                { label: "Versión", val: "1.0" },
-                { label: "Enviado", val: "05/09/2026" },
-                { label: "Etapa actual", val: "Revisión" },
+                { label: "Versión formal", val: "1.0" },
+                { label: "Enviado", val: "07/09/2026" },
+                { label: "Etapa actual", val: "Revisión Nivel 1" },
               ].map(r => (
                 <div key={r.label} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>{r.label}</div>
@@ -4097,7 +4250,7 @@ function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () =>
           {/* Info */}
           <div className="alert alert-info" style={{ fontSize: 13 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Recibirá una notificación cuando el documento sea aprobado, devuelto con observaciones o avance a una nueva etapa.
+            Recibirá una notificación cuando el revisor Carlos López apruebe el documento o formule observaciones de mejora.
           </div>
 
           {/* Actions */}
@@ -4119,8 +4272,8 @@ function Step8Confirmacion({ onViewStatus, onBackToList }: { onViewStatus: () =>
 
 const DRAFT_KEY = "fisei-plan-draft-v1";
 
-const DEFAULT_JUSTIFICACION = "La Unidad de Titulación desarrolla actividades orientadas al seguimiento de los procesos de graduación, acompañamiento a estudiantes y cumplimiento de la normativa institucional vigente. Durante el período Julio – Diciembre 2026 se han identificado necesidades específicas de fortalecimiento en las áreas de seguimiento y difusión normativa.";
-const DEFAULT_OBJETIVO = "Coordinar y ejecutar las actividades de la Unidad de Titulación durante el período Julio – Diciembre 2026, asegurando el seguimiento de los procesos académicos y el cumplimiento de los lineamientos institucionales.";
+const DEFAULT_JUSTIFICACION = "La Comisión de Eventos Académicos de la FISEI planifica y ejecuta jornadas científicas, conferencias y talleres orientados al fortalecimiento de competencias disciplinares en Ingeniería en Sistemas, Electrónica e Industrial durante el período Julio – Diciembre 2026.";
+const DEFAULT_OBJETIVO = "Organizar y ejecutar 5 eventos académicos institucionales de alto impacto durante el período académico Julio – Diciembre 2026, garantizando la participación de docentes y estudiantes.";
 
 interface PlanDraft {
   matriz: ActividadMatriz[];
@@ -4128,7 +4281,7 @@ interface PlanDraft {
   objetivo: string;
   tieneAnexos: "si" | "no" | null;
   anexos: Anexo[];
-  estado: "borrador" | "en-revision" | "devuelto" | "en-correccion";
+  estado: "borrador" | "en-revision" | "devuelto" | "en-correccion" | "validado";
   fechaEnvio: string;
   fechaElaboracion: string;
   fechaDevolucion: string;
@@ -4137,7 +4290,7 @@ interface PlanDraft {
 }
 
 function todayFormatted() {
-  return new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return "07/09/2026";
 }
 
 const DEFAULT_DRAFT: PlanDraft = {
@@ -4148,7 +4301,7 @@ const DEFAULT_DRAFT: PlanDraft = {
   anexos: [],
   estado: "borrador",
   fechaEnvio: "",
-  fechaElaboracion: todayFormatted(),
+  fechaElaboracion: "07/09/2026",
   fechaDevolucion: "",
   mensajeDevolucion: "",
   observacionesRevision: [],
@@ -4167,7 +4320,11 @@ function loadDraft(): PlanDraft {
   return { ...DEFAULT_DRAFT };
 }
 
-function PlanesView({ onNavigateActividades, initialShowObsModal }: { onNavigateActividades?: () => void; initialShowObsModal?: boolean } = {}) {
+function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine }: {
+  onNavigateActividades?: () => void;
+  initialShowObsModal?: boolean;
+  docEngine?: ReturnType<typeof useDocumentEngine>;
+} = {}) {
   const [sub, setSub] = useState<PlanesSubView>("list");
   const [maxReached, setMaxReached] = useState(3);
   const [draft, setDraftState] = useState<PlanDraft>(loadDraft);
@@ -4193,27 +4350,68 @@ function PlanesView({ onNavigateActividades, initialShowObsModal }: { onNavigate
   }
 
   function handleEnviarRevision() {
-    const today = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
-    saveDraft({ estado: "en-revision", fechaEnvio: today });
+    if (docEngine) {
+      docEngine.enviarARevision();
+    }
+    saveDraft({ estado: "en-revision", fechaEnvio: "07/09/2026" });
   }
 
   function handleCorregir() {
+    if (docEngine) {
+      docEngine.iniciarCorreccion();
+    }
     saveDraft({ estado: "en-correccion" });
+    setSub("step3edit");
   }
+
+  // Derive status from docEngine if present
+  const currentPlanEstado = docEngine ? (
+    docEngine.docMaster.documentState === "BORRADOR" ? "borrador" :
+    docEngine.docMaster.documentState === "EN REVISIÓN" ? "en-revision" :
+    docEngine.docMaster.documentState === "DEVUELTO" ? "devuelto" :
+    docEngine.docMaster.documentState === "VALIDADO" ? "validado" : "en-correccion"
+  ) : draft.estado;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {sub === "list" && (
-        <PlanesListado
-          planEstado={draft.estado}
-          onNew={() => setSub("step1")}
-          onContinuar={() => { setInitialEditId(null); setSub("step3edit"); }}
-          onCorregir={handleCorregir}
-          observacionesRevision={draft.observacionesRevision}
-          mensajeDevolucion={draft.mensajeDevolucion}
-          fechaDevolucion={draft.fechaDevolucion}
-          onNavigateActividades={onNavigateActividades}
-          initialShowObsModal={initialShowObsModal}
+        docEngine ? (
+          <MisDocumentosView
+            docEngine={docEngine}
+            onNewPlan={() => setSub("step1")}
+            onNewInforme={() => setSub("wizardInforme")}
+            onContinuarPlan={(docId) => {
+              docEngine.seleccionarDocumento(docId);
+              setInitialEditId(null);
+              setSub("step3edit");
+            }}
+            onCorregirPlan={(docId) => {
+              docEngine.seleccionarDocumento(docId);
+              handleCorregir();
+            }}
+            onNavigateActividades={onNavigateActividades || (() => {})}
+          />
+        ) : (
+          <PlanesListado
+            planEstado={currentPlanEstado}
+            formalVersion="1.0"
+            reviewRound={1}
+            onNew={() => setSub("step1")}
+            onContinuar={() => { setInitialEditId(null); setSub("step3edit"); }}
+            onCorregir={handleCorregir}
+            observacionesRevision={draft.observacionesRevision}
+            mensajeDevolucion={draft.mensajeDevolucion}
+            fechaDevolucion={draft.fechaDevolucion}
+            onNavigateActividades={onNavigateActividades}
+            initialShowObsModal={initialShowObsModal}
+          />
+        )
+      )}
+      {sub === "wizardInforme" && docEngine && (
+        <WizardInformeView
+          docEngine={docEngine}
+          onFinish={() => setSub("list")}
+          onCancel={() => setSub("list")}
         />
       )}
       {sub === "step1" && (
@@ -4279,6 +4477,8 @@ function PlanesView({ onNavigateActividades, initialShowObsModal }: { onNavigate
           tieneAnexos={draft.tieneAnexos}
           anexos={draft.anexos}
           fechaElaboracion={draft.fechaElaboracion}
+          formalVersion={docEngine ? docEngine.docMaster.formalVersion : "1.0"}
+          reviewRound={docEngine ? docEngine.docMaster.reviewRound : 1}
           onPrev={() => setSub("step5")}
           onNext={() => { setMaxReached(m => Math.max(m, 7)); setSub("step7"); }}
         />
@@ -4286,6 +4486,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal }: { onNavigate
       {sub === "step7" && (
         <Step7Firma
           maxReached={maxReached}
+          docEngine={docEngine}
           onEnviarRevision={handleEnviarRevision}
           onPrev={() => setSub("step6")}
           onNext={() => setSub("step8")}
@@ -5133,6 +5334,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const adminState = useAdminState();
   const notifState = useNotificacionesState(userRole);
   const auditoriaState = useAuditoriaState();
+  const docEngine = useDocumentEngine(auditoriaState.registrarEvento);
   const reportesState = useReportesState(userRole);
   const [adminSelectedGrupoId, setAdminSelectedGrupoId] = useState<string | null>(null);
   const [adminSelectedFlujoGrupoId, setAdminSelectedFlujoGrupoId] = useState<string | null>(null);
@@ -5143,7 +5345,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   function handleRoleSwitch() {
     if (userRole === "docente") {
       setUserRole("revisor");
-      setView("evidenciasValidar");
+      setView("bandeja");
     } else if (userRole === "revisor") {
       setUserRole("admin");
       setView("adminInicio");
@@ -5155,7 +5357,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   }
 
   function handleDevolver(data: { mensaje: string; obs: Observacion[] }) {
-    const today = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const today = "07/09/2026";
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       const parsed = raw ? JSON.parse(raw) : {};
@@ -5269,6 +5471,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "planes" && (
             <PlanesView
               key={planesViewKey}
+              docEngine={docEngine}
               initialShowObsModal={planInitialObsModal}
               onNavigateActividades={() => {
                 seguimientoState.setActividadSeleccionadaId(null);
@@ -5351,12 +5554,15 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               onActionNavigate={handleNotificationAction}
             />
           )}
-          {view === "perfil" && <PlaceholderView label="Perfil" />}
+          {view === "perfil" && <PerfilView userRole={userRole} />}
           {(view === "bandeja" || view === "planesRevision" || view === "grupos") && (
-            <RevisorView
-              onBackToDocente={handleRoleSwitch}
-              onDevolver={handleDevolver}
-              initialSub={revisorInitialSub}
+            <RevisorDocumentEngineView
+              docEngine={docEngine}
+              userRole={userRole}
+              onBackToDocente={() => {
+                setUserRole("docente");
+                setView("planes");
+              }}
             />
           )}
 

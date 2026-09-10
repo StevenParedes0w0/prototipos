@@ -1,775 +1,766 @@
-MÓDULO 10 — PERFIL, CONSISTENCIA GLOBAL Y PREPARACIÓN FINAL DEL PROTOTIPO
-
-Proyecto:
-Sistema web de Gestión de Planes de Trabajo de docentes FISEI — UTA.
+REFACCIÓN TRANSVERSAL — PLANTILLAS OFICIALES T1/T2
+Y FLUJO DEFINITIVO DEL INFORME
 
 IMPORTANTE:
-Este es el ÚLTIMO módulo funcional del prototipo.
 
-El objetivo NO es crear nuevas funcionalidades complejas.
+NO crear un nuevo módulo independiente.
+NO rehacer documentEngine.
+NO alterar el flujo de firma, rondas, revisión o validación ya aprobado.
+NO modificar la paleta visual.
+NO realizar refactors fuera de este alcance.
 
-Centrarse exclusivamente en:
-
-1. Perfil del usuario.
-2. Cambio de contraseña.
-3. Estados vacíos / mensajes de sistema básicos.
-4. Consistencia visual y terminológica global.
-5. Preparación del prototipo para demostración final.
-
-NO implementar backend real.
-NO implementar APIs.
-NO crear autenticación real.
-NO crear base de datos.
-NO agregar funcionalidades no solicitadas.
-NO refactorizar módulos anteriores salvo correcciones mínimas de
-consistencia visual o navegación.
-
-Trabajar sobre los mockups React existentes.
+El objetivo es sustituir la estructura DEMO del Informe por la
+estructura institucional suministrada y alinear la generación visual
+de Plan e Informe con los formatos oficiales proporcionados.
 
 ==========================================================
-CONTEXTO CONSOLIDADO DEL SISTEMA
+1. FUENTES DOCUMENTALES OFICIALES
 ==========================================================
 
-Roles DEMO principales:
+Utilizar como referencias maestras:
 
-DOCENTE
-Ing. Andrea Pérez, Mg.
+PLAN DE TRABAJO:
+UTA-SGC-A-2-1-P7-T1
 
-REVISOR
-Ing. Carlos López, Mg.
+INFORME:
+UTA-SGC-A-2-1-P7-T2
 
-ADMINISTRADOR
-Ing. Laura Medina, Mg.
+El documento generado/previsualizado debe reproducir visualmente la
+estructura de estos formatos:
 
-Período activo del escenario:
+- encabezados;
+- títulos;
+- distribución;
+- tablas;
+- tipografía;
+- tamaños;
+- espaciados;
+- pie de página;
+- numeración;
+- FIRMAS DE RESPONSABILIDAD;
+- CONTROL DE HISTORIAL DE CAMBIOS.
 
-Julio – Diciembre 2026
+NO generar un documento "inspirado" en la plantilla.
 
-Fecha de referencia del sistema:
-
-07/09/2026
-
-Mantener estos actores, roles, fecha y período.
-
-NO crear nuevos usuarios innecesarios.
+El objetivo visual del prototipo es representar el formato oficial
+con la mayor fidelidad posible.
 
 ==========================================================
-PANTALLA 01 — PERFIL DEL DOCENTE
+2. INFORME DEJA DE SER "ESTRUCTURA DEMO"
 ==========================================================
 
-Desde el sidebar:
+Eliminar del Informe:
 
-Perfil
+ESTRUCTURA DEMO
 
-Mostrar una pantalla institucional clara.
+y:
 
-Título:
+ESTRUCTURA PENDIENTE DE DEFINICIÓN INSTITUCIONAL
 
-Mi Perfil
+porque ya existe el formato institucional T2 suministrado.
 
-Subtítulo:
+En Administración → Plantillas Documentales mostrar:
 
-Consulte la información asociada a su cuenta institucional.
+Informe
 
-Bloque superior:
-
-Avatar:
-AP
-
-Nombre:
-Ing. Andrea Pérez, Mg.
-
-Correo institucional:
-andrea.perez@uta.edu.ec
+Formato:
+UTA-SGC-A-2-1-P7-T2
 
 Estado:
-ACTIVO
+ACTIVA
 
-Rol:
-Docente
+Para Plan:
 
-NO mostrar:
+Plan de Trabajo
 
-- cédula;
-- teléfono;
-- dirección;
-- tipo de contrato;
-- tiempo completo;
-- datos personales no confirmados.
+Formato:
+UTA-SGC-A-2-1-P7-T1
+
+Estado:
+ACTIVA
 
 ==========================================================
-INFORMACIÓN DE LA CUENTA
+3. MODELO DEL INFORME
+==========================================================
+
+Mantener:
+
+documentType = "INFORME"
+
+Agregar un dato específico:
+
+informeOrigen:
+
+- DERIVADO_PLAN
+- INDEPENDIENTE
+
+Agregar además:
+
+relatedPlanId?: string
+
+aplicaRegistroContactos: boolean
+
+No crear otro documentEngine.
+
+==========================================================
+4. NUEVO WIZARD DEL INFORME
+==========================================================
+
+Reemplazar el wizard DEMO actual por:
+
+PASO 1
+Información general
+
+PASO 2
+Antecedentes
+
+PASO 3
+Desarrollo de actividades
+
+PASO 4
+Conclusiones y oportunidades de mejora
+
+PASO 5
+Registro de contactos y gestiones, cuando aplique
+
+PASO 6
+Anexos
+
+PASO 7
+Previsualización
+
+PASO 8
+Firma y envío
+
+Puede compactarse visualmente el stepper si es necesario,
+pero conservar conceptualmente estas partes.
+
+==========================================================
+5. PASO 1 — INFORMACIÓN GENERAL
 ==========================================================
 
 Mostrar:
 
-Nombre completo
-Ing. Andrea Pérez, Mg.
+Unidad académica / administrativa *
 
-Correo institucional
-andrea.perez@uta.edu.ec
+Carrera *
 
-Rol del sistema
-Docente
+Informe de *
 
-Estado de cuenta
-Activo
+Período *
 
-Los campos institucionales pueden mostrarse en modo solo lectura.
+Fecha de elaboración *
 
-No asumir que el docente puede modificar libremente su nombre,
-correo o rol.
+Origen del Informe *
 
-==========================================================
-GRUPOS INSTITUCIONALES
-==========================================================
+----------------------------------------------------------
 
-Mostrar una sección:
+Origen:
 
-Grupos institucionales
+○ Derivado de un Plan de Trabajo
 
-Para Andrea:
+○ Informe independiente
 
-Unidad de Titulación
+----------------------------------------------------------
 
-Comisión de Eventos Académicos
+Si elige:
 
-Mostrar únicamente grupos existentes en el escenario consolidado.
+DERIVADO DE UN PLAN DE TRABAJO
 
-Cada grupo puede mostrar:
+mostrar:
 
-Nombre
-Tipo
-Rol dentro del grupo
-
-Utilizar únicamente roles ya establecidos:
-
-Miembro
-Coordinador
-Otro
-
-Para Andrea utilizar:
-
-Miembro
-
-si no existe otra definición confirmada.
-
-NO utilizar:
-
-Responsable
-
-como rol del grupo.
-
-"Responsable" pertenece al contexto de las actividades.
-
-==========================================================
-SEGURIDAD DE LA CUENTA
-==========================================================
-
-Mostrar tarjeta:
-
-Seguridad
-
-Acción:
-
-CAMBIAR CONTRASEÑA
-
-No mostrar ni recuperar contraseña actual.
-
-No mostrar contraseñas temporales en pantalla.
-
-==========================================================
-PANTALLA 02 — CAMBIAR CONTRASEÑA
-==========================================================
-
-Abrir modal o vista secundaria:
-
-Cambiar contraseña
-
-Campos:
-
-Contraseña actual
-Nueva contraseña
-Confirmar nueva contraseña
-
-Agregar controles:
-
-mostrar / ocultar contraseña
-
-Indicaciones mínimas:
-
-"La nueva contraseña debe cumplir los requisitos de seguridad
-configurados por la institución."
-
-NO inventar una política institucional exacta como:
-
-- mínimo 12 caracteres;
-- símbolos obligatorios;
-- caducidad de 90 días;
-
-si esos valores no han sido confirmados.
-
-Para el prototipo puede validarse conceptualmente:
-
-- nueva contraseña no vacía;
-- confirmación coincidente;
-- no igual a la actual.
-
-Botones:
-
-Cancelar
-ACTUALIZAR CONTRASEÑA
-
-Tras éxito:
-
-✓ Contraseña actualizada correctamente.
-
-No realizar autenticación real.
-
-==========================================================
-PANTALLA 03 — PERFIL DEL REVISOR
-==========================================================
-
-Cuando la sesión DEMO corresponde a:
-
-Ing. Carlos López, Mg.
-
-mostrar la MISMA estructura visual del perfil.
-
-Datos:
-
-Nombre:
-Ing. Carlos López, Mg.
-
-Correo:
-carlos.lopez@uta.edu.ec
-
-Roles del sistema:
-
-Docente
-Revisor
-
-Si el prototipo diferencia contexto activo mostrar:
-
-Contexto actual:
-Revisor
-
-IMPORTANTE:
-
-Diferenciar:
-
-currentUser
-de
-activeContext
-
-Cambiar contexto NO cambia de persona.
-
-No volver a introducir el error antiguo:
-
-Andrea en TopBar
-Carlos en Sidebar.
-
-TopBar, Sidebar, Perfil, observaciones, firmas y acciones deben leer
-el mismo currentUser.
-
-==========================================================
-GRUPOS DE CARLOS
-==========================================================
-
-Utilizar únicamente grupos existentes donde ya aparezca asociado.
-
-Por ejemplo:
-
-Unidad de Titulación
-Rol dentro del grupo:
-Coordinador
-
-Comisión de Eventos Académicos
-Rol dentro del grupo:
-Miembro
-
-No inventar nuevos grupos.
-
-==========================================================
-PANTALLA 04 — PERFIL DEL ADMINISTRADOR
-==========================================================
-
-Usuario:
-
-Ing. Laura Medina, Mg.
-
-Correo institucional DEMO existente.
-
-Rol:
-Administrador
-
-Estado:
-Activo
-
-No asignarla automáticamente como:
-
-- autoridad final;
-- revisora;
-- coordinadora;
-- docente;
-
-si no existe esa configuración.
-
-El Administrador administra el sistema, pero su rol administrativo
-NO implica automáticamente participar en los flujos académicos.
-
-==========================================================
-PANTALLA 05 — ESTADOS VACÍOS
-==========================================================
-
-Crear o verificar estados vacíos coherentes para vistas donde puedan
-existir cero resultados.
-
-NO crear pantallas independientes si no son necesarias.
-
-Ejemplos:
-
-MIS PLANES
-
-"No existen Planes de Trabajo para los filtros seleccionados."
-
-MIS ACTIVIDADES
-
-"No existen actividades para los filtros seleccionados."
-
-EVIDENCIAS
-
-"No existen evidencias para los filtros seleccionados."
-
-NOTIFICACIONES
-
-"No tiene notificaciones para mostrar."
-
-BANDEJA DE REVISIÓN
-
-"No existen documentos pendientes de revisión."
-
-EVIDENCIAS POR VALIDAR
-
-"No existen evidencias pendientes de validación."
-
-CONSULTA HISTÓRICA
-
-"No existen registros históricos para los filtros seleccionados."
-
-AUDITORÍA
-
-"No se encontraron eventos para los filtros aplicados."
-
-Utilizar:
-
-icono neutro
-mensaje principal
-texto secundario breve
-
-No utilizar ilustraciones excesivas.
-
-==========================================================
-PANTALLA 06 — ACCESO NO AUTORIZADO
-==========================================================
-
-Preparar un estado reutilizable:
-
-Acceso restringido
-
-Texto:
-
-"No dispone de permisos para acceder a este recurso."
-
-Acción:
-
-VOLVER
-
-Este estado debe poder utilizarse conceptualmente si un rol intenta
-abrir directamente una vista no autorizada.
-
-No implementar seguridad backend.
-
-Solo mockup / estado de interfaz.
-
-==========================================================
-PANTALLA 07 — RECURSO NO DISPONIBLE
-==========================================================
-
-Preparar un estado simple para enlaces inexistentes o recursos no
-encontrados:
-
-Recurso no disponible
-
-"No fue posible encontrar el elemento solicitado."
-
-Acción:
-
-VOLVER AL INICIO
-
-No crear un sistema complejo de routing si no es necesario.
-
-==========================================================
-CONSISTENCIA GLOBAL OBLIGATORIA
-==========================================================
-
-Realizar una revisión VISUAL Y TERMINOLÓGICA ligera de todos los módulos.
-
-NO refactorizar lógica.
-
-Verificar únicamente consistencia.
-
-==========================================================
-A. IDENTIDAD DEL USUARIO
-==========================================================
-
-En cada contexto:
-
-Sidebar
-TopBar
-Perfil
-Firmas
-Observaciones
-Auditoría
-
-deben mostrar el usuario correcto.
-
-DOCENTE:
-Andrea Pérez
-
-REVISOR:
-Carlos López
-
-ADMINISTRADOR:
-Laura Medina
-
-No mezclar identidades.
-
-==========================================================
-B. PERÍODO
-==========================================================
-
-Período activo:
-
-Julio – Diciembre 2026
-
-No volver a introducir:
-
-Sep 2026 – Feb 2027
-u otros períodos activos ficticios.
-
-Históricos:
-
-Enero – Junio 2026
-Julio – Diciembre 2025
-
-==========================================================
-C. FECHA DEL SISTEMA
-==========================================================
-
-Mantener:
-
-07/09/2026
-
-No cambiarla para adaptar escenarios individuales.
-
-==========================================================
-D. FORMATO DE FECHAS
-==========================================================
-
-En interfaz utilizar preferentemente:
-
-DD/MM/AAAA
+Plan de Trabajo relacionado *
 
 Ejemplo:
 
-07/09/2026
+Plan de Trabajo — Unidad de Titulación
+Julio – Diciembre 2026
+Versión 1.0
 
-Cuando exista hora:
+Solo mostrar Planes del usuario/contexto correspondientes.
 
-07/09/2026 — 10:28
+Si elige:
 
-No alterar internamente valores ISO si ya son necesarios para código.
+INFORME INDEPENDIENTE
 
-==========================================================
-E. TERMINOLOGÍA
-==========================================================
-
-Usar de forma consistente:
-
-Grupo institucional
-
-Plan de Trabajo
-
-Actividad
-
-Responsable de actividad
-
-Medio de verificación
-
-Evidencia
-
-Evidencia cargada
-
-Evidencia validada
-
-Evidencia observada
-
-Período académico
-
-Revisor
-
-Coordinador
-
-Administrador
-
-Evitar cambios arbitrarios de nombres entre módulos.
+no exigir Plan relacionado.
 
 ==========================================================
-F. ESTADOS DEL PLAN
+6. CARRERA — NUEVO REQUERIMIENTO
 ==========================================================
 
-Mantener únicamente estados ya utilizados:
+Incorporar conceptualmente:
 
-BORRADOR
-EN REVISIÓN
-DEVUELTO
-EN CORRECCIÓN
-EN EJECUCIÓN
-FINALIZADO
+user.careers[]
 
-No crear nuevos estados sin necesidad.
+Ejemplo Andrea:
+
+- Ingeniería de Software
+- Tecnologías de la Información
+
+o los datos DEMO que ya existan.
+
+Reglas:
+
+Si el usuario pertenece a una sola carrera:
+preseleccionarla.
+
+Si pertenece a varias:
+mostrar selector obligatorio.
+
+No permitir escoger una carrera que no pertenezca al usuario.
+
+Mostrar Carrera en Plan e Informe cuando corresponda.
+
+En el documento institucional ubicar conceptualmente:
+
+UNIDAD ACADÉMICA / ADMINISTRATIVA
+
+CARRERA
+
+antes de identificar el Plan/Informe, conforme a la retroalimentación
+obtenida durante la presentación.
+
+No convertir Carrera en texto libre.
 
 ==========================================================
-G. ESTADOS DE EVIDENCIA
+7. PASO 2 — ANTECEDENTES
 ==========================================================
+
+Título institucional:
+
+1. ANTECEDENTES
+
+Textarea amplio.
+
+Si el Informe deriva de un Plan de Trabajo:
+
+preparar automáticamente un texto base editable que relacione el
+Informe con el Plan seleccionado.
+
+No hardcodear números de:
+
+- resolución;
+- memorando;
+- disposición;
+- autoridad.
+
+Si existe un documento de respaldo seleccionado, utilizar sus datos.
+
+Si no existe:
+dejar el contenido editable para el usuario.
+
+El asistente de IA puede utilizarse aquí como SUGERENCIA.
+
+==========================================================
+8. PASO 3 — DESARROLLO DE ACTIVIDADES
+==========================================================
+
+Título:
+
+2. DESARROLLO DE ACTIVIDADES
+
+COMPORTAMIENTO A:
+
+INFORME DERIVADO DE PLAN DE TRABAJO
+
+Mostrar la tabla institucional:
+
+ACTIVIDADES
+
+MEDIOS DE VERIFICACIÓN
+
+PORCENTAJE DE EJECUCIÓN
+
+OBSERVACIONES
+
+Las columnas:
+
+ACTIVIDADES
+y
+MEDIOS DE VERIFICACIÓN
+
+deben obtenerse automáticamente del Plan relacionado.
+
+No escribirlas nuevamente manualmente.
+
+Para cada actividad permitir editar:
+
+Porcentaje de ejecución:
+0 a 100
+
+Observaciones:
+texto
+
+Validar:
+
+0 <= porcentaje <= 100
+
+NO deducir automáticamente que:
+
+evidencia validada = 100%
+
+porque son conceptos diferentes.
+
+Puede utilizarse información de actividades/evidencias como apoyo visual,
+pero el porcentaje corresponde al Informe institucional.
+
+==========================================================
+9. INFORME INDEPENDIENTE
+==========================================================
+
+Cuando:
+
+informeOrigen = INDEPENDIENTE
+
+NO mostrar la tabla derivada del Plan.
+
+Mostrar una sección editable de:
+
+Desarrollo de actividades
+
+porque el formato T2 contempla Informes originados por requerimientos
+no planificados.
+
+No inventar una planificación previa.
+
+==========================================================
+10. PASO 4 — CONCLUSIONES Y OPORTUNIDADES
+==========================================================
+
+Mostrar exactamente:
+
+3. CONCLUSIONES
+
+campo editable
+
+4. OPORTUNIDADES DE MEJORA
+
+campo editable
+
+Mantener asistente:
+
+✨ Mejorar redacción
+
+como sugerencia.
+
+No sobrescribir automáticamente.
+
+==========================================================
+11. PASO 5 — REGISTRO DE CONTACTOS
+==========================================================
+
+Título:
+
+5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN
+
+Mostrar primero:
+
+¿Este Informe corresponde a una delegación, visita técnica,
+comisión u otro caso que requiera registrar contactos?
+
+○ Sí
+○ No
+
+Si NO:
+
+marcar conceptualmente:
+
+No aplica.
+
+Si SÍ:
+
+mostrar tabla:
+
+Nombre o propósito de la delegación
+
+Ciudad, país o institución
+
+Entidad y persona de contacto
+
+Datos de contacto
+
+Tema o propósito
+
+Acuerdo y seguimiento
+
+Permitir agregar varias filas.
+
+No mostrar esta tabla innecesariamente cuando no aplica.
+
+==========================================================
+12. PASO 6 — ANEXOS
+==========================================================
+
+Título:
+
+6. ANEXOS
+
+Reutilizar el gestor ya existente.
+
+Si no existen anexos:
+
+el documento debe mostrar:
+
+No aplica.
+
+NO eliminar silenciosamente la sección.
+
+Mantener separados:
+
+ANEXOS DEL INFORME
+
+de
+
+EVIDENCIAS DE ACTIVIDADES.
+
+==========================================================
+13. PREVISUALIZACIÓN DEL INFORME
+==========================================================
+
+La previsualización debe representar el formato T2.
+
+Debe incluir conceptualmente:
+
+PORTADA / ENCABEZADO
+
+SISTEMA DE GESTIÓN DE LA CALIDAD
+
+UNIVERSIDAD TÉCNICA DE AMBATO
+
+INFORME DE: ...
+
+UNIDAD ACADÉMICA / ADMINISTRATIVA
+
+CARRERA, cuando corresponda
+
+FECHA DE ELABORACIÓN
+
+Formato Nº:
+UTA-SGC-A-2-1-P7-T2
+
+Luego:
+
+ÍNDICE DE CONTENIDOS
+
+ÍNDICE DE TABLAS
+
+Luego:
+
+1. ANTECEDENTES
+
+2. DESARROLLO DE ACTIVIDADES
+
+Tabla 1 cuando derive de Plan
+
+3. CONCLUSIONES
+
+4. OPORTUNIDADES DE MEJORA
+
+5. REGISTRO DE CONTACTOS Y GESTIONES
+si aplica
+
+6. ANEXOS
+
+FIRMAS DE RESPONSABILIDAD
+
+CONTROL DE HISTORIAL DE CAMBIOS
+
+==========================================================
+14. NO FIJAR 5 PÁGINAS
+==========================================================
+
+Aunque el archivo institucional de referencia tenga cinco páginas,
+NO asumir:
+
+pageCount = 5
+
+La cantidad final depende del contenido.
+
+Utilizar siempre:
+
+Página X de N
+
+generada desde el artefacto.
+
+==========================================================
+15. PLAN DE TRABAJO — ALINEACIÓN T1
+==========================================================
+
+Sin rehacer su wizard, corregir la previsualización del Plan para que
+respete el formato T1 suministrado.
+
+Estructura:
+
+PORTADA
+
+ÍNDICE DE CONTENIDO
+
+ÍNDICE DE TABLAS
+
+1. JUSTIFICACIÓN
+
+2. OBJETIVO
+
+3. MATRIZ DE ACTIVIDADES
+
+4. ANEXOS
+
+FIRMAS DE RESPONSABILIDAD
+
+CONTROL DE HISTORIAL DE CAMBIOS
+
+Matriz:
+
+ACTIVIDADES
+
+CRONOGRAMA
+- Desde
+- Hasta
+
+RESPONSABLE
+
+RECURSOS
+(humano, tecnológico, económico, material)
+
+MEDIOS DE VERIFICACIÓN
+
+==========================================================
+16. RECURSOS DEL PLAN
+==========================================================
+
+El formato T1 clasifica conceptualmente los recursos como:
+
+- Humano
+- Tecnológico
+- Económico
+- Material
+
+No llenar el prototipo con recursos arbitrarios solo para ocupar espacio.
+
+En futuras configuraciones administrativas debe poder existir:
+
+Tipo de recurso
+Nombre
+Descripción
+Estado
+
+No hace falta desarrollar ahora un nuevo módulo.
+
+==========================================================
+17. FIRMAS DE RESPONSABILIDAD
+==========================================================
+
+Reutilizar la tabla dinámica construida desde flowStages.
+
+Para Plan e Informe:
+
+ELABORACIÓN
+→ Elaborado por
+
+ETAPA DE REVISIÓN
+→ Revisado por
+(una fila por cada firmante que corresponda)
+
+ETAPA FINAL
+→ configurable como:
+
+Validado por
+
+o
+
+Aprobado por
+
+Agregar al modelo de flujo:
+
+finalActionLabel:
+
+"VALIDADO_POR"
+|
+"APROBADO_POR"
+
+Para el escenario DEMO actual puede utilizarse:
+
+VALIDADO_POR
+
+pero el motor debe soportar ambas formas porque las plantillas
+institucionales contemplan las dos alternativas.
+
+==========================================================
+18. CONTROL DE HISTORIAL DE CAMBIOS
+==========================================================
+
+Mostrar exactamente las columnas:
+
+Versión
+
+Descripción del Cambio
+
+Fecha de Actualización
 
 Mantener:
 
-PENDIENTE
-PENDIENTE DE VALIDACIÓN
-VALIDADA
-OBSERVADA
-PLAZO VENCIDO
-
-"EVIDENCIAS COMPLETAS" representa 100% de archivos requeridos cargados.
-
-NO significa:
-
-VALIDADAS.
-
-==========================================================
-H. VERSIONAMIENTO
-==========================================================
-
-PLAN:
-
 1.0
 2.0
-3.0
+3.0...
 
 para versiones formales.
 
-No utilizar:
-
-1.1
-1.2
-
-hasta que la institución defina ese comportamiento.
-
-Corrección por devolución:
-
-NO genera automáticamente una nueva versión formal.
-
-EVIDENCIA:
-
-puede tener:
-
-v1.0
-v2.0
-
-cuando existe reemplazo de archivo.
-
-No mezclar el versionamiento del Plan con el de la evidencia.
+NO registrar una devolución como nueva versión formal.
 
 ==========================================================
-I. IDENTIFICADORES INTERNOS
+19. FIRMA Y REVISIÓN
 ==========================================================
 
-No mostrar IDs técnicos como:
+NO cambiar documentEngine.
 
-rep-plan-1
-notif-doc-2
-aud-03
-act-1
-m-1-2
+Informe y Plan deben seguir usando:
 
-en interfaz para usuario final.
+ModalFirmaDocumental
 
-Mantenerlos internamente si son necesarios.
+RevisorDocumentEngineView
 
-==========================================================
-J. PALLETA VISUAL
-==========================================================
+ModalDevolverDocumental
 
-Mantener identidad ya consolidada:
+artifactHistory
 
-Sidebar:
-azul oscuro institucional.
+reviewRound
 
-Contenido:
-fondo claro.
+formalVersion
 
-Cards:
-blancas.
+signatures
 
-Acciones primarias:
-azul institucional.
+observations
 
-Éxito:
-verde.
+flowStages
 
-Advertencia:
-ámbar.
-
-Error/destructivo:
-rojo.
-
-No volver a introducir:
-
-dark theme automático.
-
-No utilizar rojo como color decorativo principal.
+La revisión continúa página por página.
 
 ==========================================================
-K. BOTONES DEMO / DEBUG
+20. DESCARGA FINAL
 ==========================================================
 
-Revisar controles creados únicamente para pruebas.
+Mantener exactamente la regla ya implementada:
 
-Por ejemplo:
+solo el usuario que ejecutó la validación final puede mostrar:
 
-"Simular 2ª aprobación"
+DESCARGAR DOCUMENTO FINAL
 
-Si deben permanecer para la presentación, marcarlos claramente:
-
-DEMO
-
-Si no son necesarios para el recorrido final, ocultarlos de la
-interfaz principal.
-
-NO eliminarlos si hacerlo rompe la capacidad de demostrar el flujo.
+No modificar.
 
 ==========================================================
-L. TEXTOS NO CONFIRMADOS
+21. MIS DOCUMENTOS
 ==========================================================
 
-No introducir:
+Mantener la pantalla unificada actual.
 
-- resoluciones;
-- normativas;
-- autoridades;
-- códigos institucionales;
-- procedimientos;
-- tipos contractuales;
-- cargos;
-- políticas de seguridad específicas;
+Para Informe ya NO mostrar:
 
-que no hayan sido confirmados.
+ESTRUCTURA DEMO
 
-Si un dato existe solo para demostrar comportamiento utilizar:
+Mostrar:
 
-DEMO
+Informe
 
-cuando sea necesario.
+Formato institucional:
+UTA-SGC-A-2-1-P7-T2
 
-==========================================================
-PREPARACIÓN DEL PROTOTIPO PARA PRESENTACIÓN
-==========================================================
+Para Plan:
 
-Verificar que exista un recorrido claro para demostrar:
+Formato:
+UTA-SGC-A-2-1-P7-T1
 
-DOCENTE
-
-Login
-→ Inicio
-→ Mis Planes
-→ Plan
-→ Actividades
-→ Evidencias
-→ Reportes
-→ Notificaciones
-→ Perfil
-
-REVISOR
-
-Bandeja de revisión
-→ Revisar Plan
-→ Evidencias por validar
-→ Seguimiento
-→ Notificaciones
-→ Perfil
-
-ADMINISTRADOR
-
-Panel General
-→ Usuarios
-→ Grupos
-→ Períodos
-→ Catálogos
-→ Flujos
-→ Feriados
-→ Plantillas
-→ Auditoría
-→ Reportes / Cierre
-→ Perfil
-
-No crear una pantalla especial de "presentación".
-
-Solo garantizar que la navegación existente permita recorrer estos
-flujos.
+No saturar la tabla; el número de formato puede verse en el detalle.
 
 ==========================================================
-RESTRICCIÓN FINAL
+22. ADMINISTRACIÓN → PLANTILLAS
 ==========================================================
 
-Este módulo NO debe convertirse en otro módulo grande.
+Cambiar:
 
-Prioridad:
+Informe
+ESTRUCTURA PENDIENTE DE DEFINICIÓN INSTITUCIONAL
 
-consistencia > nuevas funciones.
+por:
 
-No crear:
+Informe
 
-- configuración avanzada de perfil;
-- foto real de usuario;
-- preferencias visuales;
-- idioma;
-- MFA;
-- sesiones activas;
-- logs de dispositivos;
-- privacidad;
-- firma de perfil;
-- notificaciones configurables;
+Formato:
+UTA-SGC-A-2-1-P7-T2
 
-porque no forman parte de los requerimientos confirmados.
+Estado:
+ACTIVA
+
+Plan:
+
+Formato:
+UTA-SGC-A-2-1-P7-T1
+
+Estado:
+ACTIVA
+
+No inventar una tercera plantilla.
 
 ==========================================================
-VERIFICACIÓN TÉCNICA
+23. ESCENARIO DEMO PRINCIPAL
 ==========================================================
 
-Ejecutar al finalizar:
+Demostrar:
 
-npx tsc --noEmit
-npm run build
+Andrea
+↓
+Mis Documentos
+↓
+Nuevo Documento
+↓
+Informe
+↓
+Origen:
+Derivado de Plan de Trabajo
+↓
+Plan relacionado:
+Unidad de Titulación — 1.0
+↓
+Carrera
+↓
+Antecedentes
+↓
+Desarrollo
 
-Entregar un resumen de:
-d
-1. Pantallas de Perfil implementadas.
-2. Cambio de contraseña.
-3. Estados vacíos/restringidos.
-4. Inconsistencias globales detectadas y corregidas.
-5. Controles DEMO conservados.
-6. Resultado de TypeScript y Build.
+Las actividades y medios aparecen automáticamente.
 
-NO iniciar otro módulo.
+Andrea completa:
+
+Porcentaje de ejecución
+Observaciones
+↓
+Conclusiones
+↓
+Oportunidades de mejora
+↓
+Registro de contactos:
+No aplica
+↓
+Anexos:
+No aplica
+↓
+Previsualización oficial T2
+↓
+Firma
+↓
+Enviar
+↓
+Carlos
+↓
+Bandeja de Revisión
+↓
+Tipo:
+Informe
+↓
+Revisar página por página
+↓
+DEVOLVER
+o
+APROBAR Y FIRMAR
+↓
+Validación final
