@@ -38,7 +38,7 @@ export default function DocumentPdfPageViewer({
   readOnly = false,
 }: DocumentPdfPageViewerProps) {
   const isPlan = artifact.documentType === "PLAN_TRABAJO";
-  const totalPages = artifact.pageCount || 5;
+  const totalPages = artifact.pageCount || (artifact as any).pages?.length || 5;
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const containerRef = useRef<HTMLDivElement>(null);

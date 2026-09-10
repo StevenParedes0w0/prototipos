@@ -189,7 +189,7 @@ export default function WizardInformeView({
     titulo: titulo.replace(/^INFORME DE:\\s*/i, ""),
     formalVersion: "1.0",
     reviewRound: 1,
-    pageCount: 5,
+    pageCount: (window as any)?.previewPages?.length || 5,
     generatedAt: `${fecha} 09:30`,
     generatedBy: "Ing. Andrea Pérez, Mg.",
     grupo,
