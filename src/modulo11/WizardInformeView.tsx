@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
-import { AnexoDoc, DocumentMasterState } from "../documentEngine/types";
+import {
+  ActividadInformeDoc,
+  AnexoDoc,
+  ContactoDelegacionDoc,
+  DocumentArtifact,
+} from "../documentEngine/types";
+import {
+  CARRERAS_USUARIO_ANDREA,
+  FECHA_SISTEMA,
+} from "../documentEngine/mockDataDocument";
 import DocumentPdfPageViewer from "../documentEngine/DocumentPdfPageViewer";
 import ModalFirmaDocumental from "../documentEngine/ModalFirmaDocumental";
 
@@ -10,22 +19,22 @@ interface WizardInformeViewProps {
   onCancel: () => void;
 }
 
-const AI_OPTIONS_INTRO = [
-  "Redacción formal institucional",
-  "Enfocada en cumplimiento de metas",
-  "Resumen conciso y ejecutivo",
+const AI_OPTIONS_ANTECEDENTES = [
+  "Enfocar en cumplimiento de objetivos del Plan de Trabajo",
+  "Redacción formal institucional según lineamientos FISEI",
+  "Resumen ejecutivo del período académico",
 ];
 
-const AI_OPTIONS_DESARROLLO = [
-  "Estructurar por fases cronológicas",
-  "Resaltar coordinación y gestión técnica",
-  "Enfatizar articulación con normativas FISEI",
+const AI_OPTIONS_CONCLUSIONES = [
+  "Resaltar porcentaje global de cumplimiento y logros",
+  "Destacar impacto académico y formación técnica",
+  "Enfatizar participación estudiantil y docente",
 ];
 
-const AI_OPTIONS_RESULTADOS = [
-  "Cuantificar logros e indicadores",
-  "Resumir impacto académico y formativo",
-  "Destacar entregables y verificación",
+const AI_OPTIONS_OPORTUNIDADES = [
+  "Optimizar la disponibilidad y reserva de laboratorios",
+  "Fortalecer la articulación previa con tribunales de grado",
+  "Digitalización y automatización de medios de verificación",
 ];
 
 export default function WizardInformeView({
@@ -33,42 +42,78 @@ export default function WizardInformeView({
   onFinish,
   onCancel,
 }: WizardInformeViewProps) {
+  const { documents, generarArtefactoInforme, firmarComoElaborador, enviarARevision } = docEngine;
+
   const [step, setStep] = useState<number>(1);
   const [maxReached, setMaxReached] = useState<number>(1);
 
+  // Obtener planes disponibles del usuario para derivación
+  const planesDisponibles = documents.filter(
+    (d) => d.documentType === "PLAN_TRABAJO"
+  );
+  const defaultPlan = planesDisponibles[0];
+
   // Paso 1: Información General
-  const [periodo, setPeriodo] = useState("Julio – Diciembre 2026");
+  const [unidadAcademica] = useState("Facultad de Ingeniería en Sistemas, Electrónica e Industrial");
+  const [carrera, setCarrera] = useState<string>(CARRERAS_USUARIO_ANDREA[0]);
   const [grupo, setGrupo] = useState("Unidad de Titulación");
-  const [documentoRelacionado, setDocumentoRelacionado] = useState(
-    "Plan de Trabajo — Unidad de Titulación — Versión 1.0"
-  );
+  const [periodo, setPeriodo] = useState("Julio – Diciembre 2026");
+  const [fecha, setFecha] = useState(FECHA_SISTEMA);
   const [titulo, setTitulo] = useState("Informe de seguimiento de actividades de titulación");
-  const [fecha, setFecha] = useState("07/09/2026");
+  const [informeOrigen, setInformeOrigen] = useState<"DERIVADO_PLAN" | "INDEPENDIENTE">("DERIVADO_PLAN");
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(defaultPlan?.id || "");
 
-  // Paso 2: Contenido
-  const [introduccion, setIntroduccion] = useState(
-    "El presente informe institucional detalla el avance y resultados de las jornadas técnicas y procesos de seguimiento curricular en la Unidad de Titulación durante el período Julio – Diciembre 2026."
-  );
-  const [desarrollo, setDesarrollo] = useState(
-    "Se realizaron revisiones periódicas de los anteproyectos de grado, talleres de actualización metodológica y coordinación con los tribunales de sustentación para asegurar el cumplimiento del cronograma académico institucional."
-  );
-  const [resultados, setResultados] = useState(
-    "Se registró la aprobación de anteproyectos con cumplimiento de los estándares de calidad académica y vinculación con líneas de investigación de la FISEI."
-  );
-  const [observaciones, setObservaciones] = useState(
-    "Se recomienda mantener la articulación con los laboratorios de cómputo para futuras convocatorias."
+  // Helper para extraer actividades de un plan
+  const getActividadesFromPlan = (planId: string): ActividadInformeDoc[] => {
+    const targetPlan = documents.find((d) => d.id === planId);
+    if (!targetPlan || !targetPlan.currentArtifact.matriz) return [];
+    return targetPlan.currentArtifact.matriz.map((m, idx) => ({
+      id: idx + 1,
+      actividad: m.nombre,
+      mediosVerificacion: (m.medios && m.medios.length > 0) ? m.medios.join("; ") : "Registro institucional",
+      porcentajeEjecucion: 100,
+      observaciones: "Actividad ejecutada en su totalidad conforme al cronograma.",
+    }));
+  };
+
+  // Paso 2: Antecedentes
+  const [antecedentes, setAntecedentes] = useState<string>(
+    "En cumplimiento a la planificación académica aprobada en el Plan de Trabajo de la Unidad de Titulación correspondiente al período académico Julio – Diciembre 2026, se presenta el presente informe de avance, gestión y cumplimiento de actividades institucionales."
   );
 
-  // Paso 3: Anexos
-  const [tieneAnexos, setTieneAnexos] = useState<"si" | "no">("si");
-  const [anexos, setAnexos] = useState<AnexoDoc[]>([
+  // Paso 3: Desarrollo de actividades
+  const [actividadesInforme, setActividadesInforme] = useState<ActividadInformeDoc[]>(() => {
+    return defaultPlan ? getActividadesFromPlan(defaultPlan.id) : [];
+  });
+  const [desarrolloTextoLibre, setDesarrolloTextoLibre] = useState<string>(
+    "Durante el presente período académico se ejecutaron actividades emergentes y procesos de gestión no programados en atención a requerimientos institucionales de la facultad."
+  );
+
+  // Paso 4: Conclusiones y Oportunidades
+  const [conclusiones, setConclusiones] = useState<string>(
+    "Se ejecutaron satisfactoriamente las jornadas de revisión, asesoría metodológica y sustentación con un alto índice de cumplimiento del cronograma planificado."
+  );
+  const [oportunidadesMejora, setOportunidadesMejora] = useState<string>(
+    "Fortalecer la articulación previa con los laboratorios de cómputo y coordinar con mayor antelación las agendas de los tribunales de grado."
+  );
+
+  // Paso 5: Registro de contactos y gestiones
+  const [aplicaRegistroContactos, setAplicaRegistroContactos] = useState<boolean>(false);
+  const [contactosDelegacion, setContactosDelegacion] = useState<ContactoDelegacionDoc[]>([
     {
       id: 1,
-      nombre: "Registro de avance y actas de seguimiento de titulación",
-      archivo: "actas_seguimiento_titulacion_2026.pdf",
-      tamano: "850 KB",
+      nombreDelegacion: "Visita Técnica y Vinculación con Empresas de Software",
+      ciudadPaisInstitucion: "Quito, Ecuador — Centro de Innovación Tecnológica",
+      entidadPersonaContacto: "Ing. Marco Silva (Director de Operaciones)",
+      datosContacto: "msilva@techinnovacion.ec · +593 99 876 5432",
+      temaProposito: "Gestión de plazas de prácticas preprofesionales para estudiantes de la FISEI",
+      acuerdoSeguimiento: "Convenio marco en revisión legal; entrega de nómina de estudiantes en octubre 2026.",
     },
   ]);
+
+  // Paso 6: Anexos
+  const [tieneAnexos, setTieneAnexos] = useState<"si" | "no">("no");
+  const [anexos, setAnexos] = useState<AnexoDoc[]>([]);
 
   // Modales & AI
   const [aiMenuField, setAiMenuField] = useState<string | null>(null);
@@ -76,7 +121,20 @@ export default function WizardInformeView({
   const [aiModalData, setAiModalData] = useState<{ field: string; original: string; suggestion: string } | null>(null);
   const [showFirmaModal, setShowFirmaModal] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
-  const [newDocId, setNewDocId] = useState<string | null>(null);
+
+  // Cambio de Plan seleccionado
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanId(planId);
+    const targetPlan = documents.find((d) => d.id === planId);
+    if (targetPlan) {
+      setGrupo(targetPlan.grupo);
+      setTitulo(`Informe de actividades — ${targetPlan.grupo}`);
+      setAntecedentes(
+        `En cumplimiento a la planificación académica aprobada en el Plan de Trabajo: ${targetPlan.nombre} (Versión ${targetPlan.formalVersion}) correspondiente al período académico ${targetPlan.periodo}, se presenta el informe de avance y resultados de las actividades ejecutadas.`
+      );
+      setActividadesInforme(getActividadesFromPlan(planId));
+    }
+  };
 
   // AI handler
   const handleTriggerAi = (field: string, option: string) => {
@@ -87,26 +145,26 @@ export default function WizardInformeView({
       let original = "";
       let suggestion = "";
 
-      if (field === "introduccion") {
-        original = introduccion;
-        suggestion = `${introduccion} En concordancia con los lineamientos académicos de la FISEI (${option.toLowerCase()}), se sistematizan las acciones estratégicas ejecutadas para optimizar el rendimiento y trazabilidad.`;
-      } else if (field === "desarrollo") {
-        original = desarrollo;
-        suggestion = `${desarrollo} Asimismo, se dio estricto cumplimiento a los mecanismos de evaluación institucional con validación permanente de directores y tutores designados.`;
+      if (field === "antecedentes") {
+        original = antecedentes;
+        suggestion = `${antecedentes} En estricto apego a los estándares institucionales de calidad académica (${option.toLowerCase()}), se sistematizan los respaldos documentales y medios de verificación generados durante el período.`;
+      } else if (field === "conclusiones") {
+        original = conclusiones;
+        suggestion = `${conclusiones} Asimismo, se verificó que el 100% de los entregables cuentan con validación técnica y respaldo en las actas oficiales de la FISEI.`;
       } else {
-        original = resultados;
-        suggestion = `${resultados} Adicionalmente, el 100% de las metas planificadas cuentan con respaldo documental y medios de verificación archivados institucionalmente.`;
+        original = oportunidadesMejora;
+        suggestion = `${oportunidadesMejora} Se propone además implementar un cronograma unificado de seguimiento para optimizar la trazabilidad de las actividades del próximo ciclo académico.`;
       }
 
       setAiModalData({ field, original, suggestion });
-    }, 700);
+    }, 600);
   };
 
   const handleApplyAi = () => {
     if (!aiModalData) return;
-    if (aiModalData.field === "introduccion") setIntroduccion(aiModalData.suggestion);
-    else if (aiModalData.field === "desarrollo") setDesarrollo(aiModalData.suggestion);
-    else if (aiModalData.field === "resultados") setResultados(aiModalData.suggestion);
+    if (aiModalData.field === "antecedentes") setAntecedentes(aiModalData.suggestion);
+    else if (aiModalData.field === "conclusiones") setConclusiones(aiModalData.suggestion);
+    else if (aiModalData.field === "oportunidades") setOportunidadesMejora(aiModalData.suggestion);
     setAiModalData(null);
   };
 
@@ -120,10 +178,14 @@ export default function WizardInformeView({
     setStep((s) => Math.max(1, s - 1));
   };
 
-  // Build artifact for Step 4 Preview
-  const previewArtifact = {
+  // Construir artefacto para Previsualización (Paso 7)
+  const selectedPlanDoc = documents.find((d) => d.id === selectedPlanId);
+  const relatedPlanTitulo = informeOrigen === "DERIVADO_PLAN" ? (selectedPlanDoc?.nombre || `Plan de Trabajo — ${grupo}`) : undefined;
+
+  const previewArtifact: DocumentArtifact = {
     id: "art-informe-preview",
-    documentType: "INFORME" as const,
+    documentType: "INFORME",
+    codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
     titulo,
     formalVersion: "1.0",
     reviewRound: 1,
@@ -131,8 +193,9 @@ export default function WizardInformeView({
     generatedAt: `${fecha} 09:30`,
     generatedBy: "Ing. Andrea Pérez, Mg.",
     grupo,
+    carrera,
     periodo,
-    unidadAcademica: "FISEI – UTA",
+    unidadAcademica,
     elaborador: {
       id: "usr-andrea-01",
       nombre: "Ing. Andrea Pérez, Mg.",
@@ -140,13 +203,23 @@ export default function WizardInformeView({
       email: "andrea.perez@uta.edu.ec",
     },
     informeData: {
-      introduccion,
-      desarrollo,
-      resultados,
-      observaciones,
-      documentoRelacionado,
+      informeOrigen,
+      relatedPlanId: informeOrigen === "DERIVADO_PLAN" ? selectedPlanId : undefined,
+      relatedPlanTitulo,
+      antecedentes,
+      actividadesInforme: informeOrigen === "DERIVADO_PLAN" ? actividadesInforme : [],
+      desarrolloTextoLibre: informeOrigen === "INDEPENDIENTE" ? desarrolloTextoLibre : undefined,
+      conclusiones,
+      oportunidadesMejora,
+      aplicaRegistroContactos,
+      contactosDelegacion: aplicaRegistroContactos ? contactosDelegacion : [],
+      introduccion: antecedentes,
+      desarrollo: informeOrigen === "INDEPENDIENTE" ? desarrolloTextoLibre : "Se detallan las actividades en la matriz institucional.",
+      resultados: conclusiones,
+      observaciones: oportunidadesMejora,
+      documentoRelacionado: relatedPlanTitulo,
     },
-    tieneAnexos,
+    tieneAnexos: tieneAnexos,
     anexos: tieneAnexos === "si" ? anexos : [],
     signatures: isSigned
       ? [
@@ -154,100 +227,80 @@ export default function WizardInformeView({
             actorId: "usr-andrea-01",
             actor: "Ing. Andrea Pérez, Mg.",
             cargo: "Docente elaborador",
-            role: "docente" as const,
-            fecha,
-            hora: "10:15",
+            role: "docente",
+            fecha: FECHA_SISTEMA,
+            hora: "10:30",
             ubicacion: "Página 3 — Firmas de Responsabilidad: Elaborado por",
           },
         ]
       : [],
+    historialCambios: [
+      {
+        version: "1.0",
+        descripcion: "Elaboración inicial del Informe institucional",
+        fecha: FECHA_SISTEMA,
+      },
+    ],
   };
 
-  const handleEjecutarFirmaElaborador = (certFile: string, ubicacion: string) => {
-    // Generate new document in DocumentEngine
-    const createdDoc = docEngine.crearNuevoDocumento("INFORME", {
-      grupo,
-      periodo,
-      titulo,
-      documentoRelacionadoTitulo: documentoRelacionado,
-    });
-
-    // Generate artifact
-    docEngine.generarArtefactoInforme({
+  const handleFirmarDocumento = (certFile: string, ubicacion: string) => {
+    // Generar artefacto formal en motor
+    generarArtefactoInforme({
       titulo,
       grupo,
+      carrera,
       periodo,
-      documentoRelacionado,
-      introduccion,
-      desarrollo,
-      resultados,
-      observaciones,
+      informeOrigen,
+      relatedPlanId: informeOrigen === "DERIVADO_PLAN" ? selectedPlanId : undefined,
+      relatedPlanTitulo,
+      antecedentes,
+      actividadesInforme: informeOrigen === "DERIVADO_PLAN" ? actividadesInforme : [],
+      desarrolloTextoLibre: informeOrigen === "INDEPENDIENTE" ? desarrolloTextoLibre : undefined,
+      conclusiones,
+      oportunidadesMejora,
+      aplicaRegistroContactos,
+      contactosDelegacion: aplicaRegistroContactos ? contactosDelegacion : [],
       tieneAnexos,
       anexos: tieneAnexos === "si" ? anexos : [],
     });
 
-    // Sign as elaborator
-    docEngine.firmarComoElaborador(
-      certFile || "andrea_perez_firma.p12",
-      ubicacion || "Página 3 — Firmas de Responsabilidad: Elaborado por"
-    );
-
+    firmarComoElaborador(certFile, ubicacion);
     setIsSigned(true);
-    setNewDocId(createdDoc.id);
     setShowFirmaModal(false);
-    setStep(5);
+  };
+
+  const handleEnviarARevision = () => {
+    enviarARevision();
+    onFinish();
   };
 
   const stepLabels = [
-    { num: 1, label: "Información general" },
-    { num: 2, label: "Contenido del Informe" },
-    { num: 3, label: "Anexos institucionales" },
-    { num: 4, label: "Previsualización formal (A4)" },
-    { num: 5, label: "Firma y Envío" },
+    { num: 1, label: "Información General" },
+    { num: 2, label: "Antecedentes" },
+    { num: 3, label: "Desarrollo de Actividades" },
+    { num: 4, label: "Conclusiones y Oportunidades" },
+    { num: 5, label: "Registro de Contactos" },
+    { num: 6, label: "Anexos" },
+    { num: 7, label: "Previsualización T2" },
+    { num: 8, label: "Firma y Envío" },
   ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f8fafc" }}>
-      {/* AI Loading Modal */}
-      {aiLoading && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,47,86,0.35)",
-            zIndex: 300,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: "28px 36px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 14,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                border: "3px solid #e2e8f0",
-                borderTop: "3px solid #7c3aed",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a" }}>Generando redacción con IA...</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>Analizando estructura institucional FISEI</div>
-          </div>
-        </div>
-      )}
+      {/* Modal Firma Documental */}
+      <ModalFirmaDocumental
+        isOpen={showFirmaModal}
+        onClose={() => setShowFirmaModal(false)}
+        onFirmar={handleFirmarDocumento}
+        tituloDocumento={`Informe: ${titulo}`}
+        grupo={grupo}
+        formalVersion="1.0"
+        reviewRound={1}
+        actorNombre="Ing. Andrea Pérez, Mg."
+        actorCargo="Docente elaborador"
+        ubicacionSugerida="Página 3 — Firmas de Responsabilidad: Elaborado por"
+        accionTexto="FIRMAR INFORME"
+      />
 
       {/* AI Modal Comparison */}
       {aiModalData && (
@@ -312,18 +365,19 @@ export default function WizardInformeView({
         </div>
       )}
 
-      {/* Stepper Header */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "14px 28px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1000, margin: "0 auto" }}>
+      {/* Stepper Header (Compact) */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "12px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1100, margin: "0 auto", overflowX: "auto" }}>
           {stepLabels.map((s, idx) => (
             <React.Fragment key={s.num}>
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 6,
                   cursor: s.num <= maxReached ? "pointer" : "default",
                   opacity: s.num <= maxReached ? 1 : 0.45,
+                  flexShrink: 0,
                 }}
                 onClick={() => {
                   if (s.num <= maxReached) setStep(s.num);
@@ -331,26 +385,26 @@ export default function WizardInformeView({
               >
                 <div
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     borderRadius: "50%",
-                    background: step === s.num ? "#1a4f8a" : s.num < step ? "#16a34a" : "#f1f5f9",
+                    background: step === s.num ? "#7e22ce" : s.num < step ? "#16a34a" : "#f1f5f9",
                     color: step === s.num || s.num < step ? "#fff" : "#64748b",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontWeight: 700,
-                    fontSize: 12,
+                    fontSize: 11,
                   }}
                 >
                   {s.num < step ? "✓" : s.num}
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#1a4f8a" : "#475569" }}>
+                <div style={{ fontSize: 12, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#7e22ce" : "#475569" }}>
                   {s.label}
                 </div>
               </div>
               {idx < stepLabels.length - 1 && (
-                <div style={{ flex: 1, height: 2, background: s.num < step ? "#16a34a" : "#e2e8f0", margin: "0 10px", maxWidth: 50 }} />
+                <div style={{ width: 20, height: 1.5, background: s.num < step ? "#16a34a" : "#e2e8f0", margin: "0 6px", flexShrink: 0 }} />
               )}
             </React.Fragment>
           ))}
@@ -366,175 +420,335 @@ export default function WizardInformeView({
             <div>
               <div style={{ marginBottom: 18 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                  Paso 1 de 5 · Creación de Informe
+                  Paso 1 de 8 · Formato Oficial UTA-SGC-A-2-1-P7-T2
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
                   Información General del Informe
                 </h1>
                 <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
-                  Defina el grupo institucional, período académico y documento de referencia para este informe.
+                  Defina los datos institucionales, la carrera académica y el origen del informe.
                 </p>
               </div>
 
               <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "22px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
-                    <label className="form-label required">Período Académico</label>
-                    <select className="form-select" value={periodo} onChange={(e) => setPeriodo(e.target.value)}>
-                      <option>Julio – Diciembre 2026</option>
-                      <option>Enero – Junio 2026</option>
+                    <label className="form-label required">Unidad Académica / Administrativa</label>
+                    <input className="form-input" value={unidadAcademica} disabled style={{ background: "#f8fafc" }} />
+                  </div>
+
+                  <div>
+                    <label className="form-label required">Carrera</label>
+                    <select
+                      className="form-select"
+                      value={carrera}
+                      onChange={(e) => setCarrera(e.target.value)}
+                    >
+                      {CARRERAS_USUARIO_ANDREA.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
                     </select>
+                    <span style={{ fontSize: 11, color: "#64748b", marginTop: 3, display: "block" }}>
+                      Carreras institucionales vinculadas al docente elaborador.
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+                  <div>
+                    <label className="form-label required">Informe de (Título institucional)</label>
+                    <input
+                      className="form-input"
+                      value={titulo}
+                      onChange={(e) => setTitulo(e.target.value)}
+                    />
                   </div>
                   <div>
-                    <label className="form-label required">Grupo Institucional</label>
-                    <select className="form-select" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
-                      <option>Unidad de Titulación</option>
-                      <option>Comisión de Eventos Académicos</option>
-                      <option>Club Académico de Software</option>
-                    </select>
+                    <label className="form-label required">Período Académico</label>
+                    <input className="form-input" value={periodo} onChange={(e) => setPeriodo(e.target.value)} />
                   </div>
-                </div>
-
-                <div>
-                  <label className="form-label">Documento Relacionado / Plan de Trabajo Base (Opcional)</label>
-                  <select
-                    className="form-select"
-                    value={documentoRelacionado}
-                    onChange={(e) => setDocumentoRelacionado(e.target.value)}
-                  >
-                    <option value="">— Sin vinculación directa —</option>
-                    <option value="Plan de Trabajo — Unidad de Titulación — Versión 1.0">
-                      Plan de Trabajo — Unidad de Titulación — Versión 1.0 (EN EJECUCIÓN)
-                    </option>
-                    <option value="Plan de Trabajo — Comisión de Eventos Académicos — Versión 1.0">
-                      Plan de Trabajo — Comisión de Eventos Académicos — Versión 1.0 (BORRADOR)
-                    </option>
-                  </select>
-                  <div className="form-hint">
-                    Vincular un Plan de Trabajo permite asociar este informe al seguimiento curricular de la facultad.
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label required">Título del Informe</label>
-                  <input
-                    className="form-input"
-                    value={titulo}
-                    onChange={(e) => setTitulo(e.target.value)}
-                    placeholder="Ej. Informe de seguimiento de actividades de titulación"
-                  />
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
-                    <label className="form-label required">Fecha de Emisión</label>
-                    <input className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                    <label className="form-label required">Grupo Institucional / Comisión</label>
+                    <input className="form-input" value={grupo} onChange={(e) => setGrupo(e.target.value)} />
                   </div>
                   <div>
-                    <label className="form-label">Docente Elaborador</label>
-                    <input className="form-input" value="Ing. Andrea Pérez, Mg." disabled style={{ background: "#f8fafc", color: "#64748b" }} />
+                    <label className="form-label required">Fecha de Elaboración</label>
+                    <input className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
                   </div>
+                </div>
+
+                {/* Origen del Informe */}
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 16 }}>
+                  <label className="form-label required">Origen del Informe</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
+                    <label
+                      style={{
+                        border: `2px solid ${informeOrigen === "DERIVADO_PLAN" ? "#7e22ce" : "#e2e8f0"}`,
+                        borderRadius: 8,
+                        padding: "12px 14px",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        cursor: "pointer",
+                        background: informeOrigen === "DERIVADO_PLAN" ? "#faf5ff" : "#fff",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="origen"
+                        checked={informeOrigen === "DERIVADO_PLAN"}
+                        onChange={() => setInformeOrigen("DERIVADO_PLAN")}
+                        style={{ marginTop: 2, accentColor: "#7e22ce" }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
+                          Derivado de un Plan de Trabajo
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                          Importa automáticamente las actividades y medios de verificación planificados.
+                        </div>
+                      </div>
+                    </label>
+
+                    <label
+                      style={{
+                        border: `2px solid ${informeOrigen === "INDEPENDIENTE" ? "#7e22ce" : "#e2e8f0"}`,
+                        borderRadius: 8,
+                        padding: "12px 14px",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        cursor: "pointer",
+                        background: informeOrigen === "INDEPENDIENTE" ? "#faf5ff" : "#fff",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="origen"
+                        checked={informeOrigen === "INDEPENDIENTE"}
+                        onChange={() => setInformeOrigen("INDEPENDIENTE")}
+                        style={{ marginTop: 2, accentColor: "#7e22ce" }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
+                          Informe independiente
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                          Para gestiones, comisiones o actividades no planificadas previamente.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {informeOrigen === "DERIVADO_PLAN" && (
+                    <div style={{ marginTop: 14, background: "#f8fafc", padding: "14px 16px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                      <label className="form-label required">Plan de Trabajo Relacionado</label>
+                      <select
+                        className="form-select"
+                        value={selectedPlanId}
+                        onChange={(e) => handleSelectPlan(e.target.value)}
+                      >
+                        {planesDisponibles.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nombre} — {p.periodo} (v{p.formalVersion})
+                          </option>
+                        ))}
+                      </select>
+                      <span style={{ fontSize: 11.5, color: "#7e22ce", marginTop: 4, display: "block", fontWeight: 600 }}>
+                        ✓ Las actividades y medios de verificación se sincronizarán desde este Plan.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* PASO 2: CONTENIDO */}
+          {/* PASO 2: ANTECEDENTES */}
           {step === 2 && (
             <div>
               <div style={{ marginBottom: 18 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                    Paso 2 de 5 · Secciones del Informe
-                  </span>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, color: "#92400e", background: "#fef3c7", padding: "2px 8px", borderRadius: 4 }}>
-                    ESTRUCTURA DEMO
-                  </span>
-                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 2 de 8 · Sección 1
+                </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
-                  Contenido del Informe
+                  1. Antecedentes
                 </h1>
-                <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 12px" }}>
-                  Redacte la introducción, el desarrollo de actividades y los resultados obtenidos.
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  Redacte la fundamentación y contexto institucional del informe.
                 </p>
+              </div>
 
-                {/* Banner explicativo DEMO */}
-                <div
-                  style={{
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
-                    borderRadius: 8,
-                    padding: "10px 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>ℹ️</span>
-                  <span style={{ fontSize: 12.5, color: "#92400e", lineHeight: 1.45 }}>
-                    La estructura definitiva del Informe dependerá de la plantilla documental institucional que se establezca.
-                  </span>
+              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <label className="form-label required" style={{ margin: 0, fontSize: 14 }}>
+                    Texto de Antecedentes
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
+                      onClick={() => setAiMenuField(aiMenuField === "antecedentes" ? null : "antecedentes")}
+                    >
+                      ✨ Mejorar redacción
+                    </button>
+                    {aiMenuField === "antecedentes" && (
+                      <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
+                        {AI_OPTIONS_ANTECEDENTES.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => handleTriggerAi("antecedentes", opt)}
+                            style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#1e2a3a" }}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                <textarea
+                  className="form-textarea"
+                  rows={6}
+                  value={antecedentes}
+                  onChange={(e) => setAntecedentes(e.target.value)}
+                  placeholder="Redacte los antecedentes..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PASO 3: DESARROLLO DE ACTIVIDADES */}
+          {step === 3 && (
+            <div>
+              <div style={{ marginBottom: 18 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 3 de 8 · Sección 2
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
+                  2. Desarrollo de Actividades
+                </h1>
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  {informeOrigen === "DERIVADO_PLAN"
+                    ? "Complete el porcentaje de ejecución y las observaciones para cada actividad derivada del Plan de Trabajo."
+                    : "Redacte el desarrollo detallado de las actividades realizadas."}
+                </p>
+              </div>
+
+              {informeOrigen === "DERIVADO_PLAN" ? (
+                <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                  <div style={{ padding: "14px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 12.5, color: "#475569" }}>
+                    Tabla 1: Cumplimiento y porcentaje de ejecución de actividades planificadas
+                  </div>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: "30%" }}>Actividades</th>
+                        <th style={{ width: "30%" }}>Medios de Verificación</th>
+                        <th style={{ width: "15%" }}>% Ejecución (0-100)</th>
+                        <th style={{ width: "25%" }}>Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {actividadesInforme.map((act, idx) => (
+                        <tr key={act.id}>
+                          <td style={{ fontSize: 12.5, fontWeight: 600, color: "#1e2a3a" }}>
+                            {act.actividad}
+                          </td>
+                          <td style={{ fontSize: 12, color: "#475569" }}>
+                            {act.mediosVerificacion}
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="form-input"
+                                style={{ width: 70, textAlign: "center", padding: "4px 6px" }}
+                                value={act.porcentajeEjecucion}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                  const next = [...actividadesInforme];
+                                  next[idx].porcentajeEjecucion = val;
+                                  setActividadesInforme(next);
+                                }}
+                              />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>%</span>
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              className="form-input"
+                              style={{ fontSize: 12 }}
+                              value={act.observaciones}
+                              onChange={(e) => {
+                                const next = [...actividadesInforme];
+                                next[idx].observaciones = e.target.value;
+                                setActividadesInforme(next);
+                              }}
+                              placeholder="Observaciones de avance..."
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
+                  <label className="form-label required">Desarrollo de actividades ejecutadas</label>
+                  <textarea
+                    className="form-textarea"
+                    rows={8}
+                    value={desarrolloTextoLibre}
+                    onChange={(e) => setDesarrolloTextoLibre(e.target.value)}
+                    placeholder="Detalle las actividades desarrolladas..."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PASO 4: CONCLUSIONES Y OPORTUNIDADES */}
+          {step === 4 && (
+            <div>
+              <div style={{ marginBottom: 18 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 4 de 8 · Secciones 3 y 4
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
+                  Conclusiones y Oportunidades de Mejora
+                </h1>
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  Establezca los logros alcanzados y las recomendaciones para futuros períodos.
+                </p>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                {/* Introducción */}
+                {/* 3. Conclusiones */}
                 <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <label className="form-label required" style={{ margin: 0, fontSize: 14 }}>
-                      1. Introducción / Descripción
+                      3. Conclusiones
                     </label>
                     <div style={{ position: "relative" }}>
                       <button
                         className="btn btn-ghost btn-xs"
                         style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
-                        onClick={() => setAiMenuField(aiMenuField === "introduccion" ? null : "introduccion")}
+                        onClick={() => setAiMenuField(aiMenuField === "conclusiones" ? null : "conclusiones")}
                       >
                         ✨ Mejorar redacción
                       </button>
-                      {aiMenuField === "introduccion" && (
-                        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 230, marginTop: 4 }}>
-                          {AI_OPTIONS_INTRO.map((opt) => (
+                      {aiMenuField === "conclusiones" && (
+                        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
+                          {AI_OPTIONS_CONCLUSIONES.map((opt) => (
                             <button
                               key={opt}
-                              onClick={() => handleTriggerAi("introduccion", opt)}
-                              style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#1e2a3a" }}
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <textarea
-                    className="form-textarea"
-                    rows={3}
-                    value={introduccion}
-                    onChange={(e) => setIntroduccion(e.target.value)}
-                  />
-                </div>
-
-                {/* Desarrollo */}
-                <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <label className="form-label required" style={{ margin: 0, fontSize: 14 }}>
-                      2. Desarrollo de Actividades / Gestión
-                    </label>
-                    <div style={{ position: "relative" }}>
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
-                        onClick={() => setAiMenuField(aiMenuField === "desarrollo" ? null : "desarrollo")}
-                      >
-                        ✨ Mejorar redacción
-                      </button>
-                      {aiMenuField === "desarrollo" && (
-                        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 250, marginTop: 4 }}>
-                          {AI_OPTIONS_DESARROLLO.map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => handleTriggerAi("desarrollo", opt)}
+                              onClick={() => handleTriggerAi("conclusiones", opt)}
                               style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#1e2a3a" }}
                             >
                               {opt}
@@ -547,31 +761,31 @@ export default function WizardInformeView({
                   <textarea
                     className="form-textarea"
                     rows={4}
-                    value={desarrollo}
-                    onChange={(e) => setDesarrollo(e.target.value)}
+                    value={conclusiones}
+                    onChange={(e) => setConclusiones(e.target.value)}
                   />
                 </div>
 
-                {/* Resultados */}
+                {/* 4. Oportunidades de mejora */}
                 <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <label className="form-label required" style={{ margin: 0, fontSize: 14 }}>
-                      3. Resultados Registrados
+                      4. Oportunidades de Mejora
                     </label>
                     <div style={{ position: "relative" }}>
                       <button
                         className="btn btn-ghost btn-xs"
                         style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}
-                        onClick={() => setAiMenuField(aiMenuField === "resultados" ? null : "resultados")}
+                        onClick={() => setAiMenuField(aiMenuField === "oportunidades" ? null : "oportunidades")}
                       >
                         ✨ Mejorar redacción
                       </button>
-                      {aiMenuField === "resultados" && (
-                        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 240, marginTop: 4 }}>
-                          {AI_OPTIONS_RESULTADOS.map((opt) => (
+                      {aiMenuField === "oportunidades" && (
+                        <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
+                          {AI_OPTIONS_OPORTUNIDADES.map((opt) => (
                             <button
                               key={opt}
-                              onClick={() => handleTriggerAi("resultados", opt)}
+                              onClick={() => handleTriggerAi("oportunidades", opt)}
                               style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#1e2a3a" }}
                             >
                               {opt}
@@ -583,128 +797,166 @@ export default function WizardInformeView({
                   </div>
                   <textarea
                     className="form-textarea"
-                    rows={3}
-                    value={resultados}
-                    onChange={(e) => setResultados(e.target.value)}
-                  />
-                </div>
-
-                {/* Observaciones DEMO */}
-                <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <label className="form-label" style={{ margin: 0, fontSize: 14 }}>
-                      4. Observaciones y Recomendaciones
-                    </label>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#92400e", background: "#fef3c7", padding: "2px 7px", borderRadius: 4 }}>
-                      ESTRUCTURA PRELIMINAR DEMO
-                    </span>
-                  </div>
-                  <textarea
-                    className="form-textarea"
-                    rows={2}
-                    value={observaciones}
-                    onChange={(e) => setObservaciones(e.target.value)}
+                    rows={4}
+                    value={oportunidadesMejora}
+                    onChange={(e) => setOportunidadesMejora(e.target.value)}
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* PASO 3: ANEXOS */}
-          {step === 3 && (
+          {/* PASO 5: REGISTRO DE CONTACTOS Y GESTIONES */}
+          {step === 5 && (
             <div>
               <div style={{ marginBottom: 18 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                  Paso 3 de 5 · Documentación de Soporte
+                  Paso 5 de 8 · Sección 5
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
-                  Anexos Institucionales
+                  5. Registro de Contactos y Gestiones de la Delegación
                 </h1>
                 <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
-                  Adjunte evidencias o actas en formato PDF para complementar el informe.
+                  Indique si el informe contempla visitas técnicas, comisiones externas o contactos interinstitucionales.
                 </p>
               </div>
 
-              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "22px", display: "flex", flexDirection: "column", gap: 18 }}>
-                <div>
-                  <label className="form-label">¿Desea adjuntar anexos al informe?</label>
-                  <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13.5 }}>
+              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
+                <div style={{ marginBottom: 16 }}>
+                  <label className="form-label required">
+                    ¿Este Informe corresponde a una delegación, visita técnica, comisión u otro caso que requiera registrar contactos?
+                  </label>
+                  <div style={{ display: "flex", gap: 18, marginTop: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                       <input
                         type="radio"
-                        name="tieneAnexos"
-                        checked={tieneAnexos === "si"}
-                        onChange={() => setTieneAnexos("si")}
-                        style={{ accentColor: "#1a4f8a" }}
+                        name="contactosRadio"
+                        checked={aplicaRegistroContactos === true}
+                        onChange={() => setAplicaRegistroContactos(true)}
+                        style={{ accentColor: "#7e22ce" }}
                       />
-                      Sí, adjuntar anexos
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>Sí, registrar contactos y gestiones</span>
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13.5 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                       <input
                         type="radio"
-                        name="tieneAnexos"
-                        checked={tieneAnexos === "no"}
-                        onChange={() => setTieneAnexos("no")}
-                        style={{ accentColor: "#1a4f8a" }}
+                        name="contactosRadio"
+                        checked={aplicaRegistroContactos === false}
+                        onChange={() => setAplicaRegistroContactos(false)}
+                        style={{ accentColor: "#7e22ce" }}
                       />
-                      No adjuntar anexos
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>No (Se marcará como: No aplica en el documento oficial)</span>
                     </label>
                   </div>
                 </div>
 
-                {tieneAnexos === "si" && (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <h4 style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a", margin: 0 }}>
-                        Archivos Adjuntos ({anexos.length})
-                      </h4>
+                {aplicaRegistroContactos && (
+                  <div style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
+                        Tabla de Contactos y Gestiones Registradas
+                      </div>
                       <button
                         className="btn btn-secondary btn-xs"
                         onClick={() => {
-                          const newId = anexos.length + 1;
-                          setAnexos([
-                            ...anexos,
-                            {
-                              id: newId,
-                              nombre: `Anexo complementario ${newId}`,
-                              archivo: `evidencia_complementaria_${newId}.pdf`,
-                              tamano: "1.1 MB",
-                            },
-                          ]);
+                          const newRow: ContactoDelegacionDoc = {
+                            id: Date.now(),
+                            nombreDelegacion: "",
+                            ciudadPaisInstitucion: "",
+                            entidadPersonaContacto: "",
+                            datosContacto: "",
+                            temaProposito: "",
+                            acuerdoSeguimiento: "",
+                          };
+                          setContactosDelegacion([...contactosDelegacion, newRow]);
                         }}
                       >
-                        + Agregar Anexo Demo
+                        + Agregar Contacto / Gestión
                       </button>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {anexos.map((anexo, idx) => (
-                        <div
-                          key={anexo.id}
-                          style={{
-                            background: "#f8fafc",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: 8,
-                            padding: "10px 14px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1e2a3a" }}>
-                              Anexo {idx + 1}: {anexo.nombre}
-                            </div>
-                            <div style={{ fontSize: 11.5, color: "#64748b" }}>
-                              {anexo.archivo} · {anexo.tamano}
-                            </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      {contactosDelegacion.map((c, idx) => (
+                        <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, padding: "14px", position: "relative" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#7e22ce" }}>Contacto #{idx + 1}</span>
+                            {contactosDelegacion.length > 1 && (
+                              <button
+                                style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                                onClick={() => setContactosDelegacion(contactosDelegacion.filter((item) => item.id !== c.id))}
+                              >
+                                ✕ Eliminar
+                              </button>
+                            )}
                           </div>
-                          <button
-                            onClick={() => setAnexos(anexos.filter((a) => a.id !== anexo.id))}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 12 }}
-                          >
-                            Eliminar
-                          </button>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                            <input
+                              className="form-input"
+                              placeholder="Nombre o propósito de la delegación"
+                              style={{ fontSize: 12 }}
+                              value={c.nombreDelegacion}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].nombreDelegacion = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Ciudad, país o institución"
+                              style={{ fontSize: 12 }}
+                              value={c.ciudadPaisInstitucion}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].ciudadPaisInstitucion = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Entidad y persona de contacto"
+                              style={{ fontSize: 12 }}
+                              value={c.entidadPersonaContacto}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].entidadPersonaContacto = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Datos de contacto (email, teléfono)"
+                              style={{ fontSize: 12 }}
+                              value={c.datosContacto}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].datosContacto = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Tema o propósito de la reunión"
+                              style={{ fontSize: 12 }}
+                              value={c.temaProposito}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].temaProposito = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Acuerdo y seguimiento establecido"
+                              style={{ fontSize: 12 }}
+                              value={c.acuerdoSeguimiento}
+                              onChange={(e) => {
+                                const next = [...contactosDelegacion];
+                                next[idx].acuerdoSeguimiento = e.target.value;
+                                setContactosDelegacion(next);
+                              }}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -714,33 +966,132 @@ export default function WizardInformeView({
             </div>
           )}
 
-          {/* PASO 4: PREVISUALIZACIÓN FORMAL (A4) */}
-          {step === 4 && (
-            <div style={{ height: "70vh" }}>
-              <div style={{ marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                    Paso 4 de 5 · Validación Visual
-                  </span>
-                  <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", margin: "4px 0 0", fontFamily: "'DM Sans', sans-serif" }}>
-                    Previsualización Formal del Informe
-                  </h1>
-                </div>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setShowFirmaModal(true)}
-                  style={{ background: "#16a34a", border: "none" }}
-                >
-                  FIRMAR ELECTRÓNICAMENTE Y ENVIAR →
-                </button>
+          {/* PASO 6: ANEXOS */}
+          {step === 6 && (
+            <div>
+              <div style={{ marginBottom: 18 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 6 de 8 · Sección 6
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
+                  6. Anexos
+                </h1>
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  Adjunte documentación complementaria de soporte si corresponde.
+                </p>
               </div>
 
-              <div style={{ height: "calc(100% - 60px)", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
+                <label className="form-label required">¿El informe incluye anexos de soporte?</label>
+                <div style={{ display: "flex", gap: 18, margin: "8px 0 16px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="anexosRadio"
+                      checked={tieneAnexos === "si"}
+                      onChange={() => setTieneAnexos("si")}
+                      style={{ accentColor: "#7e22ce" }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Sí, adjuntar anexos</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="anexosRadio"
+                      checked={tieneAnexos === "no"}
+                      onChange={() => {
+                        setTieneAnexos("no");
+                        setAnexos([]);
+                      }}
+                      style={{ accentColor: "#7e22ce" }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>No (Se mostrará como: No aplica en el documento oficial)</span>
+                  </label>
+                </div>
+
+                {tieneAnexos === "si" && (
+                  <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1e2a3a" }}>Lista de Archivos Adjuntos</span>
+                      <button
+                        className="btn btn-secondary btn-xs"
+                        onClick={() => {
+                          const newAnexo: AnexoDoc = {
+                            id: Date.now(),
+                            nombre: "Documento de respaldo adicional",
+                            archivo: `anexo_${Date.now()}.pdf`,
+                            tamano: "750 KB",
+                          };
+                          setAnexos([...anexos, newAnexo]);
+                        }}
+                      >
+                        + Adjuntar Archivo
+                      </button>
+                    </div>
+
+                    {anexos.length === 0 ? (
+                      <div style={{ background: "#f8fafc", padding: "16px", textAlign: "center", color: "#64748b", borderRadius: 6 }}>
+                        Haga clic en "+ Adjuntar Archivo" para agregar documentación.
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {anexos.map((anexo, idx) => (
+                          <div key={anexo.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: "8px 12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 16 }}>📎</span>
+                              <div>
+                                <input
+                                  className="form-input"
+                                  style={{ fontSize: 12, padding: "2px 6px", width: 280 }}
+                                  value={anexo.nombre}
+                                  onChange={(e) => {
+                                    const next = [...anexos];
+                                    next[idx].nombre = e.target.value;
+                                    setAnexos(next);
+                                  }}
+                                />
+                                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                                  {anexo.archivo} · {anexo.tamano}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                              onClick={() => setAnexos(anexos.filter((a) => a.id !== anexo.id))}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* PASO 7: PREVISUALIZACIÓN OFICIAL T2 */}
+          {step === 7 && (
+            <div>
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 7 de 8 · Previsualización Oficial
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "4px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
+                  Formato Oficial UTA-SGC-A-2-1-P7-T2
+                </h1>
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  Verifique la diagramación completa, portada institucional, tablas y control de cambios antes de firmar.
+                </p>
+              </div>
+
+              <div style={{ height: 600, border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
                 <DocumentPdfPageViewer
                   artifact={previewArtifact}
                   formalVersion="1.0"
                   reviewRound={1}
-                  documentState="BORRADOR"
+                  documentState={isSigned ? "FIRMADO POR ELABORADOR" : "BORRADOR"}
                   observations={[]}
                   flowStages={docEngine.flowStages}
                   currentUser={{
@@ -751,59 +1102,75 @@ export default function WizardInformeView({
                   onOpenFirmar={() => setShowFirmaModal(true)}
                   onOpenDevolver={() => {}}
                   onAddObservacion={() => {}}
+                  readOnly={true}
                 />
               </div>
             </div>
           )}
 
-          {/* PASO 5: CONFIRMACIÓN Y ENVÍO */}
-          {step === 5 && (
-            <div style={{ textAlign: "center", padding: "40px 20px" }}>
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  background: "#dcfce7",
-                  color: "#166534",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 32,
-                  fontWeight: 800,
-                  margin: "0 auto 18px",
-                }}
-              >
-                ✓
+          {/* PASO 8: FIRMA Y ENVÍO */}
+          {step === 8 && (
+            <div>
+              <div style={{ marginBottom: 18 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", background: "#f3e8ff", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
+                  Paso 8 de 8 · Firma y Envío
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
+                  Firma Electrónica y Envío a Revisión
+                </h1>
+                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                  Estampe su firma electrónica de responsabilidad y despache el informe a la bandeja del revisor técnico.
+                </p>
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans', sans-serif", margin: "0 0 8px" }}>
-                Informe Firmado y Enviado a Revisión
-              </h1>
-              <p style={{ fontSize: 14, color: "#64748b", maxWidth: 540, margin: "0 auto 24px", lineHeight: 1.6 }}>
-                El informe <strong>"{titulo}"</strong> ha sido firmado electrónicamente por la docente elaboradora y transferido a la etapa de revisión técnica de la FISEI.
-              </p>
 
-              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px", maxWidth: 540, margin: "0 auto 28px", textAlign: "left" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 13 }}>
+              <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "28px", display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 22px" }}>
                   <div>
-                    <span style={{ color: "#64748b" }}>Tipo:</span> <strong>Informe</strong>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#7e22ce", textTransform: "uppercase" }}>
+                      Documento Listo para Firma
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", marginTop: 2 }}>
+                      {titulo}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                      Formato Nº: UTA-SGC-A-2-1-P7-T2 · Versión 1.0 (Ronda 1) · {carrera}
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ color: "#64748b" }}>Versión:</span> <strong>Versión 1.0 (Ronda 1)</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: "#64748b" }}>Estado:</span> <span style={{ color: "#1e40af", fontWeight: 700 }}>EN REVISIÓN</span>
-                  </div>
-                  <div>
-                    <span style={{ color: "#64748b" }}>Próximo Actor:</span> <strong>Ing. Carlos López, Mg.</strong>
-                  </div>
+
+                  {isSigned ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0", padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 800 }}>
+                      ✓ FIRMADO ELECTRÓNICAMENTE
+                    </span>
+                  ) : (
+                    <button
+                      className="btn btn-primary"
+                      style={{ background: "#7e22ce", border: "none", padding: "10px 18px", fontSize: 13, fontWeight: 700 }}
+                      onClick={() => setShowFirmaModal(true)}
+                    >
+                      ✍️ FIRMAR DOCUMENTO ELECTRÓNICAMENTE
+                    </button>
+                  )}
                 </div>
-              </div>
 
-              <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-                <button className="btn btn-primary" onClick={onFinish}>
-                  VOLVER A MIS DOCUMENTOS
-                </button>
+                {isSigned && (
+                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af" }}>
+                        Firma registrada exitosamente por Ing. Andrea Pérez, Mg.
+                      </div>
+                      <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
+                        El documento puede ser remitido formalmente a la etapa de Revisión Técnica.
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleEnviarARevision}
+                      style={{ background: "#16a34a", border: "none", padding: "10px 20px", fontSize: 13.5, fontWeight: 800 }}
+                    >
+                      ENVIAR A REVISIÓN →
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -811,64 +1178,26 @@ export default function WizardInformeView({
         </div>
       </div>
 
-      {/* Wizard Footer */}
-      {step < 5 && (
-        <div
-          style={{
-            background: "#fff",
-            borderTop: "1px solid #e2e8f0",
-            padding: "14px 28px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            {step === 1 ? (
-              <button className="btn btn-ghost" onClick={onCancel}>
-                Cancelar
-              </button>
-            ) : (
-              <button className="btn btn-ghost" onClick={handlePrevStep}>
-                ← Anterior
-              </button>
-            )}
-          </div>
+      {/* Wizard Footer Toolbar */}
+      <div style={{ padding: "14px 28px", borderTop: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <button className="btn btn-ghost" onClick={onCancel}>
+          Cancelar
+        </button>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            {step < 4 && (
-              <button className="btn btn-primary" onClick={handleNextStep}>
-                Continuar →
-              </button>
-            )}
-            {step === 4 && (
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowFirmaModal(true)}
-                style={{ background: "#16a34a", border: "none" }}
-              >
-                FIRMAR Y ENVIAR A REVISIÓN
-              </button>
-            )}
-          </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          {step > 1 && (
+            <button className="btn btn-secondary" onClick={handlePrevStep}>
+              ← Anterior
+            </button>
+          )}
+
+          {step < 8 && (
+            <button className="btn btn-primary" style={{ background: "#7e22ce", border: "none" }} onClick={handleNextStep}>
+              Siguiente →
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Modal Firma Documental */}
-      {showFirmaModal && (
-        <ModalFirmaDocumental
-          isOpen={showFirmaModal}
-          onClose={() => setShowFirmaModal(false)}
-          tituloDocumento={titulo}
-          grupo={grupo}
-          formalVersion="1.0"
-          reviewRound={1}
-          actorNombre="Ing. Andrea Pérez, Mg."
-          actorCargo="Docente elaborador"
-          ubicacionSugerida="Página 3 — Firmas de Responsabilidad: Elaborado por"
-          onFirmar={handleEjecutarFirmaElaborador}
-        />
-      )}
+      </div>
     </div>
   );
 }

@@ -57,10 +57,51 @@ export interface DocumentObservation {
 
 export type DocumentType = "PLAN_TRABAJO" | "INFORME";
 
+export interface ActividadInformeDoc {
+  id: number;
+  actividad: string;
+  mediosVerificacion: string;
+  porcentajeEjecucion: number; // 0 - 100
+  observaciones: string;
+}
+
+export interface ContactoDelegacionDoc {
+  id: number;
+  nombreDelegacion: string;
+  ciudadPaisInstitucion: string;
+  entidadPersonaContacto: string;
+  institucion?: string;
+  nombreCargo?: string;
+  datosContacto: string;
+  temaTratado?: string;
+  temaProposito?: string;
+  compromisoResponsablePlazo?: string;
+  acuerdoSeguimiento?: string;
+}
+
+export interface HistorialCambioFila {
+  version: string;
+  descripcion: string;
+  fecha: string;
+}
+
 export interface InformeDataDoc {
-  introduccion: string;
-  desarrollo: string;
-  resultados: string;
+  informeOrigen: "DERIVADO_PLAN" | "INDEPENDIENTE";
+  relatedPlanId?: string;
+  relatedPlanTitulo?: string;
+  antecedentes: string;
+  // Si DERIVADO_PLAN:
+  actividadesInforme?: ActividadInformeDoc[];
+  // Si INDEPENDIENTE:
+  desarrolloTextoLibre?: string;
+  conclusiones: string;
+  oportunidadesMejora: string;
+  aplicaRegistroContactos: boolean;
+  contactosDelegacion?: ContactoDelegacionDoc[];
+  // Campos de compatibilidad:
+  introduccion?: string;
+  desarrollo?: string;
+  resultados?: string;
   observaciones?: string;
   documentoRelacionado?: string;
 }
@@ -68,6 +109,7 @@ export interface InformeDataDoc {
 export interface DocumentArtifact {
   id: string;
   documentType: DocumentType;
+  codigoFormatoOficial?: "UTA-SGC-A-2-1-P7-T1" | "UTA-SGC-A-2-1-P7-T2" | string;
   titulo?: string;
   formalVersion: string; // e.g. "1.0"
   reviewRound: number;   // e.g. 1, 2, 3
@@ -75,23 +117,25 @@ export interface DocumentArtifact {
   generatedAt: string;   // e.g. "07/09/2026 09:30"
   generatedBy: string;   // "Ing. Andrea Pérez, Mg."
   grupo: string;         // "Comisión de Eventos Académicos" o "Unidad de Titulación"
+  carrera: string;       // "Ingeniería de Software"
   periodo: string;       // "Julio – Diciembre 2026"
-  unidadAcademica: string; // "FISEI – UTA"
+  unidadAcademica: string; // "Facultad de Ingeniería en Sistemas, Electrónica e Industrial"
   elaborador: {
     id?: string;
     nombre: string;
     cargo: string;
     email: string;
   };
-  // Campos específicos para Plan de Trabajo
+  // Campos específicos para Plan de Trabajo (T1)
   justificacion?: string;
   objetivo?: string;
   matriz?: ActividadMatrizDoc[];
-  // Campos específicos para Informe
+  // Campos específicos para Informe (T2)
   informeData?: InformeDataDoc;
   tieneAnexos: "si" | "no" | null;
   anexos: AnexoDoc[];
   signatures: DocumentSignature[];
+  historialCambios?: HistorialCambioFila[];
 }
 
 export interface FlowStageNode {
@@ -104,19 +148,23 @@ export interface FlowStageNode {
   actorRole: "docente" | "revisor" | "validador";
   estado: "PENDIENTE" | "FIRMADO" | "APROBADO" | "DEVUELTO" | "EN_CURSO";
   signature?: DocumentSignature;
+  actionLabel?: "ELABORADO_POR" | "REVISADO_POR" | "VALIDADO_POR" | "APROBADO_POR";
 }
 
 export interface DocumentMasterState {
   id: string;
   codigo: string;
+  codigoFormatoOficial?: "UTA-SGC-A-2-1-P7-T1" | "UTA-SGC-A-2-1-P7-T2" | string;
   nombre: string;
   documentType: DocumentType;
   grupo: string;
+  carrera?: string;
   periodo: string;
   formalVersion: string;
   reviewRound: number;
   documentState: DocumentState;
   operationalState?: "EN EJECUCIÓN" | "FINALIZADO";
+  finalActionLabel?: "VALIDADO_POR" | "APROBADO_POR";
   finalValidatorId?: string;
   finalValidatorName?: string;
   currentArtifact: DocumentArtifact;

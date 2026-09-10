@@ -362,80 +362,112 @@ export default function DocumentPdfPageViewer({
 
               {/* Page Content Switch */}
               <div>
-                {/* Institutional Header (Shown on Page 1) */}
+                {/* Institutional SGC Header (Shown on Page 1) */}
                 {currentPage === 1 && (
-                  <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 14, marginBottom: 20 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                      <div
-                        style={{
-                          width: 58,
-                          height: 58,
-                          borderRadius: 6,
-                          background: "#f0f4f8",
-                          border: "1.5px solid #cbd5e1",
-                          flexShrink: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 9,
-                          fontWeight: 700,
-                          color: "#1a4f8a",
-                          textAlign: "center",
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        UTA<br />FISEI
+                  <div style={{ border: "2px solid #1a4f8a", marginBottom: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 140px", borderBottom: "1.5px solid #1a4f8a" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderRight: "1.5px solid #1a4f8a", padding: 6, fontWeight: 800, color: "#1a4f8a", fontSize: 13, textAlign: "center", lineHeight: 1.2 }}>
+                        UTA
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          Universidad Técnica de Ambato
+                      <div style={{ padding: "8px 12px", textAlign: "center", borderRight: "1.5px solid #1a4f8a" }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          SISTEMA DE GESTIÓN DE LA CALIDAD
                         </div>
-                        <div style={{ fontSize: 10, color: "#475569", marginTop: 1 }}>
-                          Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+                        <div style={{ fontSize: 8.5, color: "#475569", fontWeight: 700 }}>
+                          UNIVERSIDAD TÉCNICA DE AMBATO
                         </div>
-                        <div style={{ fontSize: 13.5, fontWeight: 800, color: "#0f172a", marginTop: 8, textTransform: "uppercase" }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", marginTop: 4, textTransform: "uppercase" }}>
                           {artifact.documentType === "INFORME"
-                            ? `Informe: ${artifact.titulo || artifact.grupo}`
-                            : `Plan de Trabajo: ${artifact.grupo}`}
+                            ? `INFORME DE: ${artifact.titulo || artifact.grupo}`
+                            : `PLAN DE TRABAJO DE: ${artifact.grupo}`}
                         </div>
-                        {artifact.documentType === "INFORME" && artifact.informeData?.documentoRelacionado && (
-                          <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 6, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 6px", fontSize: 8.5, color: "#1e40af" }}>
-                            <span style={{ fontWeight: 700 }}>Documento de Referencia:</span> {artifact.informeData.documentoRelacionado}
-                          </div>
-                        )}
+                      </div>
+                      <div style={{ padding: "6px 8px", fontSize: 8, color: "#334155", display: "flex", flexDirection: "column", justifyContent: "center", background: "#f8fafc" }}>
+                        <div><strong>Formato Nº:</strong></div>
+                        <div style={{ fontWeight: 800, color: "#1a4f8a" }}>
+                          {artifact.codigoFormatoOficial || (artifact.documentType === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1")}
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", marginTop: 12, borderTop: "1px solid #e2e8f0", paddingTop: 8, fontSize: 8.5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.1fr 0.9fr", padding: "6px 10px", fontSize: 8.5, background: "#fbfcfd" }}>
                       <div>
-                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Unidad:</span>
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{artifact.unidadAcademica}</div>
+                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Unidad Académica / Administrativa: </span>
+                        <strong>{artifact.unidadAcademica}</strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Período:</span>
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{artifact.periodo}</div>
+                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Carrera: </span>
+                        <strong>{artifact.carrera || "Ingeniería de Software"}</strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Fecha Generación:</span>
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{artifact.generatedAt}</div>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Versión / Ronda:</span>
-                        <div style={{ fontWeight: 700, color: "#1a4f8a" }}>v{formalVersion} (R{reviewRound})</div>
+                        <span style={{ color: "#64748b", textTransform: "uppercase" }}>Fecha Elaboración: </span>
+                        <strong>{artifact.generatedAt.split(" ")[0]}</strong>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Header for Pages 2, 3, 4 */}
+                {/* Header for Pages > 1 */}
                 {currentPage > 1 && (
-                  <div style={{ borderBottom: "1px solid #cbd5e1", paddingBottom: 6, marginBottom: 18, display: "flex", justifyContent: "space-between", fontSize: 8.5, color: "#64748b" }}>
+                  <div style={{ borderBottom: "1px solid #cbd5e1", paddingBottom: 6, marginBottom: 16, display: "flex", justifyContent: "space-between", fontSize: 8.5, color: "#64748b" }}>
+                    <span style={{ fontWeight: 700, color: "#1a4f8a" }}>UNIVERSIDAD TÉCNICA DE AMBATO</span>
                     <span>
-                      {artifact.documentType === "INFORME"
-                        ? `Universidad Técnica de Ambato — FISEI · Informe (${artifact.grupo})`
-                        : `Universidad Técnica de Ambato — FISEI · Plan de Trabajo (${artifact.grupo})`}
+                      Formato Nº: {artifact.codigoFormatoOficial || (artifact.documentType === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1")}
                     </span>
-                    <span>Versión formal {formalVersion} — Ronda {reviewRound}</span>
+                  </div>
+                )}
+
+                {/* Índices de Contenido y Tablas (Página 1) */}
+                {currentPage === 1 && (
+                  <div style={{ marginBottom: 16, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 4, padding: "8px 12px", fontSize: 8.5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 3, borderBottom: "1px solid #cbd5e1", paddingBottom: 2 }}>
+                          {artifact.documentType === "INFORME" ? "Índice de Contenidos" : "Índice de Contenido"}
+                        </div>
+                        {artifact.documentType === "INFORME" ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1.5, color: "#334155" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>1. ANTECEDENTES</span> <span>Pág. 1</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>2. DESARROLLO DE ACTIVIDADES</span> <span>Pág. 2</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>3. CONCLUSIONES</span> <span>Pág. 2</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>4. OPORTUNIDADES DE MEJORA</span> <span>Pág. 2</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN</span> <span>Pág. {totalPages}</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>6. ANEXOS</span> <span>Pág. {totalPages}</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>FIRMAS DE RESPONSABILIDAD</span> <span>Pág. {totalPages}</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>CONTROL DE HISTORIAL DE CAMBIOS</span> <span>Pág. {totalPages}</span></div>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1.5, color: "#334155" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>1. JUSTIFICACIÓN</span> <span>Pág. 1</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>2. OBJETIVO</span> <span>Pág. 1</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>3. MATRIZ DE ACTIVIDADES</span> <span>Pág. 2</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>4. ANEXOS</span> <span>Pág. 2</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>FIRMAS DE RESPONSABILIDAD</span> <span>Pág. {totalPages}</span></div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>CONTROL DE HISTORIAL DE CAMBIOS</span> <span>Pág. {totalPages}</span></div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <div style={{ fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 3, borderBottom: "1px solid #cbd5e1", paddingBottom: 2 }}>
+                          Índice de Tablas
+                        </div>
+                        {artifact.documentType === "INFORME" ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1.5, color: "#334155" }}>
+                            {(artifact.informeData?.informeOrigen === "DERIVADO_PLAN" || (artifact.informeData?.actividadesInforme && artifact.informeData.actividadesInforme.length > 0)) && (
+                              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Tabla 1.- Resultados de la matriz de actividades</span> <span>Pág. 2</span></div>
+                            )}
+                            {artifact.informeData?.aplicaRegistroContactos && (
+                              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Tabla 2.- Registro de contactos y gestiones de la delegación</span> <span>Pág. {totalPages}</span></div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1.5, color: "#334155" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}><span>Tabla 1.- Matriz de actividades</span> <span>Pág. 2</span></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -444,60 +476,44 @@ export default function DocumentPdfPageViewer({
                   <div>
                     {artifact.documentType === "INFORME" ? (
                       <div>
-                        <div style={{ marginBottom: 22 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                            1. Introducción / Descripción
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            1. ANTECEDENTES
                           </div>
-                          <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.75, textAlign: "justify" }}>
-                            {artifact.informeData?.introduccion || "No se ha registrado introducción."}
+                          <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
+                            {artifact.informeData?.antecedentes || artifact.informeData?.introduccion || "En cumplimiento a la planificación académica institucional del período académico."}
                           </p>
                         </div>
 
-                        <div style={{ marginBottom: 22 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                            2. Desarrollo de Actividades / Gestión
+                        {artifact.informeData?.relatedPlanTitulo && (
+                          <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: 4, border: "1px solid #e2e8f0" }}>
+                            <div style={{ fontSize: 9.5, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 2 }}>
+                              Plan de Trabajo de Referencia
+                            </div>
+                            <div style={{ fontSize: 9.5, color: "#334155" }}>
+                              {artifact.informeData.relatedPlanTitulo}
+                            </div>
                           </div>
-                          <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.75, textAlign: "justify" }}>
-                            {artifact.informeData?.desarrollo || "No se ha registrado desarrollo de actividades."}
-                          </p>
-                        </div>
-
-                        <div style={{ marginTop: 24, padding: "12px 14px", background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 3 }}>
-                            Información del Informe Institucional
-                          </div>
-                          <div style={{ fontSize: 9.5, color: "#475569", lineHeight: 1.5 }}>
-                            Elaborado por {artifact.elaborador.nombre} ({artifact.elaborador.cargo}) para la unidad {artifact.grupo}.
-                          </div>
-                        </div>
+                        )}
                       </div>
                     ) : (
                       <div>
-                        <div style={{ marginBottom: 22 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                            1. Justificación
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            1. JUSTIFICACIÓN
                           </div>
-                          <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.75, textAlign: "justify" }}>
+                          <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
                             {artifact.justificacion}
                           </p>
                         </div>
 
-                        <div style={{ marginBottom: 22 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                            2. Objetivo
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            2. OBJETIVO
                           </div>
-                          <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.75, textAlign: "justify" }}>
+                          <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
                             {artifact.objetivo}
                           </p>
-                        </div>
-
-                        <div style={{ marginTop: 30, padding: "14px 16px", background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", marginBottom: 4 }}>
-                            Resumen Ejecutivo del Documento
-                          </div>
-                          <div style={{ fontSize: 9.5, color: "#475569", lineHeight: 1.6 }}>
-                            El presente plan comprende {artifact.matriz?.length || 0} actividades programadas y articuladas con el sistema institucional de seguimiento y carga de evidencias.
-                          </div>
                         </div>
                       </div>
                     )}
@@ -507,46 +523,72 @@ export default function DocumentPdfPageViewer({
                 {/* MIDDLE PAGES: Matriz de Actividades o Resultados e Informe Data */}
                 {currentPage > 1 && currentPage < totalPages && (() => {
                   if (artifact.documentType === "INFORME") {
+                    const acts = artifact.informeData?.actividadesInforme || [];
+                    const isDerivado = artifact.informeData?.informeOrigen === "DERIVADO_PLAN" || acts.length > 0;
+
                     return (
                       <div>
-                        <div style={{ marginBottom: 20 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                            3. Resultados Registrados
+                        <div style={{ marginBottom: 18 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            2. DESARROLLO DE ACTIVIDADES
                           </div>
-                          <p style={{ fontSize: 11, color: "#334155", lineHeight: 1.75, textAlign: "justify" }}>
-                            {artifact.informeData?.resultados || "Sin resultados registrados para esta versión."}
+                          {isDerivado && acts.length > 0 ? (
+                            <div>
+                              <div style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 6 }}>
+                                Tabla 1.- Resultados de la matriz de actividades
+                              </div>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5, marginBottom: 16 }}>
+                                <thead>
+                                  <tr style={{ background: "#1a4f8a", color: "#fff" }}>
+                                    <th style={{ padding: "5px 6px", textAlign: "left", width: "34%" }}>Actividades</th>
+                                    <th style={{ padding: "5px 6px", textAlign: "left", width: "30%" }}>Medios de verificación</th>
+                                    <th style={{ padding: "5px 6px", textAlign: "center", width: "16%" }}>Porcentaje de ejecución</th>
+                                    <th style={{ padding: "5px 6px", textAlign: "left", width: "20%" }}>Observaciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {acts.map((a, i) => (
+                                    <tr key={a.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                                      <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#0f172a" }}>
+                                        {a.actividad}
+                                      </td>
+                                      <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                                        {a.mediosVerificacion}
+                                      </td>
+                                      <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", textAlign: "center", fontWeight: 700, color: "#0f172a" }}>
+                                        {a.porcentajeEjecucion}%
+                                      </td>
+                                      <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                                        {a.observaciones || "—"}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
+                              {artifact.informeData?.desarrolloTextoLibre || artifact.informeData?.desarrollo || "Se ejecutaron las actividades institucionales previstas."}
+                            </p>
+                          )}
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            3. CONCLUSIONES
+                          </div>
+                          <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
+                            {artifact.informeData?.conclusiones || artifact.informeData?.resultados || "Se cumplieron los compromisos institucionales establecidos."}
                           </p>
                         </div>
 
-                        <div style={{ marginBottom: 20 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <span>4. Observaciones y Recomendaciones</span>
-                            <span style={{ fontSize: 8.5, fontWeight: 700, background: "#fef3c7", color: "#92400e", padding: "1px 6px", borderRadius: 3 }}>
-                              ESTRUCTURA PRELIMINAR DEMO
-                            </span>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            4. OPORTUNIDADES DE MEJORA
                           </div>
-                          <div style={{ background: "#f8fafc", padding: "12px 14px", borderRadius: 6, border: "1px dashed #cbd5e1" }}>
-                            <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.65, margin: 0 }}>
-                              {artifact.informeData?.observaciones || "No se han emitido observaciones complementarias."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div style={{ marginTop: 24 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 10 }}>
-                            5. Anexos Institucionales
-                          </div>
-                          {artifact.tieneAnexos === "si" && artifact.anexos.length > 0 ? (
-                            artifact.anexos.map((anexo, idx) => (
-                              <div key={anexo.id} style={{ fontSize: 10, color: "#334155", padding: "6px 0", borderBottom: "1px dashed #e2e8f0" }}>
-                                <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.nombre} ({anexo.archivo} - {anexo.tamano})
-                              </div>
-                            ))
-                          ) : (
-                            <div style={{ fontSize: 10, color: "#64748b", fontStyle: "italic" }}>
-                              No se adjuntan anexos adicionales para este informe.
-                            </div>
-                          )}
+                          <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>
+                            {artifact.informeData?.oportunidadesMejora || artifact.informeData?.observaciones || "Se recomienda dar continuidad a los procesos de seguimiento."}
+                          </p>
                         </div>
                       </div>
                     );
@@ -554,7 +596,7 @@ export default function DocumentPdfPageViewer({
 
                   const matriz = artifact.matriz || [];
                   const middleTotal = totalPages - 2;
-                  const middleIndex = currentPage - 2; // 0-indexed among middle pages
+                  const middleIndex = currentPage - 2;
                   const itemsPerPage = Math.max(2, Math.ceil(matriz.length / middleTotal));
                   const startIdx = middleIndex * itemsPerPage;
                   const pageItems = matriz.slice(startIdx, startIdx + itemsPerPage);
@@ -562,35 +604,47 @@ export default function DocumentPdfPageViewer({
 
                   return (
                     <div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 12 }}>
-                        3. Matriz de Actividades (Página {currentPage} — Actividades {startIdx + 1} a {Math.min(matriz.length, startIdx + pageItems.length)})
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                        3. MATRIZ DE ACTIVIDADES
                       </div>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9, marginBottom: isLastMiddlePage ? 20 : 0 }}>
+                      <div style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 6 }}>
+                        Tabla 1.- Matriz de actividades
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5, marginBottom: 10 }}>
                         <thead>
                           <tr style={{ background: "#1a4f8a", color: "#fff" }}>
-                            <th style={{ padding: "6px 8px", textAlign: "left", width: "35%" }}>Actividad</th>
-                            <th style={{ padding: "6px 8px", textAlign: "left", width: "12%" }}>Desde</th>
-                            <th style={{ padding: "6px 8px", textAlign: "left", width: "12%" }}>Hasta</th>
-                            <th style={{ padding: "6px 8px", textAlign: "left", width: "21%" }}>Responsables</th>
-                            <th style={{ padding: "6px 8px", textAlign: "left", width: "20%" }}>Medios de Verificación</th>
+                            <th style={{ padding: "5px 6px", textAlign: "left", width: "26%" }}>ACTIVIDADES</th>
+                            <th style={{ padding: "5px 6px", textAlign: "left", width: "18%" }}>
+                              <div>CRONOGRAMA</div>
+                              <div style={{ fontSize: 7, fontWeight: 500, opacity: 0.9 }}>Desde / Hasta</div>
+                            </th>
+                            <th style={{ padding: "5px 6px", textAlign: "left", width: "18%" }}>RESPONSABLE</th>
+                            <th style={{ padding: "5px 6px", textAlign: "left", width: "18%" }}>
+                              <div>RECURSOS</div>
+                              <div style={{ fontSize: 7, fontWeight: 400, opacity: 0.85 }}>(humano, tecnológico, económico, material)</div>
+                            </th>
+                            <th style={{ padding: "5px 6px", textAlign: "left", width: "20%" }}>MEDIOS DE VERIFICACIÓN</th>
                           </tr>
                         </thead>
                         <tbody>
                           {pageItems.map((act, i) => (
                             <tr key={act.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                              <td style={{ padding: "7px 8px", borderBottom: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 600, lineHeight: 1.4 }}>
-                                {act.id}. {act.nombre}
+                              <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 600, lineHeight: 1.3 }}>
+                                {act.nombre}
                               </td>
-                              <td style={{ padding: "7px 8px", borderBottom: "1px solid #e2e8f0", color: "#475569", whiteSpace: "nowrap" }}>
-                                {act.desde || "—"}
+                              <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569", fontSize: 8 }}>
+                                <div><strong>Desde:</strong> {act.desde || "—"}</div>
+                                <div><strong>Hasta:</strong> {act.hasta || "—"}</div>
                               </td>
-                              <td style={{ padding: "7px 8px", borderBottom: "1px solid #e2e8f0", color: "#475569", whiteSpace: "nowrap" }}>
-                                {act.hasta || "—"}
-                              </td>
-                              <td style={{ padding: "7px 8px", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                              <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
                                 {act.responsables.join(", ") || "—"}
                               </td>
-                              <td style={{ padding: "7px 8px", borderBottom: "1px solid #e2e8f0", color: "#475569", fontSize: 8.5 }}>
+                              <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569", fontSize: 8 }}>
+                                <div>• Humano: Docente</div>
+                                <div>• Tecnológico: Plataforma</div>
+                                <div>• Material: Ofimático</div>
+                              </td>
+                              <td style={{ padding: "6px", borderBottom: "1px solid #e2e8f0", color: "#475569", fontSize: 8 }}>
                                 {act.medios.join(", ") || "—"}
                               </td>
                             </tr>
@@ -598,20 +652,24 @@ export default function DocumentPdfPageViewer({
                         </tbody>
                       </table>
 
+                      <div style={{ fontSize: 8, color: "#64748b", fontStyle: "italic", marginBottom: isLastMiddlePage ? 14 : 0 }}>
+                        Fuente: Elaborado por: {artifact.generatedBy || "Docente Responsable"}
+                      </div>
+
                       {isLastMiddlePage && (
                         <div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 10 }}>
-                            4. Anexos Institucionales
+                          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                            4. ANEXOS
                           </div>
                           {artifact.tieneAnexos === "si" && artifact.anexos.length > 0 ? (
                             artifact.anexos.map((anexo, idx) => (
-                              <div key={anexo.id} style={{ fontSize: 10, color: "#334155", padding: "6px 0", borderBottom: "1px dashed #e2e8f0" }}>
+                              <div key={anexo.id} style={{ fontSize: 9.5, color: "#334155", padding: "4px 0", borderBottom: "1px dashed #e2e8f0" }}>
                                 <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.nombre} ({anexo.archivo} - {anexo.tamano})
                               </div>
                             ))
                           ) : (
-                            <div style={{ fontSize: 10, color: "#64748b", fontStyle: "italic" }}>
-                              No se adjuntan anexos adicionales para esta versión del Plan.
+                            <div style={{ fontSize: 9.5, color: "#64748b", fontStyle: "italic" }}>
+                              No aplica.
                             </div>
                           )}
                         </div>
@@ -620,25 +678,99 @@ export default function DocumentPdfPageViewer({
                   );
                 })()}
 
-                {/* LAST PAGE CONTENT: Firmas de Responsabilidad & Historial */}
+                {/* LAST PAGE CONTENT: Registro Contactos, Anexos, Firmas de Responsabilidad & Historial */}
                 {currentPage === totalPages && (
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 12 }}>
-                      {artifact.documentType === "INFORME" ? "6. Firmas de Responsabilidad" : "5. Firmas de Responsabilidad"}
+                    {artifact.documentType === "INFORME" && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                          5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN
+                        </div>
+                        {artifact.informeData?.aplicaRegistroContactos && artifact.informeData.contactosDelegacion && artifact.informeData.contactosDelegacion.length > 0 ? (
+                          <div>
+                            <div style={{ fontSize: 8.5, color: "#64748b", fontStyle: "italic", marginBottom: 4 }}>
+                              Tabla 2.- Registro de contactos y gestiones de la delegación
+                            </div>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8, marginBottom: 14 }}>
+                              <thead>
+                                <tr style={{ background: "#1a4f8a", color: "#fff" }}>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "18%" }}>Nombre o propósito de la delegación</th>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "15%" }}>Ciudad, país o institución</th>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "18%" }}>Entidad y persona de contacto</th>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "15%" }}>Datos de contacto</th>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "16%" }}>Tema o propósito</th>
+                                  <th style={{ padding: "4px 5px", textAlign: "left", width: "18%" }}>Acuerdo y seguimiento</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {artifact.informeData.contactosDelegacion.map((c) => (
+                                  <tr key={c.id}>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>{c.nombreDelegacion}</td>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0" }}>{c.ciudadPaisInstitucion}</td>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0" }}>
+                                      <div><strong>{c.institucion || c.entidadPersonaContacto}</strong></div>
+                                      <div>{c.nombreCargo}</div>
+                                    </td>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                                      {c.datosContacto}
+                                    </td>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0" }}>{c.temaTratado || c.temaProposito}</td>
+                                    <td style={{ padding: "4px 5px", borderBottom: "1px solid #e2e8f0" }}>{c.compromisoResponsablePlazo || c.acuerdoSeguimiento}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 9.5, color: "#64748b", fontStyle: "italic", marginBottom: 12 }}>
+                            No aplica.
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                          6. ANEXOS (en caso de ser necesario)
+                        </div>
+                        {artifact.tieneAnexos === "si" && artifact.anexos.length > 0 ? (
+                          artifact.anexos.map((anexo, idx) => (
+                            <div key={anexo.id} style={{ fontSize: 9.5, color: "#334155", padding: "4px 0", borderBottom: "1px dashed #e2e8f0" }}>
+                              <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.nombre} ({anexo.archivo} - {anexo.tamano})
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ fontSize: 9.5, color: "#64748b", fontStyle: "italic", marginBottom: 12 }}>
+                            No aplica.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                      FIRMAS DE RESPONSABILIDAD
                     </div>
                     
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9, marginBottom: 24 }}>
+                    {/* Tabla de Firmas EXACTA a 4 Columnas: ACCIONES, NOMBRE, CARGO, FIRMA */}
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5, marginBottom: 14 }}>
                       <thead>
                         <tr style={{ background: "#1a4f8a", color: "#fff" }}>
-                          <th style={{ padding: "6px 8px", textAlign: "left", width: "24%" }}>Acción</th>
-                          <th style={{ padding: "6px 8px", textAlign: "left", width: "30%" }}>Nombre y Cargo</th>
-                          <th style={{ padding: "6px 8px", textAlign: "left", width: "46%" }}>Firma Electrónica</th>
+                          <th style={{ padding: "5px 7px", textAlign: "left", width: "22%" }}>ACCIONES</th>
+                          <th style={{ padding: "5px 7px", textAlign: "left", width: "28%" }}>NOMBRE</th>
+                          <th style={{ padding: "5px 7px", textAlign: "left", width: "24%" }}>CARGO</th>
+                          <th style={{ padding: "5px 7px", textAlign: "left", width: "26%" }}>FIRMA</th>
                         </tr>
                       </thead>
                       <tbody>
                         {flowStages.map((stage, idx) => {
                           const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
                           const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
+
+                          const labelAccion =
+                            stage.actionLabel === "ELABORADO_POR" || stage.actorRole === "docente" || stage.stageName.includes("Elaboración")
+                              ? "Elaborado por:"
+                              : stage.actionLabel === "APROBADO_POR"
+                              ? "Aprobado por:"
+                              : stage.actionLabel === "VALIDADO_POR" || stage.actorRole === "validador" || stage.stageName.includes("Validación")
+                              ? "Validado por:"
+                              : "Revisado por:";
 
                           return (
                             <tr
@@ -648,80 +780,44 @@ export default function DocumentPdfPageViewer({
                                 border: isCurrentActorCell ? "2px solid #3b82f6" : "1px solid #e2e8f0",
                               }}
                             >
-                              <td style={{ padding: "8px 8px", color: "#1a4f8a", fontWeight: 700, verticalAlign: "middle" }}>
-                                {stage.actorRole === "docente" || stage.stageName.includes("Elaboración")
-                                  ? "Elaborado por:"
-                                  : stage.actorRole === "validador" || stage.stageName.includes("Validación")
-                                  ? "Validado por:"
-                                  : "Revisado por:"}
+                              <td style={{ padding: "7px 7px", color: "#1a4f8a", fontWeight: 700, verticalAlign: "middle" }}>
+                                {labelAccion}
                               </td>
-                              <td style={{ padding: "8px 8px", verticalAlign: "middle" }}>
-                                <div style={{ fontWeight: 700, color: "#0f172a" }}>{stage.actorName}</div>
-                                <div style={{ fontSize: 8, color: "#64748b" }}>{stage.actorCargo}</div>
+                              <td style={{ padding: "7px 7px", verticalAlign: "middle", fontWeight: 700, color: "#0f172a" }}>
+                                {stage.actorName}
                               </td>
-                              <td style={{ padding: "8px 8px", verticalAlign: "middle" }}>
+                              <td style={{ padding: "7px 7px", verticalAlign: "middle", color: "#475569", fontSize: 8 }}>
+                                {stage.actorCargo}
+                              </td>
+                              <td style={{ padding: "7px 7px", verticalAlign: "middle" }}>
                                 {sig ? (
-                                  <div
-                                    style={{
-                                      background: "#f0fdf4",
-                                      border: "1px solid #bbf7d0",
-                                      borderRadius: 4,
-                                      padding: "4px 8px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        width: 18,
-                                        height: 18,
-                                        borderRadius: "50%",
-                                        background: "#16a34a",
-                                        color: "#fff",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 10,
-                                        fontWeight: 800,
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      ✓
-                                    </div>
-                                    <div style={{ fontSize: 8, color: "#166534", lineHeight: 1.3 }}>
-                                      <span style={{ fontWeight: 700 }}>FIRMADO ELECTRÓNICAMENTE</span>
-                                      <br />
-                                      {sig.actor} · {sig.fecha} {sig.hora}
-                                    </div>
+                                  <div style={{ fontSize: 7.5, color: "#166534", lineHeight: 1.25 }}>
+                                    <span style={{ fontWeight: 700 }}>Firma electrónica registrada</span>
+                                    <br />
+                                    {sig.fecha} {sig.hora}
                                   </div>
                                 ) : isCurrentActorCell ? (
-                                  /* Visual highlight according to Item C & G */
                                   <div
                                     style={{
                                       background: "#dbeafe",
-                                      border: "1.5px dashed #2563eb",
+                                      border: "1px dashed #2563eb",
                                       borderRadius: 4,
-                                      padding: "6px 8px",
+                                      padding: "3px 6px",
                                       textAlign: "center",
                                     }}
                                   >
                                     <span
                                       style={{
-                                        fontSize: 9,
+                                        fontSize: 7.5,
                                         fontWeight: 800,
                                         color: "#1e40af",
-                                        letterSpacing: 0.5,
                                       }}
                                     >
-                                      [ SU FIRMA AQUÍ ]
+                                      [ Su firma aquí ]
                                     </span>
-                                    <div style={{ fontSize: 7.5, color: "#3b82f6", marginTop: 1 }}>
-                                      (Resaltado de interfaz — haga clic en Firmar para estampar)
-                                    </div>
                                   </div>
                                 ) : (
-                                  <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: 8.5 }}>
+                                  <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: 8 }}>
                                     Pendiente de firma
                                   </span>
                                 )}
@@ -732,29 +828,39 @@ export default function DocumentPdfPageViewer({
                       </tbody>
                     </table>
 
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
-                      {artifact.documentType === "INFORME" ? "7. Control de Historial de Cambios" : "6. Control de Historial de Cambios"}
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #cbd5e1", paddingBottom: 4, marginBottom: 8 }}>
+                      CONTROL DE HISTORIAL DE CAMBIOS
                     </div>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8 }}>
                       <thead>
                         <tr style={{ background: "#1a4f8a", color: "#fff" }}>
-                          <th style={{ padding: "5px 7px", textAlign: "left", width: "15%" }}>Versión</th>
-                          <th style={{ padding: "5px 7px", textAlign: "left", width: "65%" }}>Descripción del Cambio</th>
-                          <th style={{ padding: "5px 7px", textAlign: "left", width: "20%" }}>Fecha</th>
+                          <th style={{ padding: "4px 6px", textAlign: "left", width: "15%" }}>Versión</th>
+                          <th style={{ padding: "4px 6px", textAlign: "left", width: "65%" }}>Descripción del Cambio</th>
+                          <th style={{ padding: "4px 6px", textAlign: "left", width: "20%" }}>Fecha de Actualización</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td style={{ padding: "5px 7px", borderBottom: "1px solid #e2e8f0", fontWeight: 700 }}>1.0</td>
-                          <td style={{ padding: "5px 7px", borderBottom: "1px solid #e2e8f0" }}>
-                            {artifact.documentType === "INFORME"
-                              ? `Elaboración inicial del Informe (Ronda ${reviewRound})`
-                              : `Elaboración inicial del Plan de Trabajo (Ronda ${reviewRound})`}
-                          </td>
-                          <td style={{ padding: "5px 7px", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
-                            {artifact.generatedAt.split(" ")[0]}
-                          </td>
-                        </tr>
+                        {(artifact.historialCambios && artifact.historialCambios.length > 0) ? (
+                          artifact.historialCambios.map((h, i) => (
+                            <tr key={i}>
+                              <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0", fontWeight: 700 }}>v{h.version}</td>
+                              <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0" }}>{h.descripcion}</td>
+                              <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>{h.fecha}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0", fontWeight: 700 }}>v{formalVersion}</td>
+                            <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0" }}>
+                              {artifact.documentType === "INFORME"
+                                ? `Elaboración inicial de Informe institucional`
+                                : `Elaboración inicial de Plan de Trabajo`}
+                            </td>
+                            <td style={{ padding: "4px 6px", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
+                              {artifact.generatedAt.split(" ")[0]}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -765,15 +871,15 @@ export default function DocumentPdfPageViewer({
               <div
                 style={{
                   borderTop: "1px solid #cbd5e1",
-                  paddingTop: 8,
-                  marginTop: 24,
+                  paddingTop: 6,
+                  marginTop: 18,
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: 8.5,
+                  fontSize: 8,
                   color: "#64748b",
                 }}
               >
-                <span>Sistema de Gestión de Planes de Trabajo — FISEI UTA</span>
+                <span>Formato: {artifact.codigoFormatoOficial || (artifact.documentType === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1")} · SGC FISEI UTA</span>
                 <span>Página {currentPage} de {totalPages}</span>
               </div>
             </div>

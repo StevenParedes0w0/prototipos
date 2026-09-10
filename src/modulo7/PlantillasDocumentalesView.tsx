@@ -9,52 +9,104 @@ interface PlantillasDocumentalesViewProps {
 const SECCIONES_PLAN_TRABAJO = [
   {
     num: "1",
-    titulo: "Información institucional / Información general",
-    estado: "REQUERIDA",
-    obligatoria: true,
-    detalle: "Datos de la facultad, carrera, grupo institucional, período académico y docente elaborador.",
-  },
-  {
-    num: "2",
     titulo: "Justificación",
     estado: "REQUERIDA",
     obligatoria: true,
     detalle: "Fundamentación y necesidad académica de la planificación.",
   },
   {
-    num: "3",
+    num: "2",
     titulo: "Objetivo",
     estado: "REQUERIDO",
     obligatoria: true,
-    detalle: "Objetivo del Plan de Trabajo (campo único 'Objetivo').",
+    detalle: "Objetivo general de la planificación.",
   },
   {
-    num: "4",
+    num: "3",
     titulo: "Matriz de actividades",
     estado: "REQUERIDA",
     obligatoria: true,
-    detalle: "La matriz incluye: Actividad, Desde, Hasta, Responsable(s), Recursos y Medios de verificación (los medios forman parte de la matriz, no como sección separada).",
+    detalle: "Tabla 1.- Matriz de actividades con columnas: ACTIVIDADES, CRONOGRAMA (Desde, Hasta), RESPONSABLE, RECURSOS (humano, tecnológico, económico, material) y MEDIOS DE VERIFICACIÓN.",
   },
   {
-    num: "5",
+    num: "4",
     titulo: "Anexos",
     estado: "OPCIONAL",
     obligatoria: false,
-    detalle: "Documentación complementaria de soporte opcional.",
+    detalle: "Documentación complementaria de soporte (si no aplica, se muestra 'No aplica.').",
   },
   {
-    num: "6",
+    num: "—",
     titulo: "FIRMAS DE RESPONSABILIDAD",
     estado: "REQUERIDA",
     obligatoria: true,
-    detalle: "Firmas institucionales del docente elaborador, revisores designados y autoridad correspondiente.",
+    detalle: "Estructura de 4 columnas: ACCIONES, NOMBRE, CARGO, FIRMA (Elaborado por, Revisado por, Validado por / Aprobado por).",
   },
   {
-    num: "7",
+    num: "—",
     titulo: "CONTROL DE HISTORIAL DE CAMBIOS",
     estado: "REQUERIDO",
     obligatoria: true,
-    detalle: "Control de versiones del documento con columnas: Versión, Descripción del Cambio, Fecha de Actualización.",
+    detalle: "Control de versiones formal: Versión, Descripción del Cambio, Fecha de Actualización.",
+  },
+];
+
+const SECCIONES_INFORME_TECNICO = [
+  {
+    num: "1",
+    titulo: "Antecedentes",
+    estado: "REQUERIDA",
+    obligatoria: true,
+    detalle: "Contexto previo y referencia al plan de trabajo o delegación de origen.",
+  },
+  {
+    num: "2",
+    titulo: "Desarrollo de actividades",
+    estado: "REQUERIDA",
+    obligatoria: true,
+    detalle: "Tabla 1.- Resultados de la matriz de actividades (Actividades, Medios de verificación, Porcentaje de ejecución, Observaciones) si deriva de plan, o desarrollo textual si es independiente.",
+  },
+  {
+    num: "3",
+    titulo: "Conclusiones",
+    estado: "REQUERIDA",
+    obligatoria: true,
+    detalle: "Resultados y conclusiones alcanzadas.",
+  },
+  {
+    num: "4",
+    titulo: "Oportunidades de mejora",
+    estado: "REQUERIDA",
+    obligatoria: true,
+    detalle: "Recomendaciones y oportunidades de optimización.",
+  },
+  {
+    num: "5",
+    titulo: "Registro de contactos y gestiones de la delegación",
+    estado: "CONDICIONAL",
+    obligatoria: false,
+    detalle: "Estructura de delegación: Delegación, Ciudad/País/Institución, Contacto, Tema/Propósito y Acuerdo/Seguimiento (si no aplica, se muestra 'No aplica.').",
+  },
+  {
+    num: "6",
+    titulo: "Anexos",
+    estado: "CONDICIONAL",
+    obligatoria: false,
+    detalle: "Documentación complementaria de soporte (si no aplica, se muestra 'No aplica.').",
+  },
+  {
+    num: "—",
+    titulo: "FIRMAS DE RESPONSABILIDAD",
+    estado: "REQUERIDA",
+    obligatoria: true,
+    detalle: "Estructura de 4 columnas: ACCIONES, NOMBRE, CARGO, FIRMA (Elaborado por, Revisado por, Validado por / Aprobado por).",
+  },
+  {
+    num: "—",
+    titulo: "CONTROL DE HISTORIAL DE CAMBIOS",
+    estado: "REQUERIDO",
+    obligatoria: true,
+    detalle: "Control de versiones formal: Versión, Descripción del Cambio, Fecha de Actualización.",
   },
 ];
 
@@ -62,7 +114,8 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
   const [plantillaConfigurar, setPlantillaConfigurar] = useState<PlantillaDocumental | null>(null);
   const [plantillaVer, setPlantillaVer] = useState<PlantillaDocumental | null>(null);
 
-  const isPlanTrabajo = plantillaConfigurar?.tipoDocumento === "Plan de Trabajo";
+  const isPlanTrabajo = plantillaConfigurar?.tipoDocumento === "Plan de Trabajo" || plantillaConfigurar?.version?.includes("T1");
+  const isInforme = plantillaConfigurar?.tipoDocumento === "Informe" || plantillaConfigurar?.version?.includes("T2");
 
   return (
     <div style={{ padding: "28px", maxWidth: 1200, margin: "0 auto" }}>
@@ -79,7 +132,7 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
           Plantillas documentales institucionales
         </h1>
         <p style={{ fontSize: 13.5, color: "#64748b", margin: 0 }}>
-          Estructuras y secciones obligatorias para Planes de Trabajo e informes de la facultad.
+          Estructuras de formato oficial para Plan de Trabajo (UTA-SGC-A-2-1-P7-T1) e Informe (UTA-SGC-A-2-1-P7-T2).
         </p>
       </div>
 
@@ -96,7 +149,7 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
             <tr>
               <th>Plantilla institucional</th>
               <th>Tipo de documento</th>
-              <th>Versión de plantilla</th>
+              <th>Formato oficial SGC</th>
               <th>Estado</th>
               <th>Última actualización</th>
               <th style={{ textAlign: "right" }}>Acciones</th>
@@ -187,10 +240,10 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
           }}>
             <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0" }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase" }}>
-                Configuración conceptual de estructura
+                Estructura del formato oficial
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1e2a3a", margin: "2px 0 0" }}>
-                {plantillaConfigurar.nombre} — Versión {plantillaConfigurar.version}
+                {plantillaConfigurar.nombre} — Formato {plantillaConfigurar.version}
               </h2>
             </div>
 
@@ -205,12 +258,45 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
                 color: "#166534",
                 lineHeight: 1.5,
               }}>
-                <strong>Estructura oficial institucional:</strong> Esta configuración valida las secciones normativas del documento. Las versiones de un Plan de Trabajo generado continúan utilizando su propio contador (1.0, 2.0, etc.).
+                <strong>Estructura del formato:</strong> Esta configuración refleja fielmente las secciones y tablas normativas del documento institucional. Las versiones formales generadas por el sistema avanzan con su propio ciclo (1.0, 2.0, etc.).
               </div>
 
               {isPlanTrabajo ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
                   {SECCIONES_PLAN_TRABAJO.map((sec) => (
+                    <div
+                      key={sec.num}
+                      style={{
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 8,
+                        padding: "12px 14px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                        <strong style={{ fontSize: 13.5, color: "#1e2a3a" }}>
+                          {sec.num}. {sec.titulo}
+                        </strong>
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: sec.obligatoria ? "#166534" : "#0284c7",
+                          background: sec.obligatoria ? "#dcfce7" : "#e0f2fe",
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                        }}>
+                          {sec.estado}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 12, color: "#64748b", margin: 0, lineHeight: 1.5 }}>
+                        {sec.detalle}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : isInforme ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+                  {SECCIONES_INFORME_TECNICO.map((sec) => (
                     <div
                       key={sec.num}
                       style={{
@@ -313,10 +399,10 @@ export default function PlantillasDocumentalesView({ plantillas }: PlantillasDoc
 
             <div style={{ padding: "20px 24px" }}>
               <div style={{ fontSize: 13, color: "#334155", marginBottom: 12 }}>
-                Tipo: <strong>{plantillaVer.tipoDocumento}</strong> • Versión de plantilla: <strong>{plantillaVer.version}</strong>
+                Tipo: <strong>{plantillaVer.tipoDocumento}</strong> • Formato oficial SGC: <strong>{plantillaVer.version}</strong>
               </div>
               <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.6 }}>
-                Esta plantilla define la estructura oficial que respetan todos los documentos emitidos en el sistema. Los Planes de Trabajo y Actas conservan la maquetación y encabezados institucionales de la FISEI.
+                Esta plantilla define la estructura oficial que respetan los documentos emitidos en el sistema según las normas SGC de la Universidad Técnica de Ambato.
               </div>
             </div>
 

@@ -19,7 +19,7 @@ import {
   FLOW_STAGES_INICIAL,
 } from "./mockDataDocument";
 
-const STORAGE_KEY = "fisei_documents_collection_v4";
+const STORAGE_KEY = "fisei_documents_collection_v5";
 
 export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string) => void) {
   const [documents, setDocuments] = useState<DocumentMasterState[]>(() => {
@@ -64,18 +64,34 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
 
   // Crear nuevo documento (Plan de Trabajo o Informe)
   const crearNuevoDocumento = useCallback(
-    (tipo: DocumentType, datosBasicos?: { grupo?: string; periodo?: string; titulo?: string; documentoRelacionadoId?: string; documentoRelacionadoTitulo?: string }) => {
+    (
+      tipo: DocumentType,
+      datosBasicos?: {
+        grupo?: string;
+        carrera?: string;
+        periodo?: string;
+        titulo?: string;
+        informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE";
+        documentoRelacionadoId?: string;
+        documentoRelacionadoTitulo?: string;
+        antecedentes?: string;
+        actividadesInforme?: any[];
+      }
+    ) => {
       const nowHora = "09:00";
       const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
       const grupo = datosBasicos?.grupo || (tipo === "INFORME" ? "Unidad de Titulación" : "Comisión de Eventos Académicos");
+      const carrera = datosBasicos?.carrera || "Ingeniería de Software";
       const periodo = datosBasicos?.periodo || "Julio – Diciembre 2026";
       const titulo = datosBasicos?.titulo || (tipo === "INFORME" ? `Informe de actividades — ${grupo}` : `Plan de Trabajo: ${grupo}`);
       const id = tipo === "INFORME" ? `doc-inf-${Date.now()}` : `doc-plan-${Date.now()}`;
       const codigo = tipo === "INFORME" ? `INF-FISEI-2026-${Math.floor(100 + Math.random() * 900)}` : `PT-FISEI-2026-${Math.floor(100 + Math.random() * 900)}`;
+      const codigoFormatoOficial = tipo === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1";
 
       const newArtifact: DocumentArtifact = {
         id: `art-${id}-v1_0-r1`,
         documentType: tipo,
+        codigoFormatoOficial,
         titulo,
         formalVersion: "1.0",
         reviewRound: 1,
@@ -83,8 +99,9 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo,
+        carrera,
         periodo,
-        unidadAcademica: "FISEI – UTA",
+        unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
         elaborador: {
           id: "usr-andrea-01",
           nombre: "Ing. Andrea Pérez, Mg.",
@@ -95,31 +112,55 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         objetivo: tipo === "PLAN_TRABAJO" ? OBJETIVO_INICIAL : undefined,
         matriz: tipo === "PLAN_TRABAJO" ? MATRIZ_INICIAL_DOC : undefined,
         informeData: tipo === "INFORME" ? {
-          introduccion: "El presente informe institucional documenta las actividades ejecutadas en el marco de los objetivos planificados.",
-          desarrollo: "Se detallan los procesos desarrollados, las reuniones de coordinación y el seguimiento efectuado durante el período académico.",
-          resultados: "Se registraron avances significativos en los compromisos establecidos y articulados con la FISEI.",
-          observaciones: "Se sugiere dar continuidad a los procesos iniciados.",
+          informeOrigen: datosBasicos?.informeOrigen || "DERIVADO_PLAN",
+          relatedPlanId: datosBasicos?.documentoRelacionadoId,
+          relatedPlanTitulo: datosBasicos?.documentoRelacionadoTitulo,
+          antecedentes: datosBasicos?.antecedentes || "En cumplimiento a la planificación institucional aprobada para el período académico.",
+          actividadesInforme: datosBasicos?.actividadesInforme || [],
+          conclusiones: "Se ejecutaron las actividades programadas conforme a los estándares de calidad académica.",
+          oportunidadesMejora: "Fortalecer la coordinación y optimización de medios de verificación.",
+          aplicaRegistroContactos: false,
+          contactosDelegacion: [],
+          introduccion: "El presente informe institucional documenta las actividades ejecutadas.",
+          desarrollo: "Se detallan los procesos desarrollados y el seguimiento efectuado durante el período académico.",
+          resultados: "Se registraron avances significativos en los compromisos establecidos.",
+          observaciones: "Se recomienda mantener la articulación institucional.",
           documentoRelacionado: datosBasicos?.documentoRelacionadoTitulo,
         } : undefined,
         tieneAnexos: "no",
         anexos: [],
         signatures: [],
+        historialCambios: [
+          {
+            version: "1.0",
+            descripcion: `Elaboración inicial de ${tipo === "INFORME" ? "Informe" : "Plan de Trabajo"}`,
+            fecha: FECHA_SISTEMA,
+          },
+        ],
       };
 
       const newDoc: DocumentMasterState = {
         id,
         codigo,
+        codigoFormatoOficial,
         nombre: titulo,
         documentType: tipo,
         grupo,
+        carrera,
         periodo,
         formalVersion: "1.0",
         reviewRound: 1,
         documentState: "BORRADOR",
+        finalActionLabel: "VALIDADO_POR",
+        finalValidatorId: "usr-patricia-03",
+        finalValidatorName: "Ing. Patricia Salazar, Mg.",
         currentArtifact: newArtifact,
         artifactHistory: [],
         observations: [],
-        flowStages: FLOW_STAGES_INICIAL,
+        flowStages: FLOW_STAGES_INICIAL.map((st) => ({
+          ...st,
+          actionLabel: st.actorRole === "docente" ? "ELABORADO_POR" : st.actorRole === "revisor" ? "REVISADO_POR" : "VALIDADO_POR",
+        })),
         fechaUltimaActualizacion: nowStr,
         documentoRelacionadoId: datosBasicos?.documentoRelacionadoId,
         documentoRelacionadoTitulo: datosBasicos?.documentoRelacionadoTitulo,
@@ -155,22 +196,36 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
     (datos: {
       titulo: string;
       grupo: string;
+      carrera?: string;
       periodo: string;
-      documentoRelacionado?: string;
-      introduccion: string;
-      desarrollo: string;
-      resultados: string;
-      observaciones?: string;
+      informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE";
+      relatedPlanId?: string;
+      relatedPlanTitulo?: string;
+      antecedentes: string;
+      actividadesInforme?: any[];
+      desarrolloTextoLibre?: string;
+      conclusiones: string;
+      oportunidadesMejora: string;
+      aplicaRegistroContactos: boolean;
+      contactosDelegacion?: any[];
       tieneAnexos: "si" | "no" | null;
       anexos: AnexoDoc[];
+      // legacy compatibility
+      introduccion?: string;
+      desarrollo?: string;
+      resultados?: string;
+      observaciones?: string;
+      documentoRelacionado?: string;
     }) => {
       const isRegen = docMaster.reviewRound > 1 || docMaster.documentState === "EN CORRECCIÓN";
       const nowHora = "10:15";
       const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
+      const carrera = datos.carrera || docMaster.carrera || "Ingeniería de Software";
 
       const newArtifact: DocumentArtifact = {
         id: `art-inf-${docMaster.id}-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
         documentType: "INFORME",
+        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
         titulo: datos.titulo || docMaster.nombre,
         formalVersion: docMaster.formalVersion,
         reviewRound: docMaster.reviewRound,
@@ -178,8 +233,9 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo: datos.grupo || docMaster.grupo,
+        carrera,
         periodo: datos.periodo || docMaster.periodo,
-        unidadAcademica: "FISEI – UTA",
+        unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
         elaborador: {
           id: "usr-andrea-01",
           nombre: "Ing. Andrea Pérez, Mg.",
@@ -187,26 +243,46 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
           email: "andrea.perez@uta.edu.ec",
         },
         informeData: {
-          introduccion: datos.introduccion,
-          desarrollo: datos.desarrollo,
-          resultados: datos.resultados,
-          observaciones: datos.observaciones,
-          documentoRelacionado: datos.documentoRelacionado,
+          informeOrigen: datos.informeOrigen || "DERIVADO_PLAN",
+          relatedPlanId: datos.relatedPlanId,
+          relatedPlanTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado,
+          antecedentes: datos.antecedentes || datos.introduccion || "En cumplimiento a la planificación institucional.",
+          actividadesInforme: datos.actividadesInforme || [],
+          desarrolloTextoLibre: datos.desarrolloTextoLibre,
+          conclusiones: datos.conclusiones || "Se cumplieron los objetivos previstos.",
+          oportunidadesMejora: datos.oportunidadesMejora || "Continuar con el seguimiento periódico.",
+          aplicaRegistroContactos: datos.aplicaRegistroContactos || false,
+          contactosDelegacion: datos.contactosDelegacion || [],
+          introduccion: datos.antecedentes || datos.introduccion || "",
+          desarrollo: datos.desarrolloTextoLibre || datos.desarrollo || "",
+          resultados: datos.conclusiones || datos.resultados || "",
+          observaciones: datos.oportunidadesMejora || datos.observaciones,
+          documentoRelacionado: datos.relatedPlanTitulo || datos.documentoRelacionado,
         },
         tieneAnexos: datos.tieneAnexos,
         anexos: datos.anexos || [],
         signatures: [],
+        historialCambios: [
+          {
+            version: docMaster.formalVersion,
+            descripcion: "Generación del documento formal de Informe",
+            fecha: FECHA_SISTEMA,
+          },
+        ],
       };
 
       const nextState: DocumentMasterState = {
         ...docMaster,
         nombre: datos.titulo || docMaster.nombre,
         grupo: datos.grupo || docMaster.grupo,
+        carrera,
         periodo: datos.periodo || docMaster.periodo,
+        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
         documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
         currentArtifact: newArtifact,
         fechaUltimaActualizacion: nowStr,
-        documentoRelacionadoTitulo: datos.documentoRelacionado,
+        documentoRelacionadoId: datos.relatedPlanId || docMaster.documentoRelacionadoId,
+        documentoRelacionadoTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado || docMaster.documentoRelacionadoTitulo,
       };
 
       saveState(nextState);
@@ -245,14 +321,16 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
       const newArtifact: DocumentArtifact = {
         id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
         documentType: docMaster.documentType || "PLAN_TRABAJO",
+        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
         formalVersion: docMaster.formalVersion,
         reviewRound: docMaster.reviewRound,
         pageCount: docMaster.currentArtifact.pageCount || pageCount,
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo: docMaster.grupo,
+        carrera: docMaster.carrera || "Ingeniería de Software",
         periodo: docMaster.periodo,
-        unidadAcademica: "FISEI – UTA",
+        unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
         elaborador: {
           id: "usr-andrea-01",
           nombre: "Ing. Andrea Pérez, Mg.",
@@ -265,10 +343,18 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         tieneAnexos: datos.tieneAnexos,
         anexos: datos.anexos || [],
         signatures: [],
+        historialCambios: [
+          {
+            version: docMaster.formalVersion,
+            descripcion: "Generación del documento formal de Plan de Trabajo",
+            fecha: FECHA_SISTEMA,
+          },
+        ],
       };
 
       const nextState: DocumentMasterState = {
         ...docMaster,
+        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
         documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
         currentArtifact: newArtifact,
         fechaUltimaActualizacion: nowStr,

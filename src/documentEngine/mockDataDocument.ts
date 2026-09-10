@@ -1,5 +1,5 @@
 // ─── Mock Data inicial para el Motor Documental FISEI ─────────────────────────
-import { ActividadMatrizDoc, DocumentArtifact, DocumentMasterState, FlowStageNode } from "./types";
+import { ActividadMatrizDoc, ActividadInformeDoc, DocumentArtifact, DocumentMasterState, FlowStageNode } from "./types";
 
 export const FECHA_SISTEMA = "07/09/2026";
 
@@ -89,9 +89,53 @@ export const FLOW_STAGES_INICIAL: FlowStageNode[] = [
   },
 ];
 
+export const CARRERAS_USUARIO_ANDREA = [
+  "Ingeniería de Software",
+  "Tecnologías de la Información",
+];
+
+export const ACTIVIDADES_INFORME_TITULACION_INICIAL: ActividadInformeDoc[] = [
+  {
+    id: 1,
+    actividad: "Elaboración de cronograma de eventos académicos del período",
+    mediosVerificacion: "Cronograma oficial aprobado en PDF",
+    porcentajeEjecucion: 100,
+    observaciones: "Cronograma ejecutado en su totalidad según las fechas planificadas.",
+  },
+  {
+    id: 2,
+    actividad: "Coordinación y gestión de ponentes para conferencias magistrales",
+    mediosVerificacion: "Cartas de invitación y confirmación de ponentes",
+    porcentajeEjecucion: 90,
+    observaciones: "Ponentes confirmados; recepción de resúmenes de ponencias al 90%.",
+  },
+  {
+    id: 3,
+    actividad: "Revisión técnica de proyectos de grado para jornada científica",
+    mediosVerificacion: "Actas de evaluación de proyectos",
+    porcentajeEjecucion: 85,
+    observaciones: "Actas suscritas y archivadas en el repositorio institucional.",
+  },
+  {
+    id: 4,
+    actividad: "Ejecución de la Semana Técnica de Software e Innovación",
+    mediosVerificacion: "Registro de asistencia y fotografías del evento",
+    porcentajeEjecucion: 80,
+    observaciones: "Jornadas técnicas realizadas con alta participación estudiantil.",
+  },
+  {
+    id: 5,
+    actividad: "Informe final de resultados y evaluación de eventos del período",
+    mediosVerificacion: "Informe final de actividades firmado electrónicamente",
+    porcentajeEjecucion: 70,
+    observaciones: "En consolidación final de indicadores de impacto académico.",
+  },
+];
+
 export const INITIAL_ARTIFACT: DocumentArtifact = {
   id: "art-plan-fisei-v1-r1",
   documentType: "PLAN_TRABAJO",
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
   titulo: "Plan de Trabajo: Comisión de Eventos Académicos",
   formalVersion: "1.0",
   reviewRound: 1,
@@ -99,8 +143,9 @@ export const INITIAL_ARTIFACT: DocumentArtifact = {
   generatedAt: "07/09/2026 09:15",
   generatedBy: "Ing. Andrea Pérez, Mg.",
   grupo: "Comisión de Eventos Académicos",
+  carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
-  unidadAcademica: "FISEI – UTA",
+  unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
   elaborador: {
     id: "usr-andrea-01",
     nombre: "Ing. Andrea Pérez, Mg.",
@@ -120,6 +165,13 @@ export const INITIAL_ARTIFACT: DocumentArtifact = {
     },
   ],
   signatures: [],
+  historialCambios: [
+    {
+      version: "1.0",
+      descripcion: "Emisión inicial del Plan de Trabajo",
+      fecha: "05/09/2026",
+    },
+  ],
 };
 
 export const OBSERVACIONES_INICIALES_EVENTOS = [
@@ -155,6 +207,8 @@ export const OBSERVACIONES_INICIALES_EVENTOS = [
 
 export const INITIAL_ARTIFACT_EVENTOS_CORRECCION: DocumentArtifact = {
   ...INITIAL_ARTIFACT,
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
+  carrera: "Ingeniería de Software",
   signatures: [
     {
       actorId: "usr-andrea-01",
@@ -171,13 +225,16 @@ export const INITIAL_ARTIFACT_EVENTOS_CORRECCION: DocumentArtifact = {
 export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
   id: "doc-plan-eventos-2026",
   codigo: "PT-FISEI-2026-004",
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
   nombre: "Plan de Trabajo: Comisión de Eventos Académicos",
   documentType: "PLAN_TRABAJO",
   grupo: "Comisión de Eventos Académicos",
+  carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
   formalVersion: "1.0",
   reviewRound: 1,
   documentState: "EN CORRECCIÓN",
+  finalActionLabel: "VALIDADO_POR",
   finalValidatorId: "usr-patricia-03",
   finalValidatorName: "Ing. Patricia Salazar, Mg.",
   currentArtifact: INITIAL_ARTIFACT_EVENTOS_CORRECCION,
@@ -192,6 +249,7 @@ export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
       actorCargo: "Docente elaborador",
       actorRole: "docente",
       estado: "FIRMADO",
+      actionLabel: "ELABORADO_POR",
     },
     {
       id: "stage-2",
@@ -202,6 +260,7 @@ export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
       actorCargo: "Responsable de revisión técnica",
       actorRole: "revisor",
       estado: "DEVUELTO",
+      actionLabel: "REVISADO_POR",
     },
     {
       id: "stage-3",
@@ -212,6 +271,7 @@ export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
       actorCargo: "Coordinadora de Comisión / Autoridad",
       actorRole: "validador",
       estado: "PENDIENTE",
+      actionLabel: "VALIDADO_POR",
     },
   ],
   fechaUltimaActualizacion: "06/09/2026 11:30",
@@ -222,6 +282,7 @@ export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
 export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
   id: "art-inf-titulacion-v1-r1",
   documentType: "INFORME",
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
   titulo: "Informe de seguimiento de actividades de titulación",
   formalVersion: "1.0",
   reviewRound: 1,
@@ -229,8 +290,9 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
   generatedAt: "07/09/2026 10:00",
   generatedBy: "Ing. Andrea Pérez, Mg.",
   grupo: "Unidad de Titulación",
+  carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
-  unidadAcademica: "FISEI – UTA",
+  unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
   elaborador: {
     id: "usr-andrea-01",
     nombre: "Ing. Andrea Pérez, Mg.",
@@ -238,40 +300,85 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
     email: "andrea.perez@uta.edu.ec",
   },
   informeData: {
-    introduccion: "El presente informe institucional detalla el avance y resultados de las jornadas técnicas y procesos de seguimiento curricular en la Unidad de Titulación durante el período Julio – Diciembre 2026.",
+    informeOrigen: "DERIVADO_PLAN",
+    relatedPlanId: "doc-plan-titulacion-2026",
+    relatedPlanTitulo: "Plan de Trabajo — Unidad de Titulación — Versión 1.0",
+    antecedentes: "En cumplimiento a la planificación académica aprobada en el Plan de Trabajo de la Unidad de Titulación correspondiente al período académico Julio – Diciembre 2026, se presenta el informe de avance y cumplimiento de las actividades desarrolladas.",
+    actividadesInforme: ACTIVIDADES_INFORME_TITULACION_INICIAL,
+    conclusiones: "Se ejecutaron satisfactoriamente las jornadas de revisión y sustentación con un alto índice de cumplimiento del cronograma planificado.",
+    oportunidadesMejora: "Fortalecer la articulación previa con los laboratorios y coordinar con mayor antelación las agendas de los tribunales de grado.",
+    aplicaRegistroContactos: false,
+    contactosDelegacion: [],
+    introduccion: "En cumplimiento a la planificación académica aprobada en el Plan de Trabajo de la Unidad de Titulación correspondiente al período académico Julio – Diciembre 2026, se presenta el informe de avance y cumplimiento de las actividades desarrolladas.",
     desarrollo: "Se realizaron revisiones periódicas de los proyectos de grado, talleres de actualización metodológica y coordinación con los tribunales de sustentación para asegurar el cumplimiento del cronograma académico institucional.",
     resultados: "Se registró la aprobación de anteproyectos con cumplimiento de los estándares de calidad académica y vinculación con líneas de investigación de la FISEI.",
     observaciones: "Se recomienda mantener la articulación con los laboratorios de cómputo para futuras convocatorias.",
     documentoRelacionado: "Plan de Trabajo — Unidad de Titulación — Versión 1.0",
   },
-  tieneAnexos: "si",
-  anexos: [
+  tieneAnexos: "no",
+  anexos: [],
+  signatures: [],
+  historialCambios: [
     {
-      id: 1,
-      nombre: "Registro de avance y actas de seguimiento de titulación",
-      archivo: "actas_seguimiento_titulacion_2026.pdf",
-      tamano: "850 KB",
+      version: "1.0",
+      descripcion: "Elaboración inicial del Informe de seguimiento",
+      fecha: "07/09/2026",
     },
   ],
-  signatures: [],
 };
 
 export const INITIAL_INFORME_MASTER: DocumentMasterState = {
   id: "doc-inf-titulacion-2026",
   codigo: "INF-FISEI-2026-012",
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
   nombre: "Informe de seguimiento de actividades de titulación",
   documentType: "INFORME",
   grupo: "Unidad de Titulación",
+  carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
   formalVersion: "1.0",
   reviewRound: 1,
   documentState: "BORRADOR",
+  finalActionLabel: "VALIDADO_POR",
   finalValidatorId: "usr-patricia-03",
   finalValidatorName: "Ing. Patricia Salazar, Mg.",
   currentArtifact: INITIAL_INFORME_ARTIFACT,
   artifactHistory: [],
   observations: [],
-  flowStages: FLOW_STAGES_INICIAL,
+  flowStages: [
+    {
+      id: "stage-1",
+      actorId: "usr-andrea-01",
+      stageName: "ETAPA 1 — Elaboración",
+      actorName: "Ing. Andrea Pérez, Mg.",
+      actorCargo: "Docente elaborador",
+      actorRole: "docente",
+      estado: "PENDIENTE",
+      actionLabel: "ELABORADO_POR",
+    },
+    {
+      id: "stage-2",
+      actorId: "usr-carlos-02",
+      stageName: "ETAPA 2 — Revisión",
+      subLevelName: "Nivel 1 — Revisión técnica",
+      actorName: "Ing. Carlos López, Mg.",
+      actorCargo: "Responsable de revisión técnica",
+      actorRole: "revisor",
+      estado: "PENDIENTE",
+      actionLabel: "REVISADO_POR",
+    },
+    {
+      id: "stage-3",
+      actorId: "usr-patricia-03",
+      stageName: "ETAPA 3 — Validación final",
+      subLevelName: "Validación y Aprobación",
+      actorName: "Ing. Patricia Salazar, Mg.",
+      actorCargo: "Coordinadora de Comisión / Autoridad",
+      actorRole: "validador",
+      estado: "PENDIENTE",
+      actionLabel: "VALIDADO_POR",
+    },
+  ],
   fechaUltimaActualizacion: "07/09/2026 10:00",
   documentoRelacionadoId: "doc-plan-titulacion-2026",
   documentoRelacionadoTitulo: "Plan de Trabajo — Unidad de Titulación — Versión 1.0",
@@ -280,21 +387,26 @@ export const INITIAL_INFORME_MASTER: DocumentMasterState = {
 export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   id: "doc-plan-titulacion-2026",
   codigo: "PT-FISEI-2026-001",
+  codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
   nombre: "Plan de Trabajo: Unidad de Titulación",
   documentType: "PLAN_TRABAJO",
   grupo: "Unidad de Titulación",
+  carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
   formalVersion: "1.0",
   reviewRound: 1,
   documentState: "VALIDADO",
   operationalState: "EN EJECUCIÓN",
+  finalActionLabel: "VALIDADO_POR",
   finalValidatorId: "usr-patricia-03",
   finalValidatorName: "Ing. Patricia Salazar, Mg.",
   currentArtifact: {
     ...INITIAL_ARTIFACT,
     id: "art-plan-titulacion-v1",
+    codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
     titulo: "Plan de Trabajo: Unidad de Titulación",
     grupo: "Unidad de Titulación",
+    carrera: "Ingeniería de Software",
     signatures: [
       {
         actorId: "usr-andrea-01",
@@ -324,6 +436,13 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
         ubicacion: "Página 4 — Firmas de Responsabilidad: Validado por",
       },
     ],
+    historialCambios: [
+      {
+        version: "1.0",
+        descripcion: "Emisión inicial de Plan de Trabajo validado",
+        fecha: "06/09/2026",
+      },
+    ],
   },
   artifactHistory: [],
   observations: [],
@@ -336,6 +455,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
       actorCargo: "Docente elaborador",
       actorRole: "docente",
       estado: "FIRMADO",
+      actionLabel: "ELABORADO_POR",
     },
     {
       id: "stage-2",
@@ -346,6 +466,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
       actorCargo: "Responsable de revisión técnica",
       actorRole: "revisor",
       estado: "APROBADO",
+      actionLabel: "REVISADO_POR",
     },
     {
       id: "stage-3",
@@ -356,6 +477,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
       actorCargo: "Coordinadora de Comisión / Autoridad",
       actorRole: "validador",
       estado: "FIRMADO",
+      actionLabel: "VALIDADO_POR",
     },
   ],
   fechaUltimaActualizacion: "06/09/2026 15:00",
