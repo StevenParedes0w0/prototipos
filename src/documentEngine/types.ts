@@ -106,6 +106,18 @@ export interface InformeDataDoc {
   documentoRelacionado?: string;
 }
 
+export interface DocumentPage {
+  id: string;
+  type: string;
+  signatureSlots?: {
+    stageId?: string;
+    userId?: string;
+    action?: string;
+    role?: string;
+    label?: string;
+  }[];
+}
+
 export interface DocumentArtifact {
   id: string;
   documentType: DocumentType;
@@ -114,6 +126,7 @@ export interface DocumentArtifact {
   formalVersion: string; // e.g. "1.0"
   reviewRound: number;   // e.g. 1, 2, 3
   pageCount: number;     // e.g. 3, 4 (o N páginas dinámicas)
+  pages?: DocumentPage[]; // Representación de las páginas del documento
   generatedAt: string;   // e.g. "07/09/2026 09:30"
   generatedBy: string;   // "Ing. Andrea Pérez, Mg."
   grupo: string;         // "Comisión de Eventos Académicos" o "Unidad de Titulación"
@@ -135,6 +148,7 @@ export interface DocumentArtifact {
   tieneAnexos: "si" | "no" | null;
   anexos: AnexoDoc[];
   signatures: DocumentSignature[];
+  signatureSlots?: { role: string; pageIndex: number; label: string; action: string; }[];
   historialCambios?: HistorialCambioFila[];
 }
 

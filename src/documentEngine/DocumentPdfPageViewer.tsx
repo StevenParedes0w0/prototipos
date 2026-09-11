@@ -1958,7 +1958,7 @@ export default function DocumentPdfPageViewer({
                     DEVOLVER
                   </button>
                 </>
-              ) : isDocente ? (
+              ) : isDocente && !isAlreadySignedByMe && documentState !== "EN REVISIÓN" && documentState !== "EN CORRECCIÓN" ? (
                 /* Docente Preview Actions */
                 <button className="btn btn-primary" onClick={onOpenFirmar} style={{ justifyContent: "center" }}>
                   FIRMAR Y CONTINUAR →

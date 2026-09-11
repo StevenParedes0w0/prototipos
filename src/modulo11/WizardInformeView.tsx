@@ -42,9 +42,10 @@ export default function WizardInformeView({
   onFinish,
   onCancel,
 }: WizardInformeViewProps) {
-  const { documents, generarArtefactoInforme, firmarComoElaborador, enviarARevision } = docEngine;
+  const { documents, crearNuevoDocumento, generarArtefactoInforme, firmarComoElaborador, enviarARevision } = docEngine;
 
   const [step, setStep] = useState<number>(1);
+  const [createdDocId, setCreatedDocId] = useState<string | null>(null);
   const [maxReached, setMaxReached] = useState<number>(1);
 
   // Obtener planes disponibles del usuario para derivación
@@ -181,15 +182,37 @@ export default function WizardInformeView({
   // Construir artefacto para Previsualización (Paso 7)
   const selectedPlanDoc = documents.find((d) => d.id === selectedPlanId);
   const relatedPlanTitulo = informeOrigen === "DERIVADO_PLAN" ? (selectedPlanDoc?.nombre || `Plan de Trabajo — ${grupo}`) : undefined;
+  const previewPageCount = 5;
+  const previewPages: import("../documentEngine/types").DocumentPage[] = Array.from({ length: previewPageCount }).map((_, i) => {
+    const isPenultimate = i === previewPageCount - 2;
+    const isLast = i === previewPageCount - 1;
+    return {
+      id: `page-${i+1}`,
+      type: "standard",
+      signatureSlots: isPenultimate ? [
+        { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+        { role: "revisor", action: "REVISADO_POR", label: "Revisado por" }
+      ] : isLast ? [
+        { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+      ] : []
+    };
+  });
+  const previewSignatureSlots = previewPages.flatMap((p, i) => 
+    (p.signatureSlots || []).map(s => ({ ...s, pageIndex: i + 1, pageNumber: i + 1 }))
+  ) as any[];
+
+  const normalizeInformeTitle = (t: string) => t.replace(/^INFORME DE:\s*/i, "");
 
   const previewArtifact: DocumentArtifact = {
     id: "art-informe-preview",
     documentType: "INFORME",
     codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-    titulo: titulo.replace(/^INFORME DE:\\s*/i, ""),
+    titulo: normalizeInformeTitle(titulo),
     formalVersion: "1.0",
     reviewRound: 1,
-    pageCount: (window as any)?.previewPages?.length || 5,
+    pageCount: previewPageCount,
+    pages: previewPages,
+    signatureSlots: previewSignatureSlots,
     generatedAt: `${fecha} 09:30`,
     generatedBy: "Ing. Andrea Pérez, Mg.",
     grupo,
@@ -230,7 +253,7 @@ export default function WizardInformeView({
             role: "docente",
             fecha: FECHA_SISTEMA,
             hora: "10:30",
-            ubicacion: "Página 3 — Firmas de Responsabilidad: Elaborado por",
+            ubicacion: `Página ${previewSignatureSlots.find((s: any) => s.role === "docente")?.pageNumber || 4} — Firmas de Responsabilidad: Elaborado por`,
           },
         ]
       : [],
@@ -244,8 +267,24 @@ export default function WizardInformeView({
   };
 
   const handleFirmarDocumento = (certFile: string, ubicacion: string) => {
+    let targetId = createdDocId;
+    if (!targetId) {
+      const newDoc = crearNuevoDocumento("INFORME", {
+        grupo,
+        carrera,
+        periodo,
+        titulo,
+        informeOrigen,
+        documentoRelacionadoId: informeOrigen === "DERIVADO_PLAN" ? selectedPlanId : undefined,
+        documentoRelacionadoTitulo: relatedPlanTitulo,
+        antecedentes,
+      });
+      targetId = newDoc.id;
+      setCreatedDocId(newDoc.id);
+    }
+
     // Generar artefacto formal en motor
-    generarArtefactoInforme({
+    generarArtefactoInforme(targetId, {
       titulo,
       grupo,
       carrera,
@@ -264,13 +303,13 @@ export default function WizardInformeView({
       anexos: tieneAnexos === "si" ? anexos : [],
     });
 
-    firmarComoElaborador(certFile, ubicacion);
+    firmarComoElaborador(targetId, certFile, ubicacion);
     setIsSigned(true);
     setShowFirmaModal(false);
   };
 
   const handleEnviarARevision = () => {
-    enviarARevision();
+    if (createdDocId) enviarARevision(createdDocId);
     onFinish();
   };
 

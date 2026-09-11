@@ -1,3 +1,5 @@
+import { Eye } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 import React, { useState } from "react";
 import { AuditoriaEvento } from "./types";
 import { FiltrosAuditoria } from "./useAuditoriaState";
@@ -638,31 +640,11 @@ export default function AuditoriaView({
 
                       {/* Detalle */}
                       <td style={{ padding: "14px 16px", textAlign: "center" }}>
-                        <button
+                        <TableActionButton
+                          title="Ver detalle"
+                          icon={Eye}
                           onClick={() => onSelectEvento(ev)}
-                          style={{
-                            background: "#f1f5f9",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            color: "#1a4f8a",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                            transition: "all 0.15s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.background = "#1a4f8a";
-                            (e.currentTarget as HTMLElement).style.color = "#ffffff";
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.background = "#f1f5f9";
-                            (e.currentTarget as HTMLElement).style.color = "#1a4f8a";
-                          }}
-                        >
-                          [ VER DETALLE ]
-                        </button>
+                        />
                       </td>
                     </tr>
                   );

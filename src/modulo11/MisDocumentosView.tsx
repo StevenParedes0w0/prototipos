@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import { DocumentMasterState, DocumentType } from "../documentEngine/types";
 import DetalleDocumentoModal from "./DetalleDocumentoModal";
+import { Eye, ClipboardList, FilePenLine, MessageSquare, RotateCcw, Download, BadgeCheck, PenLine } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface MisDocumentosViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
@@ -293,79 +295,72 @@ export default function MisDocumentosView({
                     <td style={{ fontSize: 12, color: "#64748b" }}>{doc.fechaUltimaActualizacion}</td>
                     <td>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <button
-                          className="btn btn-ghost btn-xs"
+                        <TableActionButton
+                          title="Ver documento"
+                          icon={Eye}
                           onClick={() => {
                             seleccionarDocumento(doc.id);
                             setSelectedDocForDetail(doc);
                           }}
-                        >
-                          VER
-                        </button>
+                        />
 
                         {isPlan && (doc.documentState === "EN EJECUCIÓN" || doc.documentState === "VALIDADO") && (
-                          <button
-                            className="btn btn-ghost btn-xs"
+                          <TableActionButton
+                            title="Ver actividades"
+                            icon={ClipboardList}
                             onClick={onNavigateActividades}
-                            style={{ color: "#1a4f8a", fontWeight: 700 }}
-                          >
-                            ACTIVIDADES
-                          </button>
+                          />
                         )}
 
                         {doc.documentState === "DEVUELTO" && (
                           <>
-                            <button
-                              className="btn btn-ghost btn-xs"
+                            <TableActionButton
+                              title="Ver observaciones"
+                              icon={MessageSquare}
+                              variant="destructive"
                               onClick={() => setShowObsModalDoc(doc)}
-                              style={{ color: "#b45309", fontWeight: 700 }}
-                            >
-                              VER OBSERVACIONES
-                            </button>
-                            <button
-                              className="btn btn-secondary btn-xs"
+                            />
+                            <TableActionButton
+                              title="Corregir documento"
+                              icon={RotateCcw}
+                              variant="constructive"
                               onClick={() => {
                                 seleccionarDocumento(doc.id);
                                 onCorregirPlan(doc.id);
                               }}
-                              style={{ background: "#f59e0b", color: "#1e2a3a", border: "none", fontWeight: 700 }}
-                            >
-                              CORREGIR
-                            </button>
+                            />
                           </>
                         )}
 
                         {doc.documentState === "BORRADOR" && (
-                          <button
-                            className="btn btn-secondary btn-xs"
+                          <TableActionButton
+                            title="Continuar elaboración"
+                            icon={FilePenLine}
+                            variant="constructive"
                             onClick={() => {
                               seleccionarDocumento(doc.id);
                               if (isPlan) onContinuarPlan(doc.id);
                             }}
-                          >
-                            CONTINUAR
-                          </button>
+                          />
                         )}
 
                         {doc.documentState === "EN CORRECCIÓN" && (
                           <>
-                            <button
-                              className="btn btn-ghost btn-xs"
+                            <TableActionButton
+                              title="Ver observaciones"
+                              icon={MessageSquare}
+                              variant="destructive"
                               onClick={() => setShowObsModalDoc(doc)}
-                              style={{ color: "#b45309", fontWeight: 700 }}
-                            >
-                              VER OBSERVACIONES
-                            </button>
-                            <button
-                              className="btn btn-secondary btn-xs"
+                            />
+                            <TableActionButton
+                              title="Continuar corrección"
+                              icon={RotateCcw}
+                              variant="constructive"
                               onClick={() => {
                                 seleccionarDocumento(doc.id);
                                 onCorregirPlan(doc.id);
                               }}
-                              style={{ background: "#f59e0b", color: "#1e2a3a", border: "none", fontWeight: 700 }}
-                            >
-                              CONTINUAR CORRECCIÓN
-                            </button>
+                            />
                           </>
                         )}
                       </div>

@@ -6,6 +6,8 @@ import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
 import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
 import ModalTrazabilidadCompleta from "../modulo6/ModalTrazabilidadCompleta";
+import { Eye, MessageSquare, RotateCcw, History } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface MisEvidenciasViewProps {
   actividades: ActividadEjecucion[];
@@ -368,42 +370,34 @@ export default function MisEvidenciasView({
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
                         {isCargada && (
-                          <button
-                            className="btn btn-secondary btn-sm"
+                          <TableActionButton
+                            title="Ver documento PDF"
+                            icon={Eye}
                             onClick={() => {
                               setActiveItem({ actividad, medio });
                               setModalType("ver");
                             }}
-                            title="Ver documento PDF"
-                          >
-                            VER
-                          </button>
+                          />
                         )}
 
                         {/* Botón ver observación si está observada */}
                         {estadoVis === "OBSERVADA" && (
-                          <button
-                            className="btn btn-sm"
+                          <TableActionButton
+                            title="Consultar la observación del revisor"
+                            icon={MessageSquare}
+                            variant="destructive"
                             onClick={() => {
                               setActiveItem({ actividad, medio });
                               setModalType("observacion");
                             }}
-                            style={{
-                              background: "#fffbeb",
-                              color: "#b45309",
-                              border: "1px solid #fde68a",
-                              fontWeight: 700,
-                            }}
-                            title="Consultar la observación del revisor"
-                          >
-                            VER OBSERVACIÓN
-                          </button>
+                          />
                         )}
 
                         {/* Reemplazar con flujo seguro según estado */}
                         {isCargada && !isVencida && esResponsable && (
-                          <button
-                            className="btn btn-ghost btn-sm"
+                          <TableActionButton
+                            title="Cargar nueva versión del archivo"
+                            icon={RotateCcw}
                             onClick={() => {
                               if (estadoVis === "VALIDADA") {
                                 setItemParaConfirmarReemplazo({ actividad, medio });
@@ -412,15 +406,7 @@ export default function MisEvidenciasView({
                                 setModalType("reemplazar");
                               }
                             }}
-                            style={{
-                              color: "#475569",
-                              border: "1px solid #e2e8f0",
-                              fontSize: 11.5,
-                            }}
-                            title="Cargar nueva versión del archivo"
-                          >
-                            REEMPLAZAR
-                          </button>
+                          />
                         )}
 
                         {/* Ver Trazabilidad / Auditoría */}

@@ -1,6 +1,8 @@
 // Pantalla 05 — Grupos Institucionales
 import React, { useState, useMemo } from "react";
 import { GrupoInstitucional, TipoGrupoInstitucional } from "./types";
+import { Eye, Pencil, Archive, CheckCircle2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface GruposInstitucionalesViewProps {
   grupos: GrupoInstitucional[];

@@ -1,6 +1,8 @@
 // Pantalla 08 — Catálogo de Actividades Institucionales
 import React, { useState, useMemo } from "react";
 import { ActividadCatalogo } from "./types";
+import { Pencil, Archive, CheckCircle2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface ActividadesInstitucionalesViewProps {
   actividades: ActividadCatalogo[];

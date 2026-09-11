@@ -1,6 +1,8 @@
 // Pantalla 07 — Períodos Académicos
 import React, { useState } from "react";
 import { PeriodoAcademico } from "./types";
+import { Eye, Pencil, CheckCircle2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface PeriodosAcademicosViewProps {
   periodos: PeriodoAcademico[];

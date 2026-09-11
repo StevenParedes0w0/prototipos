@@ -1,6 +1,8 @@
 // Pantalla 09 — Catálogos: Recursos y Medios de Verificación
 import React, { useState } from "react";
 import { RecursoCatalogo, MedioVerificacionCatalogo } from "./types";
+import { Eye, Pencil, Trash2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface CatalogosViewProps {
   recursos: RecursoCatalogo[];

@@ -1,6 +1,8 @@
 // Pantalla 12 — Feriados y Días Restringidos
 import React, { useState } from "react";
 import { FeriadoItem } from "./types";
+import { Pencil, Trash2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface FeriadosViewProps {
   feriados: FeriadoItem[];

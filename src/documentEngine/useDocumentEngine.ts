@@ -63,11 +63,27 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
     });
   }, []);
 
+  const mutateDocument = useCallback((targetDocId: string, updater: (doc: DocumentMasterState) => DocumentMasterState): DocumentMasterState | null => {
+    let nextDoc: DocumentMasterState | null = null;
+    setDocuments(prevDocs => {
+      const doc = prevDocs.find(d => d.id === targetDocId);
+      if (!doc) return prevDocs;
+      nextDoc = updater(doc);
+      const nextDocs = prevDocs.map(d => d.id === targetDocId ? nextDoc! : d);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextDocs));
+      } catch (e) {
+        console.error("Error saving documents to storage", e);
+      }
+      return nextDocs;
+    });
+    return nextDoc;
+  }, []);
+
   const seleccionarDocumento = useCallback((id: string) => {
     setSelectedDocId(id);
   }, []);
 
-  // Crear nuevo documento (Plan de Trabajo o Informe)
   const crearNuevoDocumento = useCallback(
     (
       tipo: DocumentType,
@@ -94,6 +110,31 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
       const codigo = tipo === "INFORME" ? `INF-FISEI-2026-${Math.floor(100 + Math.random() * 900)}` : `PT-FISEI-2026-${Math.floor(100 + Math.random() * 900)}`;
       const codigoFormatoOficial = tipo === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1";
 
+      const pageCount = 5;
+      const pages: import("./types").DocumentPage[] = Array.from({ length: pageCount }).map((_, i) => {
+        const isPenultimate = tipo === "INFORME" && i === pageCount - 2;
+        const isLast = i === pageCount - 1;
+        return { 
+          id: `page-${i+1}`, 
+          type: "standard",
+          signatureSlots: tipo === "INFORME" 
+            ? (isPenultimate ? [
+                { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+                { role: "revisor", action: "REVISADO_POR", label: "Revisado por" }
+              ] : isLast ? [
+                { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+              ] : [])
+            : (isLast ? [
+                { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+                { role: "revisor", action: "REVISADO_POR", label: "Revisado por" },
+                { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+              ] : [])
+        };
+      });
+      const derivedSignatureSlots = pages.flatMap((p, i) => 
+        (p.signatureSlots || []).map(s => ({ ...s, pageIndex: i + 1, pageNumber: i + 1 }))
+      ) as any[];
+
       const newArtifact: DocumentArtifact = {
         id: `art-${id}-v1_0-r1`,
         documentType: tipo,
@@ -101,7 +142,8 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         titulo: normalizedTitulo,
         formalVersion: "1.0",
         reviewRound: 1,
-        pageCount: (docMaster && (docMaster.currentArtifact as any)?.pages?.length) ? (docMaster.currentArtifact as any).pages.length : 5,
+        pageCount,
+        pages,
         generatedAt: nowStr,
         generatedBy: "Ing. Andrea Pérez, Mg.",
         grupo,
@@ -136,6 +178,7 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
         tieneAnexos: "no",
         anexos: [],
         signatures: [],
+        signatureSlots: derivedSignatureSlots,
         historialCambios: [
           {
             version: "1.0",
@@ -197,9 +240,8 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
     [onAuditLog]
   );
 
-  // 1b. Generar / Actualizar Artefacto de Informe
   const generarArtefactoInforme = useCallback(
-    (datos: {
+    (targetDocId: string, datos: {
       titulo: string;
       grupo: string;
       carrera?: string;
@@ -216,575 +258,610 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
       contactosDelegacion?: any[];
       tieneAnexos: "si" | "no" | null;
       anexos: AnexoDoc[];
-      // legacy compatibility
       introduccion?: string;
       desarrollo?: string;
       resultados?: string;
       observaciones?: string;
       documentoRelacionado?: string;
     }) => {
-      const isRegen = docMaster.reviewRound > 1 || docMaster.documentState === "EN CORRECCIÓN";
       const nowHora = "10:15";
       const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
-      const carrera = datos.carrera || docMaster.carrera || "Ingeniería de Software";
 
-      const newArtifact: DocumentArtifact = {
-        id: `art-inf-${docMaster.id}-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
-        documentType: "INFORME",
-        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-        titulo: normalizeInformeTitle(datos.titulo || docMaster.nombre),
-        formalVersion: docMaster.formalVersion,
-        reviewRound: docMaster.reviewRound,
-        pageCount: (docMaster && (docMaster.currentArtifact as any)?.pages?.length) ? (docMaster.currentArtifact as any).pages.length : 5,
-        generatedAt: nowStr,
-        generatedBy: "Ing. Andrea Pérez, Mg.",
-        grupo: datos.grupo || docMaster.grupo,
-        carrera,
-        periodo: datos.periodo || docMaster.periodo,
-        unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
-        elaborador: {
-          id: "usr-andrea-01",
-          nombre: "Ing. Andrea Pérez, Mg.",
-          cargo: "Docente elaborador",
-          email: "andrea.perez@uta.edu.ec",
-        },
-        informeData: {
-          informeOrigen: datos.informeOrigen || "DERIVADO_PLAN",
-          relatedPlanId: datos.relatedPlanId,
-          relatedPlanTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado,
-          antecedentes: datos.antecedentes || datos.introduccion || "En cumplimiento a la planificación institucional.",
-          actividadesInforme: datos.actividadesInforme || [],
-          desarrolloTextoLibre: datos.desarrolloTextoLibre,
-          conclusiones: datos.conclusiones || "Se cumplieron los objetivos previstos.",
-          oportunidadesMejora: datos.oportunidadesMejora || "Continuar con el seguimiento periódico.",
-          aplicaRegistroContactos: datos.aplicaRegistroContactos || false,
-          contactosDelegacion: datos.contactosDelegacion || [],
-          introduccion: datos.antecedentes || datos.introduccion || "",
-          desarrollo: datos.desarrolloTextoLibre || datos.desarrollo || "",
-          resultados: datos.conclusiones || datos.resultados || "",
-          observaciones: datos.oportunidadesMejora || datos.observaciones,
-          documentoRelacionado: datos.relatedPlanTitulo || datos.documentoRelacionado,
-        },
-        tieneAnexos: datos.tieneAnexos,
-        anexos: datos.anexos || [],
-        signatures: [],
-        historialCambios: [
-          {
-            version: docMaster.formalVersion,
-            descripcion: "Generación del documento formal de Informe",
-            fecha: FECHA_SISTEMA,
+      const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const isRegen = docMaster.reviewRound > 1 || docMaster.documentState === "EN CORRECCIÓN";
+        const carrera = datos.carrera || docMaster.carrera || "Ingeniería de Software";
+        
+        const pageCount = 5;
+        const pages: import("./types").DocumentPage[] = Array.from({ length: pageCount }).map((_, i) => {
+          const isPenultimate = i === pageCount - 2;
+          const isLast = i === pageCount - 1;
+          return {
+            id: `page-${i+1}`,
+            type: "standard",
+            signatureSlots: isPenultimate ? [
+              { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+              { role: "revisor", action: "REVISADO_POR", label: "Revisado por" }
+            ] : isLast ? [
+              { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+            ] : []
+          };
+        });
+        const derivedSignatureSlots = pages.flatMap((p, i) => 
+          (p.signatureSlots || []).map(s => ({ ...s, pageIndex: i + 1, pageNumber: i + 1 }))
+        ) as any[];
+
+        const newArtifact: DocumentArtifact = {
+          id: `art-inf-${docMaster.id}-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
+          documentType: "INFORME",
+          codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
+          titulo: normalizeInformeTitle(datos.titulo || docMaster.nombre),
+          formalVersion: docMaster.formalVersion,
+          reviewRound: docMaster.reviewRound,
+          pageCount,
+          pages,
+          generatedAt: nowStr,
+          generatedBy: "Ing. Andrea Pérez, Mg.",
+          grupo: datos.grupo || docMaster.grupo,
+          carrera,
+          periodo: datos.periodo || docMaster.periodo,
+          unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
+          elaborador: {
+            id: "usr-andrea-01",
+            nombre: "Ing. Andrea Pérez, Mg.",
+            cargo: "Docente elaborador",
+            email: "andrea.perez@uta.edu.ec",
           },
-        ],
-      };
+          informeData: {
+            informeOrigen: datos.informeOrigen || "DERIVADO_PLAN",
+            relatedPlanId: datos.relatedPlanId,
+            relatedPlanTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado,
+            antecedentes: datos.antecedentes || datos.introduccion || "En cumplimiento a la planificación institucional.",
+            actividadesInforme: datos.actividadesInforme || [],
+            desarrolloTextoLibre: datos.desarrolloTextoLibre,
+            conclusiones: datos.conclusiones || "Se cumplieron los objetivos previstos.",
+            oportunidadesMejora: datos.oportunidadesMejora || "Continuar con el seguimiento periódico.",
+            aplicaRegistroContactos: datos.aplicaRegistroContactos || false,
+            contactosDelegacion: datos.contactosDelegacion || [],
+            introduccion: datos.antecedentes || datos.introduccion || "",
+            desarrollo: datos.desarrolloTextoLibre || datos.desarrollo || "",
+            resultados: datos.conclusiones || datos.resultados || "",
+            observaciones: datos.oportunidadesMejora || datos.observaciones,
+            documentoRelacionado: datos.relatedPlanTitulo || datos.documentoRelacionado,
+          },
+          tieneAnexos: datos.tieneAnexos,
+          anexos: datos.anexos || [],
+          signatures: [],
+        signatureSlots: derivedSignatureSlots,
+          historialCambios: [
+            {
+              version: docMaster.formalVersion,
+              descripcion: "Generación del documento formal de Informe",
+              fecha: FECHA_SISTEMA,
+            },
+          ],
+        };
 
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        nombre: datos.titulo || docMaster.nombre,
-        grupo: datos.grupo || docMaster.grupo,
-        carrera,
-        periodo: datos.periodo || docMaster.periodo,
-        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
-        documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
-        currentArtifact: newArtifact,
-        fechaUltimaActualizacion: nowStr,
-        documentoRelacionadoId: datos.relatedPlanId || docMaster.documentoRelacionadoId,
-        documentoRelacionadoTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado || docMaster.documentoRelacionadoTitulo,
-      };
+        return {
+          ...docMaster,
+          nombre: datos.titulo || docMaster.nombre,
+          grupo: datos.grupo || docMaster.grupo,
+          carrera,
+          periodo: datos.periodo || docMaster.periodo,
+          codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
+          documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
+          currentArtifact: newArtifact,
+          fechaUltimaActualizacion: nowStr,
+          documentoRelacionadoId: datos.relatedPlanId || docMaster.documentoRelacionadoId,
+          documentoRelacionadoTitulo: datos.relatedPlanTitulo || datos.documentoRelacionado || docMaster.documentoRelacionadoTitulo,
+        };
+      });
 
-      saveState(nextState);
-
-      const eventType = isRegen ? "DOCUMENTO REGENERADO" : "DOCUMENTO GENERADO";
-      onAuditLog?.(
-        eventType,
-        nextState.nombre,
-        eventType,
-        `Artefacto formal de Informe generado (Versión formal ${docMaster.formalVersion} — Ronda ${docMaster.reviewRound})`,
-        "Ing. Andrea Pérez, Mg.",
-        "Docente"
-      );
-
-      return newArtifact;
+      if (nextDoc) {
+        const isRegen = nextDoc.reviewRound > 1 || nextDoc.documentState === "EN CORRECCIÓN";
+        const eventType = isRegen ? "DOCUMENTO REGENERADO" : "DOCUMENTO GENERADO";
+        onAuditLog?.(
+          eventType,
+          nextDoc.nombre,
+          eventType,
+          `Artefacto formal de Informe generado (Versión formal ${nextDoc.formalVersion} — Ronda ${nextDoc.reviewRound})`,
+          "Ing. Andrea Pérez, Mg.",
+          "Docente"
+        );
+        return nextDoc.currentArtifact;
+      }
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-
-  // 1. Generar / Regenerar Artefacto desde Borrador
   const generarArtefacto = useCallback(
-    (datos: {
+    (targetDocId: string, datos: {
       justificacion: string;
       objetivo: string;
       matriz: ActividadMatrizDoc[];
       tieneAnexos: "si" | "no" | null;
       anexos: AnexoDoc[];
     }) => {
-      const isRegen = docMaster.reviewRound > 1 || docMaster.documentState === "EN CORRECCIÓN";
       const nowHora = "10:15";
       const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
       const matriz = datos.matriz && datos.matriz.length > 0 ? datos.matriz : MATRIZ_INICIAL_DOC;
       const pageCount = Math.max(5, Math.min(8, Math.ceil((matriz.length + 3) / 2)));
 
-      const newArtifact: DocumentArtifact = {
-        id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
-        documentType: docMaster.documentType || "PLAN_TRABAJO",
-        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
-        formalVersion: docMaster.formalVersion,
-        reviewRound: docMaster.reviewRound,
-        pageCount: docMaster.currentArtifact.pageCount || pageCount,
-        generatedAt: nowStr,
-        generatedBy: "Ing. Andrea Pérez, Mg.",
-        grupo: docMaster.grupo,
-        carrera: docMaster.carrera || "Ingeniería de Software",
-        periodo: docMaster.periodo,
-        unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
-        elaborador: {
-          id: "usr-andrea-01",
-          nombre: "Ing. Andrea Pérez, Mg.",
-          cargo: "Docente elaborador",
-          email: "andrea.perez@uta.edu.ec",
-        },
-        justificacion: datos.justificacion || JUSTIFICACION_INICIAL,
-        objetivo: datos.objetivo || OBJETIVO_INICIAL,
-        matriz,
-        tieneAnexos: datos.tieneAnexos,
-        anexos: datos.anexos || [],
-        signatures: [],
-        historialCambios: [
-          {
-            version: docMaster.formalVersion,
-            descripcion: "Generación del documento formal de Plan de Trabajo",
-            fecha: FECHA_SISTEMA,
+      const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const pages = Array.from({ length: pageCount }).map((_, i) => {
+          const isPenultimate = docMaster.documentType === "INFORME" && i === pageCount - 2;
+          const isLast = i === pageCount - 1;
+          return {
+            id: `page-${i+1}`,
+            type: "standard",
+            signatureSlots: docMaster.documentType === "INFORME" 
+              ? (isPenultimate ? [
+                  { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+                  { role: "revisor", action: "REVISADO_POR", label: "Revisado por" }
+                ] : isLast ? [
+                  { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+                ] : [])
+              : (isLast ? [
+                  { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
+                  { role: "revisor", action: "REVISADO_POR", label: "Revisado por" },
+                  { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
+                ] : [])
+          };
+        });
+        const derivedSignatureSlots = pages.flatMap((p, i) => 
+          (p.signatureSlots || []).map(s => ({ ...s, pageIndex: i + 1, pageNumber: i + 1 }))
+        ) as any[];
+
+        const newArtifact: DocumentArtifact = {
+          id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${docMaster.reviewRound}-${Date.now()}`,
+          documentType: docMaster.documentType || "PLAN_TRABAJO",
+          codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
+          formalVersion: docMaster.formalVersion,
+          reviewRound: docMaster.reviewRound,
+          pageCount: pageCount,
+          pages: pages,
+          generatedAt: nowStr,
+          generatedBy: "Ing. Andrea Pérez, Mg.",
+          grupo: docMaster.grupo,
+          carrera: docMaster.carrera || "Ingeniería de Software",
+          periodo: docMaster.periodo,
+          unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
+          elaborador: {
+            id: "usr-andrea-01",
+            nombre: "Ing. Andrea Pérez, Mg.",
+            cargo: "Docente elaborador",
+            email: "andrea.perez@uta.edu.ec",
           },
-        ],
-      };
+          justificacion: datos.justificacion || JUSTIFICACION_INICIAL,
+          objetivo: datos.objetivo || OBJETIVO_INICIAL,
+          matriz,
+          tieneAnexos: datos.tieneAnexos,
+          anexos: datos.anexos || [],
+          signatures: [],
+          signatureSlots: derivedSignatureSlots,
+          historialCambios: [
+            {
+              version: docMaster.formalVersion,
+              descripcion: "Generación del documento formal de Plan de Trabajo",
+              fecha: FECHA_SISTEMA,
+            },
+          ],
+        };
 
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
-        documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
-        currentArtifact: newArtifact,
-        fechaUltimaActualizacion: nowStr,
-      };
+        return {
+          ...docMaster,
+          codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
+          documentState: docMaster.documentState === "BORRADOR" ? "LISTO PARA FIRMA" : docMaster.documentState,
+          currentArtifact: newArtifact,
+          fechaUltimaActualizacion: nowStr,
+        };
+      });
 
-      saveState(nextState);
-
-      const eventType = isRegen ? "DOCUMENTO REGENERADO" : "DOCUMENTO GENERADO";
-      onAuditLog?.(
-        eventType,
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        eventType,
-        `Artefacto formal generado (Versión formal ${docMaster.formalVersion} — Ronda de revisión ${docMaster.reviewRound})`,
-        "Ing. Andrea Pérez, Mg.",
-        "Docente"
-      );
-
-      return newArtifact;
+      if (nextDoc) {
+        const isRegen = nextDoc.reviewRound > 1 || nextDoc.documentState === "EN CORRECCIÓN";
+        const eventType = isRegen ? "DOCUMENTO REGENERADO" : "DOCUMENTO GENERADO";
+        onAuditLog?.(
+          eventType,
+          "Plan de Trabajo — Comisión de Eventos Académicos",
+          eventType,
+          `Artefacto formal generado (Versión formal ${nextDoc.formalVersion} — Ronda de revisión ${nextDoc.reviewRound})`,
+          "Ing. Andrea Pérez, Mg.",
+          "Docente"
+        );
+        return nextDoc.currentArtifact;
+      }
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-  // 2. Firma por Elaborador (Andrea Pérez)
   const firmarComoElaborador = useCallback(
-    (certFile: string, ubicacion: string = "Página 4 — Firmas de Responsabilidad: Elaborado por") => {
+    (targetDocId: string, certFile: string, ubicacion: string = "Página 4") => {
       const nowHora = "10:30";
-      const signature: DocumentSignature = {
-        actorId: "usr-andrea-01",
-        actor: "Ing. Andrea Pérez, Mg.",
-        cargo: "Docente elaborador",
-        role: "docente",
-        fecha: FECHA_SISTEMA,
-        hora: nowHora,
-        ubicacion,
-        hashCertificado: "SHA256:4a8f9c2d1e7b6a3f9e8d2c1a5b4e7f9a8c6e3b2d1",
-        algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
-      };
+      
+      mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const signature: DocumentSignature = {
+          actorId: "usr-andrea-01",
+          actor: "Ing. Andrea Pérez, Mg.",
+          cargo: "Docente elaborador",
+          role: "docente",
+          fecha: FECHA_SISTEMA,
+          hora: nowHora,
+          ubicacion,
+          hashCertificado: "SHA256:4a8f9c2d1e7b6a3f9e8d2c1a5b4e7f9a8c6e3b2d1",
+          algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
+        };
 
-      const updatedSignatures = [
-        ...docMaster.currentArtifact.signatures.filter((s) => s.role !== "docente"),
-        signature,
-      ];
+        const updatedSignatures = [
+          ...docMaster.currentArtifact.signatures.filter((s) => s.role !== "docente"),
+          signature,
+        ];
 
-      const updatedArtifact: DocumentArtifact = {
-        ...docMaster.currentArtifact,
-        signatures: updatedSignatures,
-      };
+        const updatedArtifact: DocumentArtifact = {
+          ...docMaster.currentArtifact,
+          signatures: updatedSignatures,
+        };
 
-      const updatedFlow = docMaster.flowStages.map((st) =>
-        st.id === "stage-1" ? { ...st, estado: "FIRMADO" as const, signature } : st
-      );
+        const updatedFlow = docMaster.flowStages.map((st) =>
+          st.id === "stage-1" ? { ...st, estado: "FIRMADO" as const, signature } : st
+        );
 
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        documentState: "FIRMADO POR ELABORADOR",
-        currentArtifact: updatedArtifact,
-        flowStages: updatedFlow,
-        fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-      };
-
-      saveState(nextState);
+        return {
+          ...docMaster,
+          documentState: "FIRMADO POR ELABORADOR",
+          currentArtifact: updatedArtifact,
+          flowStages: updatedFlow,
+          fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
+        };
+      });
 
       onAuditLog?.(
         "DOCUMENTO FIRMADO",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
+        "Documento",
         "DOCUMENTO FIRMADO",
         `Firma electrónica estampada por Ing. Andrea Pérez, Mg. en posición "${ubicacion}"`,
         "Ing. Andrea Pérez, Mg.",
         "Docente"
       );
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-  // 3. Enviar a Revisión
-  const enviarARevision = useCallback(() => {
+  const enviarARevision = useCallback((targetDocId: string) => {
     const nowHora = "10:35";
-    const updatedFlow = docMaster.flowStages.map((st) => {
-      if (st.id === "stage-1") return { ...st, estado: "FIRMADO" as const };
-      if (st.id === "stage-2") return { ...st, estado: "EN_CURSO" as const };
-      return st;
-    });
-
-    const nextState: DocumentMasterState = {
-      ...docMaster,
-      documentState: "EN REVISIÓN",
-      flowStages: updatedFlow,
-      fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-    };
-
-    saveState(nextState);
-
-    onAuditLog?.(
-      "DOCUMENTO ENVIADO A REVISIÓN",
-      "Plan de Trabajo — Comisión de Eventos Académicos",
-      "DOCUMENTO ENVIADO A REVISIÓN",
-      `Documento formal v${docMaster.formalVersion} (Ronda ${docMaster.reviewRound}) enviado a Nivel 1 — Revisión técnica`,
-      "Ing. Andrea Pérez, Mg.",
-      "Docente"
-    );
-  }, [docMaster, onAuditLog, saveState]);
-
-  // 4. Registrar Observación
-  const agregarObservacion = useCallback(
-    (pagina: number, texto: string, seccion: string = "", tipo: "general" | "seccion" = "seccion", revisor: string = "Ing. Carlos López, Mg.") => {
-      const nowHora = "10:45";
-      const newObs: DocumentObservation = {
-        id: Date.now(),
-        documentoId: docMaster.id,
-        formalVersion: docMaster.formalVersion,
-        ronda: docMaster.reviewRound,
-        pagina,
-        revisor,
-        cargo: "Responsable de revisión técnica",
-        fecha: `${FECHA_SISTEMA} — ${nowHora}`,
-        texto: texto.trim(),
-        estado: "activa",
-        tipo,
-        seccion: tipo === "seccion" ? (seccion || `Página ${pagina}`) : "General",
-      };
-
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        observations: [...docMaster.observations, newObs],
-        fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-      };
-
-      saveState(nextState);
-
-      onAuditLog?.(
-        "OBSERVACIÓN REGISTRADA",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "OBSERVACIÓN REGISTRADA",
-        `Observación registrada en Página ${pagina} por ${revisor}: "${texto.slice(0, 60)}..."`,
-        revisor,
-        "Revisor"
-      );
-
-      return newObs;
-    },
-    [docMaster, onAuditLog, saveState]
-  );
-
-  // 5. Editar Observación
-  const editarObservacion = useCallback(
-    (id: number, nuevoTexto: string) => {
-      const nextObs = docMaster.observations.map((o) =>
-        o.id === id && o.estado === "activa" ? { ...o, texto: nuevoTexto.trim() } : o
-      );
-      saveState({ ...docMaster, observations: nextObs });
-    },
-    [docMaster, saveState]
-  );
-
-  // 6. Eliminar Observación
-  const eliminarObservacion = useCallback(
-    (id: number) => {
-      const nextObs = docMaster.observations.filter((o) => o.id !== id);
-      saveState({ ...docMaster, observations: nextObs });
-    },
-    [docMaster, saveState]
-  );
-
-  // 7. Devolver Documento (Revisor) - Mantiene v1.0 y ronda actual (e.g. Ronda 1)
-  const devolverDocumento = useCallback(
-    (revisor: string = "Ing. Carlos López, Mg.", motivo: string = "Por favor, revise las observaciones registradas y realice las correcciones requeridas antes de reenviar el documento.") => {
-      const nowHora = "10:55";
+    const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
       const updatedFlow = docMaster.flowStages.map((st) => {
-        if (st.id === "stage-2") return { ...st, estado: "DEVUELTO" as const };
+        if (st.id === "stage-1") return { ...st, estado: "FIRMADO" as const };
+        if (st.id === "stage-2") return { ...st, estado: "EN_CURSO" as const };
         return st;
       });
 
-      const nextState: DocumentMasterState = {
+      return {
         ...docMaster,
-        documentState: "DEVUELTO",
-        mensajeDevolucion: motivo,
+        documentState: "EN REVISIÓN",
         flowStages: updatedFlow,
         fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
       };
+    });
 
-      saveState(nextState);
-
+    if (nextDoc) {
       onAuditLog?.(
-        "DOCUMENTO DEVUELTO",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "DOCUMENTO DEVUELTO",
-        `Documento devuelto al elaborador con ${docMaster.observations.filter((o) => o.estado === "activa").length} observaciones activas. Motivo: "${motivo}"`,
-        revisor,
-        "Revisor"
+        "DOCUMENTO ENVIADO A REVISIÓN",
+        nextDoc.nombre,
+        "DOCUMENTO ENVIADO A REVISIÓN",
+        `Documento formal v${nextDoc.formalVersion} (Ronda ${nextDoc.reviewRound}) enviado a Nivel 1 — Revisión técnica`,
+        "Ing. Andrea Pérez, Mg.",
+        "Docente"
       );
+    }
+  }, [mutateDocument, onAuditLog]);
+
+  const agregarObservacion = useCallback(
+    (targetDocId: string, pagina: number, texto: string, seccion: string = "", tipo: "general" | "seccion" = "seccion", revisor: string = "Ing. Carlos López, Mg.") => {
+      const nowHora = "10:45";
+      let newObs: DocumentObservation | undefined;
+
+      mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        newObs = {
+          id: Date.now(),
+          documentoId: docMaster.id,
+          formalVersion: docMaster.formalVersion,
+          ronda: docMaster.reviewRound,
+          pagina,
+          revisor,
+          cargo: "Responsable de revisión técnica",
+          fecha: `${FECHA_SISTEMA} — ${nowHora}`,
+          texto: texto.trim(),
+          estado: "activa",
+          tipo,
+          seccion: tipo === "seccion" ? (seccion || `Página ${pagina}`) : "General",
+        };
+
+        return {
+          ...docMaster,
+          observations: [...docMaster.observations, newObs],
+          fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
+        };
+      });
+
+      if (newObs) {
+        onAuditLog?.(
+          "OBSERVACIÓN REGISTRADA",
+          "Documento",
+          "OBSERVACIÓN REGISTRADA",
+          `Observación registrada en Página ${pagina} por ${revisor}: "${texto.slice(0, 60)}..."`,
+          revisor,
+          "Revisor"
+        );
+      }
+      return newObs;
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-  // 8. Iniciar Corrección (Andrea) - Sigue v1.0 y ronda actual (e.g. Ronda 1)
-  const iniciarCorreccion = useCallback(() => {
+  const editarObservacion = useCallback(
+    (targetDocId: string, id: number, nuevoTexto: string) => {
+      mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const nextObs = docMaster.observations.map((o) =>
+          o.id === id && o.estado === "activa" ? { ...o, texto: nuevoTexto.trim() } : o
+        );
+        return { ...docMaster, observations: nextObs };
+      });
+    },
+    [mutateDocument]
+  );
+
+  const eliminarObservacion = useCallback(
+    (targetDocId: string, id: number) => {
+      mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const nextObs = docMaster.observations.filter((o) => o.id !== id);
+        return { ...docMaster, observations: nextObs };
+      });
+    },
+    [mutateDocument]
+  );
+
+  const devolverDocumento = useCallback(
+    (targetDocId: string, revisor: string = "Ing. Carlos López, Mg.", motivo: string = "Por favor, revise las observaciones registradas y realice las correcciones requeridas antes de reenviar el documento.") => {
+      const nowHora = "10:55";
+      const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const updatedFlow = docMaster.flowStages.map((st) => {
+          if (st.id === "stage-2") return { ...st, estado: "DEVUELTO" as const };
+          return st;
+        });
+
+        return {
+          ...docMaster,
+          documentState: "DEVUELTO",
+          mensajeDevolucion: motivo,
+          flowStages: updatedFlow,
+          fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
+        };
+      });
+
+      if (nextDoc) {
+        onAuditLog?.(
+          "DOCUMENTO DEVUELTO",
+          nextDoc.nombre,
+          "DOCUMENTO DEVUELTO",
+          `Documento devuelto al elaborador con ${nextDoc.observations.filter((o) => o.estado === "activa").length} observaciones activas. Motivo: "${motivo}"`,
+          revisor,
+          "Revisor"
+        );
+      }
+    },
+    [mutateDocument, onAuditLog]
+  );
+
+  const iniciarCorreccion = useCallback((targetDocId: string) => {
     const nowHora = "11:05";
-    const nextState: DocumentMasterState = {
+    const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => ({
       ...docMaster,
       documentState: "EN CORRECCIÓN",
       fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-    };
+    }));
 
-    saveState(nextState);
+    if (nextDoc) {
+      onAuditLog?.(
+        "CORRECCIÓN INICIADA",
+        nextDoc.nombre,
+        "CORRECCIÓN INICIADA",
+        `Docente elaborador inició la sesión de corrección (v${nextDoc.formalVersion} / Ronda ${nextDoc.reviewRound})`,
+        "Ing. Andrea Pérez, Mg.",
+        "Docente"
+      );
+    }
+  }, [mutateDocument, onAuditLog]);
 
-    onAuditLog?.(
-      "CORRECCIÓN INICIADA",
-      "Plan de Trabajo — Comisión de Eventos Académicos",
-      "CORRECCIÓN INICIADA",
-      `Docente elaborador inició la sesión de corrección del Plan v${docMaster.formalVersion} (Ronda ${docMaster.reviewRound})`,
-      "Ing. Andrea Pérez, Mg.",
-      "Docente"
-    );
-  }, [docMaster, onAuditLog, saveState]);
-
-  // 9. Preparar Nueva Ronda de Revisión - Incrementa reviewRound ÚNICAMENTE al terminar corrección
-  const prepararNuevaRonda = useCallback(() => {
-    const nextRound = docMaster.reviewRound + 1;
+  const prepararNuevaRonda = useCallback((targetDocId: string) => {
     const nowHora = "11:20";
     const nowStr = `${FECHA_SISTEMA} ${nowHora}`;
 
-    // Archivar artefacto actual al historial
-    const updatedHistory = [...docMaster.artifactHistory, docMaster.currentArtifact];
+    const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+      const nextRound = docMaster.reviewRound + 1;
+      const updatedHistory = [...docMaster.artifactHistory, docMaster.currentArtifact];
 
-    // Marcar observaciones como históricas
-    const historifiedObs = docMaster.observations.map((o) => ({
-      ...o,
-      estado: "historica" as const,
-    }));
+      const historifiedObs = docMaster.observations.map((o) => ({
+        ...o,
+        estado: "historica" as const,
+      }));
 
-    // Nuevo artefacto limpio sin firmas vigentes para la nueva ronda
-    const cleanArtifact: DocumentArtifact = {
-      ...docMaster.currentArtifact,
-      id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${nextRound}-${Date.now()}`,
-      formalVersion: docMaster.formalVersion,
-      reviewRound: nextRound,
-      generatedAt: nowStr,
-      signatures: [], // Nueva ronda comienza sin firmas vigentes
-    };
+      const cleanArtifact: DocumentArtifact = {
+        ...docMaster.currentArtifact,
+        id: `art-plan-fisei-v${docMaster.formalVersion.replace(".", "_")}-r${nextRound}-${Date.now()}`,
+        formalVersion: docMaster.formalVersion,
+        reviewRound: nextRound,
+        generatedAt: nowStr,
+        signatures: [],
+        signatureSlots: docMaster.currentArtifact.signatureSlots,
+      };
 
-    // Reiniciar flujo dinámico preservando actores configurados
-    const resetFlow = docMaster.flowStages.map((stage, i) => ({
-      ...stage,
-      estado: i === 0 ? ("PENDIENTE" as const) : ("PENDIENTE" as const),
-      signature: undefined,
-    }));
+      const resetFlow = docMaster.flowStages.map((stage, i) => ({
+        ...stage,
+        estado: i === 0 ? ("PENDIENTE" as const) : ("PENDIENTE" as const),
+        signature: undefined,
+      }));
 
-    const nextState: DocumentMasterState = {
-      ...docMaster,
-      reviewRound: nextRound,
-      documentState: "LISTO PARA FIRMA",
-      currentArtifact: cleanArtifact,
-      artifactHistory: updatedHistory,
-      observations: historifiedObs,
-      flowStages: resetFlow,
-      fechaUltimaActualizacion: nowStr,
-      mensajeDevolucion: undefined,
-    };
+      return {
+        ...docMaster,
+        reviewRound: nextRound,
+        documentState: "LISTO PARA FIRMA",
+        currentArtifact: cleanArtifact,
+        artifactHistory: updatedHistory,
+        observations: historifiedObs,
+        flowStages: resetFlow,
+        fechaUltimaActualizacion: nowStr,
+        mensajeDevolucion: undefined,
+      };
+    });
 
-    saveState(nextState);
+    if (nextDoc) {
+      onAuditLog?.(
+        "NUEVA RONDA INICIADA",
+        nextDoc.nombre,
+        "NUEVA RONDA INICIADA",
+        `Iniciada Ronda de revisión ${nextDoc.reviewRound} para la Versión formal ${nextDoc.formalVersion}. Requiere nueva firma de elaborador.`,
+        "Ing. Andrea Pérez, Mg.",
+        "Docente"
+      );
+      return nextDoc;
+    }
+  }, [mutateDocument, onAuditLog]);
 
-    onAuditLog?.(
-      "NUEVA RONDA INICIADA",
-      "Plan de Trabajo — Comisión de Eventos Académicos",
-      "NUEVA RONDA INICIADA",
-      `Iniciada Ronda de revisión ${nextRound} para la Versión formal ${docMaster.formalVersion}. Requiere nueva firma de elaborador.`,
-      "Ing. Andrea Pérez, Mg.",
-      "Docente"
-    );
-
-    return nextState;
-  }, [docMaster, onAuditLog, saveState]);
-
-  // 10. Aprobar y Firmar por Revisor (Nivel intermedio)
   const aprobarYFirmarRevisor = useCallback(
     (
+      targetDocId: string,
       revisorNombre: string = "Ing. Carlos López, Mg.",
       revisorCargo: string = "Responsable de revisión técnica",
-      ubicacion: string = "Página 4 — Firmas de Responsabilidad: Revisado por"
+      ubicacion: string = "Página 4"
     ) => {
       const nowHora = "11:35";
-      const currentRevisorStage = docMaster.flowStages.find((s) => s.actorName === revisorNombre);
-      const revisorId = currentRevisorStage?.actorId || "usr-revisor";
+      
+      const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const currentRevisorStage = docMaster.flowStages.find((s) => s.actorName === revisorNombre);
+        const revisorId = currentRevisorStage?.actorId || "usr-revisor";
 
-      const signature: DocumentSignature = {
-        actorId: revisorId,
-        actor: revisorNombre,
-        cargo: revisorCargo,
-        role: "revisor",
-        fecha: FECHA_SISTEMA,
-        hora: nowHora,
-        ubicacion,
-        hashCertificado: "SHA256:7c9e1a3b5d7f2e4a6c8b0e2d4f6a8b0c2e4a6c8b0",
-        algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
-      };
+        const signature: DocumentSignature = {
+          actorId: revisorId,
+          actor: revisorNombre,
+          cargo: revisorCargo,
+          role: "revisor",
+          fecha: FECHA_SISTEMA,
+          hora: nowHora,
+          ubicacion,
+          hashCertificado: "SHA256:7c9e1a3b5d7f2e4a6c8b0e2d4f6a8b0c2e4a6c8b0",
+          algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
+        };
 
-      // Agregar firma acumulada al mismo artefacto
-      const updatedSignatures = [
-        ...docMaster.currentArtifact.signatures.filter((s) => s.actor !== revisorNombre),
-        signature,
-      ];
+        const updatedSignatures = [
+          ...docMaster.currentArtifact.signatures.filter((s) => s.actor !== revisorNombre),
+          signature,
+        ];
 
-      const updatedArtifact: DocumentArtifact = {
-        ...docMaster.currentArtifact,
-        signatures: updatedSignatures,
-      };
+        const updatedArtifact: DocumentArtifact = {
+          ...docMaster.currentArtifact,
+          signatures: updatedSignatures,
+        };
 
-      const updatedFlow = docMaster.flowStages.map((st) => {
-        if (st.actorName === revisorNombre || st.id === "stage-2") return { ...st, estado: "APROBADO" as const, signature };
-        if (st.id === "stage-3" || st.actorRole === "validador") return { ...st, estado: "EN_CURSO" as const };
-        return st;
+        const updatedFlow = docMaster.flowStages.map((st) => {
+          if (st.actorName === revisorNombre || st.id === "stage-2") return { ...st, estado: "APROBADO" as const, signature };
+          if (st.id === "stage-3" || st.actorRole === "validador") return { ...st, estado: "EN_CURSO" as const };
+          return st;
+        });
+
+        return {
+          ...docMaster,
+          documentState: "EN VALIDACIÓN FINAL",
+          currentArtifact: updatedArtifact,
+          flowStages: updatedFlow,
+          fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
+        };
       });
 
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        documentState: "EN VALIDACIÓN FINAL",
-        currentArtifact: updatedArtifact,
-        flowStages: updatedFlow,
-        fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-      };
-
-      saveState(nextState);
-
-      onAuditLog?.(
-        "DOCUMENTO APROBADO",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "DOCUMENTO APROBADO",
-        `Revisión técnica aprobada y firmada por ${revisorNombre} (v${docMaster.formalVersion} / Ronda ${docMaster.reviewRound})`,
-        revisorNombre,
-        "Revisor"
-      );
-
-      onAuditLog?.(
-        "DOCUMENTO FIRMADO",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "DOCUMENTO FIRMADO",
-        `Firma digital de aprobación estampada por ${revisorNombre}`,
-        revisorNombre,
-        "Revisor"
-      );
+      if (nextDoc) {
+        onAuditLog?.(
+          "DOCUMENTO APROBADO",
+          nextDoc.nombre,
+          "DOCUMENTO APROBADO",
+          `Revisión técnica aprobada y firmada por ${revisorNombre} (v${nextDoc.formalVersion} / Ronda ${nextDoc.reviewRound})`,
+          revisorNombre,
+          "Revisor"
+        );
+      }
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-  // 11. Validar y Firmar Final (Validador Final configurable)
   const validarYFirmarFinal = useCallback(
     (
+      targetDocId: string,
       validadorNombre: string = "Ing. Patricia Salazar, Mg.",
       validadorCargo: string = "Coordinadora de Unidad",
-      ubicacion: string = "Página 4 — Firmas de Responsabilidad: Validado por"
+      ubicacion: string = "Página 5"
     ) => {
       const nowHora = "11:50";
-      const validadorStage = docMaster.flowStages.find((s) => s.actorName === validadorNombre || s.actorRole === "validador");
-      const validadorId = validadorStage?.actorId || "usr-patricia-03";
+      
+      const nextDoc = mutateDocument(targetDocId, (docMaster: DocumentMasterState): DocumentMasterState => {
+        const validadorStage = docMaster.flowStages.find((s) => s.actorName === validadorNombre || s.actorRole === "validador");
+        const validadorId = validadorStage?.actorId || "usr-patricia-03";
 
-      const signature: DocumentSignature = {
-        actorId: validadorId,
-        actor: validadorNombre,
-        cargo: validadorCargo,
-        role: "validador",
-        fecha: FECHA_SISTEMA,
-        hora: nowHora,
-        ubicacion,
-        hashCertificado: "SHA256:9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9",
-        algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
-      };
+        const signature: DocumentSignature = {
+          actorId: validadorId,
+          actor: validadorNombre,
+          cargo: validadorCargo,
+          role: "validador",
+          fecha: FECHA_SISTEMA,
+          hora: nowHora,
+          ubicacion,
+          hashCertificado: "SHA256:9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9",
+          algoritmo: "RSA-4096 / SHA-256 (Mecanismo sujeto a integración institucional)",
+        };
 
-      const updatedSignatures = [
-        ...docMaster.currentArtifact.signatures.filter((s) => s.actor !== validadorNombre),
-        signature,
-      ];
+        const updatedSignatures = [
+          ...docMaster.currentArtifact.signatures.filter((s) => s.actor !== validadorNombre),
+          signature,
+        ];
 
-      const updatedArtifact: DocumentArtifact = {
-        ...docMaster.currentArtifact,
-        signatures: updatedSignatures,
-      };
+        const updatedArtifact: DocumentArtifact = {
+          ...docMaster.currentArtifact,
+          signatures: updatedSignatures,
+        };
 
-      const updatedFlow = docMaster.flowStages.map((st) => {
-        if (st.actorName === validadorNombre || st.id === "stage-3" || st.actorRole === "validador") {
-          return { ...st, estado: "FIRMADO" as const, signature };
-        }
-        return st;
+        const updatedFlow = docMaster.flowStages.map((st) => {
+          if (st.actorName === validadorNombre || st.id === "stage-3" || st.actorRole === "validador") {
+            return { ...st, estado: "FIRMADO" as const, signature };
+          }
+          return st;
+        });
+
+        return {
+          ...docMaster,
+          documentState: "VALIDADO",
+          operationalState: docMaster.documentType === "PLAN_TRABAJO" ? "EN EJECUCIÓN" : undefined,
+          finalValidatorId: validadorId,
+          finalValidatorName: validadorNombre,
+          currentArtifact: updatedArtifact,
+          flowStages: updatedFlow,
+          fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
+        };
       });
 
-      const nextState: DocumentMasterState = {
-        ...docMaster,
-        documentState: "VALIDADO",
-        operationalState: docMaster.documentType === "PLAN_TRABAJO" ? "EN EJECUCIÓN" : undefined,
-        finalValidatorId: validadorId,
-        finalValidatorName: validadorNombre,
-        currentArtifact: updatedArtifact,
-        flowStages: updatedFlow,
-        fechaUltimaActualizacion: `${FECHA_SISTEMA} ${nowHora}`,
-      };
-
-      saveState(nextState);
-
-      onAuditLog?.(
-        "VALIDACIÓN FINAL REALIZADA",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "VALIDACIÓN FINAL REALIZADA",
-        `Validación final completada exitosamente por ${validadorNombre}. Documento pasa a estado VALIDADO.`,
-        validadorNombre,
-        "Validador"
-      );
-
-      onAuditLog?.(
-        "DOCUMENTO FIRMADO",
-        "Plan de Trabajo — Comisión de Eventos Académicos",
-        "DOCUMENTO FIRMADO",
-        `Firma digital de validación final estampada por ${validadorNombre}`,
-        validadorNombre,
-        "Validador"
-      );
+      if (nextDoc) {
+        onAuditLog?.(
+          "VALIDACIÓN FINAL REALIZADA",
+          nextDoc.nombre,
+          "VALIDACIÓN FINAL REALIZADA",
+          `Validación final completada exitosamente por ${validadorNombre}. Documento pasa a estado VALIDADO.`,
+          validadorNombre,
+          "Validador"
+        );
+      }
     },
-    [docMaster, onAuditLog, saveState]
+    [mutateDocument, onAuditLog]
   );
 
-
-  // 12. Restablecer DEMO
   const restablecerDemo = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setDocuments(INITIAL_DOCUMENTS_LIST);
-    setSelectedDocId(INITIAL_DOCUMENT_MASTER.id);
+    setSelectedDocId(INITIAL_DOCUMENTS_LIST[0]?.id || INITIAL_DOCUMENT_MASTER.id);
   }, []);
 
   return {
@@ -811,4 +888,3 @@ export function useDocumentEngine(onAuditLog?: (tipoEvento: string, objeto: stri
     restablecerDemo,
   };
 }
-

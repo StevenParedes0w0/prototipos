@@ -1,6 +1,8 @@
 // Pantalla 13 — Plantillas Documentales
 import React, { useState } from "react";
 import { PlantillaDocumental } from "./types";
+import { Eye, Pencil, Archive, CheckCircle2, History, GitBranch } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface PlantillasDocumentalesViewProps {
   plantillas: PlantillaDocumental[];

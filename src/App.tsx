@@ -50,6 +50,8 @@ import ModalDevolverDocumental from "./documentEngine/ModalDevolverDocumental";
 import RevisorDocumentEngineView from "./documentEngine/RevisorDocumentEngineView";
 import MisDocumentosView from "./modulo11/MisDocumentosView";
 import WizardInformeView from "./modulo11/WizardInformeView";
+import { Eye, ClipboardList, Info, FilePenLine, MessageSquare, RotateCcw } from "./components/icons";
+import { TableActionButton } from "./components/TableActionButton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1890,38 +1892,22 @@ function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", 
                   <td>
                     <div style={{ display: "flex", gap: 6 }}>
                       {p.acciones.includes("ver") && (
-                        <button className="btn btn-ghost btn-xs">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                          Ver
-                        </button>
+                        <TableActionButton title="Ver documento" icon={Eye} />
                       )}
                       {p.acciones.includes("actividades") && (
-                        <button className="btn btn-ghost btn-xs" onClick={onNavigateActividades}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                          Actividades
-                        </button>
+                        <TableActionButton title="Ver actividades" icon={ClipboardList} onClick={onNavigateActividades} />
                       )}
                       {p.acciones.includes("ver-estado") && (
-                        <button className="btn btn-ghost btn-xs">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          Ver estado
-                        </button>
+                        <TableActionButton title="Ver estado" icon={Info} />
                       )}
                       {p.acciones.includes("continuar") && (
-                        <button className="btn btn-secondary btn-xs" onClick={onContinuar}>
-                          Continuar edición
-                        </button>
+                        <TableActionButton title="Continuar elaboración" icon={FilePenLine} variant="constructive" onClick={onContinuar} />
                       )}
                       {p.acciones.includes("ver-obs") && (
-                        <button className="btn btn-ghost btn-xs" onClick={() => setShowObsModal(true)}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                          Ver observaciones
-                        </button>
+                        <TableActionButton title="Ver observaciones" icon={MessageSquare} onClick={() => setShowObsModal(true)} />
                       )}
                       {p.acciones.includes("corregir") && (
-                        <button className="btn btn-secondary btn-xs" style={{ background: "#f59e0b", border: "none", color: "#1e2a3a" }} onClick={onCorregir}>
-                          CORREGIR
-                        </button>
+                        <TableActionButton title="Continuar corrección" icon={RotateCcw} variant="constructive" onClick={onCorregir} />
                       )}
                     </div>
                   </td>
@@ -3896,7 +3882,10 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngin
 }) {
   const [certFile, setCertFile] = useState("andrea_perez_cert.p12");
   const [certPass, setCertPass] = useState("••••••••");
-  const [ubicacionDocumento, setUbicacionDocumento] = useState("Página 4 — Firmas de Responsabilidad: Elaborado por");
+  const [ubicacionDocumento, setUbicacionDocumento] = useState(() => {
+    const slot = docEngine?.docMaster.currentArtifact.signatureSlots?.find(s => s.role === "docente");
+    return slot ? `Página ${slot.pageIndex} — Firmas de Responsabilidad: ${slot.label}` : "Página 4 — Firmas de Responsabilidad: Elaborado por";
+  });
   const [showPass, setShowPass] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -3912,7 +3901,7 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngin
 
   function handleFirmar() {
     if (docEngine) {
-      docEngine.firmarComoElaborador(certFile, ubicacionDocumento);
+      docEngine.firmarComoElaborador(docEngine.docMaster.id, certFile, ubicacionDocumento);
     }
     setSigned(true);
   }
@@ -4357,14 +4346,14 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine }: {
 
   function handleEnviarRevision() {
     if (docEngine) {
-      docEngine.enviarARevision();
+      docEngine.enviarARevision(docEngine.docMaster.id);
     }
     saveDraft({ estado: "en-revision", fechaEnvio: "07/09/2026" });
   }
 
   function handleCorregir() {
     if (docEngine) {
-      docEngine.iniciarCorreccion();
+      docEngine.iniciarCorreccion(docEngine.docMaster.id);
     }
     saveDraft({ estado: "en-correccion" });
     setSub("step3edit");

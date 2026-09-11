@@ -445,9 +445,9 @@ export default function RevisorDocumentEngineView({
           currentUser={actorInfo}
           onOpenFirmar={() => setShowFirmarModal(true)}
           onOpenDevolver={() => setShowDevolverModal(true)}
-          onAddObservacion={(pag, txt, sec, tip) => docEngine.agregarObservacion(pag, txt, sec, tip, actorInfo.nombre)}
-          onEditObservacion={docEngine.editarObservacion}
-          onDeleteObservacion={docEngine.eliminarObservacion}
+          onAddObservacion={(pag, txt, sec, tip) => internalDocEngine.agregarObservacion(internalDocEngine.docMaster.id, pag, txt, sec, tip, actorInfo.nombre)}
+          onEditObservacion={(id, texto) => internalDocEngine.editarObservacion(internalDocEngine.docMaster.id, id, texto)}
+          onDeleteObservacion={(id) => internalDocEngine.eliminarObservacion(internalDocEngine.docMaster.id, id)}
         />
       </div>
 

@@ -2,6 +2,8 @@
 import React, { useState, useMemo } from "react";
 import { UsuarioAdmin, GrupoInstitucional, RolSistema, RolEnGrupo } from "./types";
 import UsuarioDetalleModal from "./UsuarioDetalleModal";
+import { Eye, Pencil, Archive, CheckCircle2 } from "../components/icons";
+import { TableActionButton } from "../components/TableActionButton";
 
 interface UsuariosViewProps {
   usuarios: UsuarioAdmin[];
@@ -295,25 +297,22 @@ export default function UsuariosView({
                     </td>
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
+                        <TableActionButton
+                          title="Ver detalle de usuario"
+                          icon={Eye}
                           onClick={() => setUsuarioSeleccionado(u)}
-                        >
-                          VER
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-sm"
+                        />
+                        <TableActionButton
+                          title="Editar usuario"
+                          icon={Pencil}
                           onClick={() => setUsuarioSeleccionado(u)}
-                        >
-                          EDITAR
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-sm"
+                        />
+                        <TableActionButton
+                          title={isActivo ? "Desactivar usuario" : "Activar usuario"}
+                          icon={isActivo ? Archive : CheckCircle2}
+                          variant={isActivo ? "destructive" : "constructive"}
                           onClick={() => handleToggleEstado(u)}
-                          style={{ color: isActivo ? "#dc2626" : "#16a34a" }}
-                        >
-                          {isActivo ? "DESACTIVAR" : "ACTIVAR"}
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>
