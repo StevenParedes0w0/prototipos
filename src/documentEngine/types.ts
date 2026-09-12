@@ -6,6 +6,7 @@ export interface ActividadMatrizDoc {
   desde: string;
   hasta: string;
   responsables: string[];
+  responsablesEtiqueta?: string;
   recursos: string[];
   medios: string[];
 }
@@ -51,6 +52,9 @@ export interface DocumentObservationAnchor {
 
 export interface DocumentObservation {
   anchor?: DocumentObservationAnchor;
+  revisorId?: string;
+  stageId?: string;
+  congelada?: boolean;
   id: number;
   documentoId: string;
   formalVersion: string;
@@ -116,15 +120,35 @@ export interface InformeDataDoc {
   documentoRelacionado?: string;
 }
 
+export interface DocumentPageBlock {
+  type: "text" | "matrix" | "report-matrix" | "contacts" | "annexes" | "signatures" | "history";
+  section: string;
+  title?: string;
+  text?: string;
+  start?: number;
+  end?: number;
+  continued?: boolean;
+  rows?: string[][];
+}
+
 export interface DocumentPage {
   id: string;
   type: string;
+  activityStart?: number;
+  activityEnd?: number;
+  orientation?: "portrait" | "landscape";
+  contentSections?: string[];
+  blocks?: DocumentPageBlock[];
   signatureSlots?: {
     stageId?: string;
     userId?: string;
     action?: string;
     role?: string;
     label?: string;
+    actorName?: string;
+    actorCargo?: string;
+    actionMode?: "SIGN_AND_APPROVE" | "APPROVE_ONLY";
+    destinationName?: string;
   }[];
 }
 
@@ -139,6 +163,7 @@ export interface DocumentArtifact {
   pages?: DocumentPage[]; // Representación de las páginas del documento
   elaborationFinalizedAt?: string;
   fuente?: string;
+  collectsPersonalData?: boolean;
   generatedAt: string;   // e.g. "07/09/2026 09:30"
   generatedBy: string;   // "Ing. Andrea Pérez, Mg."
   grupo: string;         // "Comisión de Eventos Académicos" o "Unidad de Titulación"
@@ -165,6 +190,8 @@ export interface DocumentArtifact {
 }
 
 export interface FlowStageNode {
+  destinationName?: string;
+  destinationType?: string;
   approvalGroup?: string;
   approvalRule?: "TODOS DEBEN APROBAR" | "AL MENOS UNO";
   actionMode?: "SIGN_AND_APPROVE" | "APPROVE_ONLY";
@@ -201,6 +228,7 @@ export interface DocumentMasterState {
   artifactHistory: DocumentArtifact[];
   observations: DocumentObservation[];
   flowStages: FlowStageNode[];
+  workflowHistory?: { reviewRound: number; stages: FlowStageNode[]; fecha: string }[];
   fechaUltimaActualizacion: string;
   mensajeDevolucion?: string;
   documentoRelacionadoId?: string;

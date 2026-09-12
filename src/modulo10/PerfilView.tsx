@@ -1,3 +1,4 @@
+import type { UsuarioAdmin } from "../modulo7/types";
 import React, { useState } from "react";
 
 const USUARIOS = {
@@ -187,9 +188,9 @@ function ModalCambiarContrasena({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function PerfilView({ userRole }: { userRole: "docente" | "revisor" | "admin" }) {
+export default function PerfilView({ userRole, currentUser }: { userRole: "docente" | "revisor" | "admin"; currentUser?: UsuarioAdmin }) {
   const [showModal, setShowModal] = useState(false);
-  const user = USUARIOS[userRole];
+  const user = currentUser ? {...USUARIOS.docente,nombre:currentUser.nombreCompleto,correo:currentUser.correo,avatar:currentUser.nombres[0]+currentUser.apellidos[0],roles:[currentUser.rol],estado:currentUser.estado,grupos:currentUser.grupos.map(g => ({nombre:g.grupoNombre,tipo:"Grupo institucional",rolGrupo:g.rolEnGrupo})),contextoActual:userRole} : USUARIOS.docente;
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 900, margin: "0 auto", fontFamily: "'DM Sans','Inter',sans-serif" }}>

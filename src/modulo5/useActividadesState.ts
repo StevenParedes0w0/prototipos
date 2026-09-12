@@ -20,8 +20,19 @@ export function parseFechaDMY(dmy: string): Date {
 
 export function getDiasRestantes(hastaDmy: string, fechaRef: Date = FECHA_SISTEMA): number {
   const fechaLimite = parseFechaDMY(hastaDmy);
-  const diffMs = fechaLimite.getTime() - fechaRef.getTime();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const diaLimite = new Date(fechaLimite.getFullYear(), fechaLimite.getMonth(), fechaLimite.getDate());
+  const diaActual = new Date(fechaRef.getFullYear(), fechaRef.getMonth(), fechaRef.getDate());
+  return Math.round((diaLimite.getTime() - diaActual.getTime()) / 86400000);
+}
+
+export function plazoEvidenciaVencido(actividad: ActividadEjecucion, fechaRef = FECHA_SISTEMA): boolean {
+  return actividad.soloLectura === true || fechaRef.getTime() > parseFechaDMY(actividad.hasta).getTime();
+}
+
+export function estadoActividadDesdeMedios(actividad: ActividadEjecucion): EstadoActividad {
+  if (actividad.medios.length > 0 && actividad.medios.every(m => !!m.archivoVigente)) return "EVIDENCIAS COMPLETAS";
+  if (plazoEvidenciaVencido(actividad)) return "VENCIDA";
+  return actividad.medios.some(m => !!m.archivoVigente) ? "EN CURSO" : "PENDIENTE";
 }
 
 export function useActividadesState() {

@@ -1,4 +1,4 @@
-import { flowFromConfiguration } from "./documentEngine/workflow";
+import { canonicalDemoActorId, flowFromConfiguration } from "./documentEngine/workflow";
 import { buildDocumentPages, getSignatureSlots } from "./documentEngine/pagination";
 import { useState, useRef, useEffect } from "react";
 import logoUta from "./img/Logo UTA-Azul.png";
@@ -276,7 +276,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 56 }}>
             <FISEILogoMark size={48} />
             <div>
-              <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 15, fontFamily: "'DM Sans',sans-serif" }}>Gestión de Planes de Trabajo</div>
+              <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 15, fontFamily: "'DM Sans',sans-serif" }}>Gestión Documental Académica</div>
               <div style={{ color: "#8ab8d8", fontSize: 11.5 }}>FISEI — Universidad Técnica de Ambato</div>
             </div>
           </div>
@@ -765,7 +765,7 @@ const ADMINISTRADOR = {
   rol: "Administrador",
 };
 
-function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, onRoleSwitch, noLeidasCount }: {
+function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, onRoleSwitch, noLeidasCount, sessionUser }: {
   view: AppView;
   setView: (v: AppView) => void;
   onLogout: () => void;
@@ -774,6 +774,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
   userRole: "docente" | "revisor" | "admin";
   onRoleSwitch: () => void;
   noLeidasCount: number;
+  sessionUser: {nombre:string;correo:string;avatar:string;nombreCorto:string;rol:string};
 }) {
   const docenteItems: { id: AppView; label: string; icon: React.ReactNode }[] = [
     { id: "inicio",         label: "Inicio",                icon: Ico.home },
@@ -811,7 +812,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "perfil",            label: "Perfil",                  icon: Ico.user },
   ];
   const navItems = userRole === "admin" ? adminItems : userRole === "revisor" ? revisorItems : docenteItems;
-  const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
+  const currentUser = sessionUser;
   const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#2563ab";
 
   const w = collapsed ? 64 : 244;
@@ -840,7 +841,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <FISEILogoMark size={38} />
               <div>
-                <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 13, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.2 }}>Gestión de Planes de Trabajo</div>
+                <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 13, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.2 }}>Gestión Documental Académica</div>
                 <div style={{ color: "#7aaed0", fontSize: 10.5 }}>FISEI — UTA</div>
               </div>
             </div>
@@ -949,7 +950,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          {!collapsed && (userRole === "admin" ? "Sesión DEMO: Administrador" : userRole === "revisor" ? "Sesión DEMO: Revisor" : "Sesión DEMO: Docente")}
+          {!collapsed && (userRole === "admin" ? "Contexto: Administrador" : userRole === "revisor" ? "Contexto: Revisor" : "Contexto: Docente")}
         </div>
         <div
           onClick={onLogout}
@@ -987,6 +988,7 @@ function TopBar({
   onMarcarTodasLeidas,
   onNavigateToNotificaciones,
   onSelectAction,
+  sessionUser,
 }: {
   view: AppView;
   userRole: "docente" | "revisor" | "admin";
@@ -996,9 +998,10 @@ function TopBar({
   onMarcarTodasLeidas: () => void;
   onNavigateToNotificaciones: () => void;
   onSelectAction: (n: NotificacionItem) => void;
+  sessionUser: {nombre:string;correo:string;avatar:string;nombreCorto:string;rol:string};
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const currentUser = userRole === "admin" ? ADMINISTRADOR : userRole === "revisor" ? REVISOR : DOCENTE;
+  const currentUser = sessionUser;
   const avatarBg = userRole === "admin" ? "#7c3aed" : userRole === "revisor" ? "#1a6a4a" : "#1a4f8a";
   const labels: Record<AppView, string> = {
     inicio: "Inicio",
@@ -1473,6 +1476,7 @@ interface ActividadMatriz {
   desde: string;
   hasta: string;
   responsables: string[];
+  responsablesEtiqueta?: string;
   recursos: string[];
   medios: string[];
 }
@@ -1638,7 +1642,7 @@ function ExitModal({ onKeep, onSaveAndExit }: { onKeep: () => void; onSaveAndExi
   );
 }
 
-// ─── 01 — Mis Planes de Trabajo (List) ───────────────────────────────────────
+// ─── 01 — Gestión Documental Académica (List) ───────────────────────────────────────
 
 function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", reviewRound = 1, onCorregir, observacionesRevision, mensajeDevolucion, fechaDevolucion, onNavigateActividades, initialShowObsModal }: {
   onNew: () => void;
@@ -1731,7 +1735,7 @@ function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 4 }}>
-            Mis Planes de Trabajo
+            Gestión Documental Académica
           </h1>
           <p style={{ fontSize: 13.5, color: "#6b7a8d" }}>
             Consulte, continúe o revise los Planes de Trabajo asociados a sus grupos institucionales.
@@ -1926,12 +1930,13 @@ function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", 
 
 // ─── 02 — Información General ─────────────────────────────────────────────────
 
-function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, onChange, grupos, periodos }: { onNext: () => void; onCancel: () => void; maxReached?: number; grupo: string; periodo: string; onChange: (v: Partial<PlanDraft>) => void; grupos: GrupoInstitucional[]; periodos: PeriodoAcademico[] }) {
+function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, onChange, grupos, periodos, elaborador, error, onSave }: { onNext: () => void; onCancel: () => void; maxReached?: number; grupo: string; periodo: string; onChange: (v: Partial<PlanDraft>) => void; grupos: GrupoInstitucional[]; periodos: PeriodoAcademico[]; elaborador: string; error: string; onSave: () => void }) {
   const setGrupo = (grupo: string) => onChange({grupo});
   const setPeriodo = (periodo: string) => onChange({periodo});
   const [saving] = useState(false);
   const [showExit, setShowExit] = useState(false);
-  const canContinue = !!grupo && !!periodo;
+  const canContinue = grupos.some(g => g.nombre === grupo) && periodos.some(p => p.nombre === periodo);
+  const [showMembers,setShowMembers] = useState(false);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -1941,7 +1946,7 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
       <div style={{ padding: "20px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>
-            Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo
+            Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo
           </div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>
             Crear Plan de Trabajo
@@ -1961,7 +1966,7 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
                 <div>
                   <label className="form-label">Tipo de documento</label>
                   <input className="form-input" value="Plan de Trabajo" disabled style={{ background: "#f8fafc", color: "#475569" }} />
-                  <div className="form-hint">Actualmente el sistema gestiona Planes de Trabajo.</div>
+                  <div className="form-hint">Formato institucional UTA-SGC-A-2-1-P7-T1.</div>
                 </div>
                 <div>
                   <label className="form-label required">Período académico</label>
@@ -2006,7 +2011,7 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
                       <div style={{ fontSize: 13.5, color: "#334155" }}>{grupos.find(g => g.nombre === grupo)?.miembros.length || 0} integrantes</div>
                     </div>
                     <div>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.5, color: "#1a4f8a", fontWeight: 500, padding: 0 }}>
+                      <button onClick={() => setShowMembers(v => !v)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.5, color: "#1a4f8a", fontWeight: 500, padding: 0 }}>
                         Ver integrantes →
                       </button>
                     </div>
@@ -2015,6 +2020,8 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
               </div>
             </div>
 
+            {showMembers && <div className="alert alert-info">{grupos.find(g => g.nombre === grupo)?.miembros.map(m => <p key={m.usuarioId}>{m.nombreCompleto} — {m.rolEnGrupo}</p>)}</div>}
+            {error && <p role="alert" className="alert alert-error">{error}</p>}
             {/* Plantilla */}
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 14 }}>Plantilla del documento</h3>
@@ -2032,7 +2039,7 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a", marginBottom: 14 }}>Resumen del plan</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
-                  { label: "Docente elaborador", val: "Ing. Andrea Pérez, Mg." },
+                  { label: "Docente elaborador", val: elaborador },
                   { label: "Período", val: periodo || "—" },
                   { label: "Grupo", val: grupo || "—" },
                   { label: "Versión", val: "Versión 1.0" },
@@ -2062,7 +2069,7 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
 
       <FormFooter
         onNext={onNext}
-        onSave={() => {}}
+        onSave={onSave}
         prevLabel="Cancelar"
         onPrev={() => setShowExit(true)}
         canContinue={canContinue}
@@ -2103,7 +2110,7 @@ function Step2Actividades({ onPrev, onNext, maxReached = 3, matriz, onChange, ca
 
       <div style={{ padding: "20px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Seleccionar actividades</h1>
           <p style={{ fontSize: 13, color: "#6b7a8d", marginTop: 3 }}>
             Seleccione las actividades que formarán parte de su Plan de Trabajo. Las actividades obligatorias ya se encuentran incluidas.
@@ -2342,7 +2349,16 @@ const MATRIZ_INICIAL: ActividadMatriz[] = [
 ];
 
 function isCompleta(a: ActividadMatriz) {
-  return a.desde && a.hasta && a.desde <= a.hasta && a.responsables.length > 0 && a.recursos.length > 0 && a.recursos.every(v => v.trim()) && a.medios.length > 0 && a.medios.every(v => v.trim());
+  return (
+    Boolean(a.desde) &&
+    Boolean(a.hasta) &&
+    a.desde <= a.hasta &&
+    a.responsables.length > 0 &&
+    a.recursos.length > 0 &&
+    a.recursos.every(v => v.trim().length > 0) &&
+    a.medios.length > 0 &&
+    a.medios.every(v => v.trim().length > 0)
+  );
 }
 
 function Step3Matriz({
@@ -2357,9 +2373,21 @@ function Step3Matriz({
 }) {
   const [editId, setEditId] = useState<number | null>(initialEditId);
   const [dateError, setDateError] = useState("");
+  const [recursoOtroError, setRecursoOtroError] = useState("");
+  const [medioOtroError, setMedioOtroError] = useState("");
   const [recursoSearch, setRecursoSearch] = useState("");
   const [highlightId, setHighlightId] = useState<number | null>(null);
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+  const recursoOtroInputRef = useRef<HTMLInputElement>(null);
+  const medioOtroInputRef = useRef<HTMLInputElement>(null);
+
+  function handleOpenEdit(id: number | null) {
+    setEditId(id);
+    setRecursoSearch("");
+    setDateError("");
+    setRecursoOtroError("");
+    setMedioOtroError("");
+  }
 
   // Auto-open & highlight when arriving via "Completar pendientes"
   useEffect(() => {
@@ -2372,7 +2400,7 @@ function Step3Matriz({
     }
   }, []); // eslint-disable-line
 
-  const editAct = editId ? matriz.find(a => a.id === editId) ?? null : null;
+  const editAct = editId !== null ? matriz.find(a => a.id === editId) ?? null : null;
   const incompletas = matriz.filter(a => !isCompleta(a) || !!validateDates(a.desde, a.hasta));
   const completas = matriz.length - incompletas.length;
   const canContinue = matriz.length > 0 && incompletas.length === 0;
@@ -2391,10 +2419,61 @@ function Step3Matriz({
     return "";
   }
 
+  function validateOtroFields(): boolean {
+    if (!editAct) return false;
+    let valid = true;
+    let firstInvalidRef: React.RefObject<HTMLInputElement | null> | null = null;
+
+    const recursoOtroSelected = editAct.recursos.some(v => !recursosCatalogo.includes(v));
+    const recursoOtroVal = editAct.recursos.filter(v => !recursosCatalogo.includes(v)).join("; ").trim();
+    if (recursoOtroSelected && !recursoOtroVal) {
+      setRecursoOtroError("Especifique el recurso personalizado o desmarque ‘Otro’.");
+      valid = false;
+      if (!firstInvalidRef) firstInvalidRef = recursoOtroInputRef;
+    } else {
+      setRecursoOtroError("");
+    }
+
+    const medioOtroSelected = editAct.medios.some(v => !mediosCatalogo.includes(v));
+    const medioOtroVal = editAct.medios.filter(v => !mediosCatalogo.includes(v)).join("; ").trim();
+    if (medioOtroSelected && !medioOtroVal) {
+      setMedioOtroError("Especifique el medio personalizado o desmarque ‘Otro’.");
+      valid = false;
+      if (!firstInvalidRef) firstInvalidRef = medioOtroInputRef;
+    } else {
+      setMedioOtroError("");
+    }
+
+    if (!valid) {
+      setTimeout(() => {
+        firstInvalidRef?.current?.focus();
+      }, 50);
+      return false;
+    }
+
+    return true;
+  }
+
+  function handleGuardarActividad() {
+    if (!validateOtroFields()) return;
+    const error = editAct ? validateDates(editAct.desde, editAct.hasta) : "";
+    if (error) { setDateError(error); return; }
+    onSave(matriz);
+    handleOpenEdit(null);
+  }
+
+  function handleGuardarYSiguiente() {
+    if (!validateOtroFields()) return;
+    const error = editAct ? validateDates(editAct.desde, editAct.hasta) : "";
+    if (error) { setDateError(error); return; }
+    onSave(matriz);
+    guardarYSiguiente();
+  }
+
   function abrirPrimeroIncompleto() {
     const primero = matriz.find(a => !isCompleta(a));
     if (!primero) return;
-    setEditId(primero.id);
+    handleOpenEdit(primero.id);
     setHighlightId(primero.id);
     setTimeout(() => {
       rowRefs.current[primero.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -2405,10 +2484,10 @@ function Step3Matriz({
   function guardarYSiguiente() {
     // After saving current, find next incomplete (excluding current)
     const siguienteIncompleta = matriz.find(a => a.id !== editId && !isCompleta(a));
-    setEditId(null);
+    handleOpenEdit(null);
     if (siguienteIncompleta) {
       setTimeout(() => {
-        setEditId(siguienteIncompleta.id);
+        handleOpenEdit(siguienteIncompleta.id);
         setHighlightId(siguienteIncompleta.id);
         rowRefs.current[siguienteIncompleta.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
         setTimeout(() => setHighlightId(null), 1400);
@@ -2417,7 +2496,7 @@ function Step3Matriz({
   }
 
   // After saving current activity, check if any remaining (excluding current) are incomplete
-  const editActIsNowComplete = editAct ? isCompleta(editAct) : false;
+  const editActIsNowComplete = editAct ? isCompleta(editAct) && !validateDates(editAct.desde, editAct.hasta) : false;
   const otrasIncompletas = editId ? matriz.filter(a => a.id !== editId && !isCompleta(a)) : incompletas;
   const haySiguienteIncompleta = editActIsNowComplete && otrasIncompletas.length > 0;
 
@@ -2426,7 +2505,7 @@ function Step3Matriz({
       <Stepper current={4} maxReached={maxReached} />
 
       <div style={{ padding: "20px 28px 0" }}>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Configurar matriz de actividades</h1>
@@ -2468,11 +2547,13 @@ function Step3Matriz({
                 const completa = isCompleta(a);
                 const active = editId === a.id;
                 const highlighted = highlightId === a.id;
+                const recursosValidos = a.recursos.filter(r => r.trim().length > 0);
+                const mediosValidos = a.medios.filter(m => m.trim().length > 0);
                 return (
                   <tr
                     key={a.id}
                     ref={el => { rowRefs.current[a.id] = el; }}
-                    onClick={() => { if (!completa) { setEditId(a.id); setRecursoSearch(""); } }}
+                    onClick={() => { if (!completa) { handleOpenEdit(a.id); } }}
                     style={{
                       background: highlighted ? "#fefce8" : active ? "#f0f6ff" : undefined,
                       cursor: !completa ? "pointer" : "default",
@@ -2501,28 +2582,50 @@ function Step3Matriz({
                     <td style={{ fontSize: 12.5, color: a.responsables.length ? "#334155" : "#94a3b8", paddingLeft: 14 }}>
                       {a.responsables.length ? `${a.responsables.length} persona${a.responsables.length > 1 ? "s" : ""}` : "—"}
                     </td>
-                    <td style={{ fontSize: 12.5, color: a.recursos.length ? "#334155" : "#94a3b8", paddingLeft: 14 }}>
-                      {a.recursos.length ? `${a.recursos.length} recurso${a.recursos.length > 1 ? "s" : ""}` : "—"}
+                    <td style={{ fontSize: 12.5, color: recursosValidos.length ? "#334155" : "#94a3b8", paddingLeft: 14 }}>
+                      {recursosValidos.length ? `${recursosValidos.length} recurso${recursosValidos.length > 1 ? "s" : ""}` : "—"}
                     </td>
                     <td style={{ fontSize: 12.5 }}>
-                      {a.medios.length ? a.medios.map(m => (
+                      {mediosValidos.length ? mediosValidos.map(m => (
                         <span key={m} style={{ display: "inline-block", fontSize: 10.5, background: "#f1f5f9", color: "#475569", borderRadius: 4, padding: "1px 5px", marginRight: 3, marginBottom: 2 }}>{m}</span>
                       )) : <span style={{ color: "#94a3b8" }}>—</span>}
                     </td>
                     <td>
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        fontSize: 10.5, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
-                        background: completa ? "#dcfce7" : "#fef3c7",
-                        color: completa ? "#166534" : "#92400e",
-                      }}>
+                      <span
+                        title={!completa ? "Falta completar información obligatoria de esta actividad." : undefined}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontSize: 10.5, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                          background: completa ? "#dcfce7" : "#fef3c7",
+                          color: completa ? "#166534" : "#92400e",
+                          cursor: !completa ? "help" : "default",
+                        }}
+                      >
+                        {!completa && (
+                          <svg
+                            aria-label="Falta completar información obligatoria de esta actividad."
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ flexShrink: 0 }}
+                          >
+                            <path d="M10.29 3.86L1.82 18h20.36L10.29 3.86z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                        )}
                         {completa ? "COMPLETA" : "PENDIENTE"}
                       </span>
                     </td>
                     <td>
                       <button
                         className="btn btn-secondary btn-xs"
-                        onClick={e => { e.stopPropagation(); setEditId(editId === a.id ? null : a.id); setRecursoSearch(""); setDateError(""); }}
+                        onClick={e => { e.stopPropagation(); handleOpenEdit(editId === a.id ? null : a.id); }}
                         style={{ background: active ? "#1a4f8a" : undefined, color: active ? "#fff" : undefined }}
                       >
                         {completa ? "Editar" : "Completar"}
@@ -2559,7 +2662,7 @@ function Step3Matriz({
         <>
           {/* Overlay backdrop */}
           <div
-            onClick={() => setEditId(null)}
+            onClick={() => handleOpenEdit(null)}
             style={{
               position: "fixed", inset: 0, background: "rgba(15,47,86,0.25)", zIndex: 100,
               backdropFilter: "none",
@@ -2588,7 +2691,7 @@ function Step3Matriz({
                   </div>
                 </div>
                 <button
-                  onClick={() => setEditId(null)}
+                  onClick={() => handleOpenEdit(null)}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7a8d", padding: 4, borderRadius: 4, display: "flex", marginTop: -2 }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2635,7 +2738,7 @@ function Step3Matriz({
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#f8fafc", borderRadius: 8, padding: "10px 12px", border: "1.5px solid #e2e8f0" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#1a4f8a", fontWeight: 600, cursor: "pointer", marginBottom: 4 }}>
                     <input type="checkbox"
-                      checked={editAct.responsables.length === responsablesGrupo.length}
+                      checked={responsablesGrupo.length > 0 && responsablesGrupo.every(r => editAct.responsables.includes(r))}
                       onChange={e => updateAct({ ...editAct, responsables: e.target.checked ? [...responsablesGrupo] : [] })}
                       style={{ accentColor: "#1a4f8a" }}
                     />
@@ -2683,11 +2786,59 @@ function Step3Matriz({
                     </label>
                   ))}
                 </div>
-                <label className="form-label"><input type="checkbox" checked={editAct.recursos.some(v => !recursosCatalogo.includes(v))} onChange={e => updateAct({...editAct,recursos:e.target.checked ? [...editAct.recursos, ""] : editAct.recursos.filter(v => recursosCatalogo.includes(v))})} /> Otro</label>
-                {editAct.recursos.some(v => !recursosCatalogo.includes(v)) && <input className="form-input" aria-label="Especifique el recurso" placeholder="Especifique el recurso" value={editAct.recursos.filter(v => !recursosCatalogo.includes(v)).join("; ")} onChange={e => updateAct({...editAct,recursos:[...editAct.recursos.filter(v => recursosCatalogo.includes(v)),e.target.value]})} />}
-                {editAct.recursos.length > 0 && (
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={editAct.recursos.some(v => !recursosCatalogo.includes(v))}
+                    onChange={e => {
+                      updateAct({
+                        ...editAct,
+                        recursos: e.target.checked
+                          ? [...editAct.recursos, ""]
+                          : editAct.recursos.filter(v => recursosCatalogo.includes(v)),
+                      });
+                      if (!e.target.checked) setRecursoOtroError("");
+                    }}
+                    style={{ accentColor: "#1a4f8a" }}
+                  />
+                  <span>Otro</span>
+                </label>
+                {editAct.recursos.some(v => !recursosCatalogo.includes(v)) && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 3, display: "flex", alignItems: "center", gap: 3 }}>
+                      <span>Especifique el recurso</span>
+                      <span style={{ color: "#dc2626", fontWeight: 700 }} title="Campo obligatorio">*</span>
+                    </div>
+                    <input
+                      ref={recursoOtroInputRef}
+                      className="form-input"
+                      aria-label="Especifique el recurso"
+                      placeholder="Especifique el recurso"
+                      style={recursoOtroError ? { borderColor: "#ef4444", background: "#fff5f5" } : undefined}
+                      value={editAct.recursos.filter(v => !recursosCatalogo.includes(v)).join("; ")}
+                      onChange={e => {
+                        updateAct({
+                          ...editAct,
+                          recursos: [...editAct.recursos.filter(v => recursosCatalogo.includes(v)), e.target.value],
+                        });
+                        if (e.target.value.trim()) setRecursoOtroError("");
+                      }}
+                    />
+                    {recursoOtroError && (
+                      <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="8" x2="12" y2="12"/>
+                          <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span>{recursoOtroError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {editAct.recursos.filter(r => r.trim()).length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
-                    {editAct.recursos.map(r => (
+                    {editAct.recursos.filter(r => r.trim()).map(r => (
                       <span key={r} style={{ fontSize: 11.5, background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: 99, fontWeight: 500 }}>{r}</span>
                     ))}
                   </div>
@@ -2712,11 +2863,59 @@ function Step3Matriz({
                 <div style={{ fontSize: 11.5, color: "#6b7a8d", marginTop: 6 }}>
                   Durante la ejecución deberá cargar un archivo PDF por cada medio seleccionado.
                 </div>
-                <label className="form-label"><input type="checkbox" checked={editAct.medios.some(v => !mediosCatalogo.includes(v))} onChange={e => updateAct({...editAct,medios:e.target.checked ? [...editAct.medios, ""] : editAct.medios.filter(v => mediosCatalogo.includes(v))})} /> Otro</label>
-                {editAct.medios.some(v => !mediosCatalogo.includes(v)) && <input className="form-input" aria-label="Especifique el medio de verificación" placeholder="Especifique el medio de verificación" value={editAct.medios.filter(v => !mediosCatalogo.includes(v)).join("; ")} onChange={e => updateAct({...editAct,medios:[...editAct.medios.filter(v => mediosCatalogo.includes(v)),e.target.value]})} />}
-                {editAct.medios.length > 0 && (
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={editAct.medios.some(v => !mediosCatalogo.includes(v))}
+                    onChange={e => {
+                      updateAct({
+                        ...editAct,
+                        medios: e.target.checked
+                          ? [...editAct.medios, ""]
+                          : editAct.medios.filter(v => mediosCatalogo.includes(v)),
+                      });
+                      if (!e.target.checked) setMedioOtroError("");
+                    }}
+                    style={{ accentColor: "#1a4f8a" }}
+                  />
+                  <span>Otro</span>
+                </label>
+                {editAct.medios.some(v => !mediosCatalogo.includes(v)) && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 3, display: "flex", alignItems: "center", gap: 3 }}>
+                      <span>Especifique el medio de verificación</span>
+                      <span style={{ color: "#dc2626", fontWeight: 700 }} title="Campo obligatorio">*</span>
+                    </div>
+                    <input
+                      ref={medioOtroInputRef}
+                      className="form-input"
+                      aria-label="Especifique el medio de verificación"
+                      placeholder="Especifique el medio de verificación"
+                      style={medioOtroError ? { borderColor: "#ef4444", background: "#fff5f5" } : undefined}
+                      value={editAct.medios.filter(v => !mediosCatalogo.includes(v)).join("; ")}
+                      onChange={e => {
+                        updateAct({
+                          ...editAct,
+                          medios: [...editAct.medios.filter(v => mediosCatalogo.includes(v)), e.target.value],
+                        });
+                        if (e.target.value.trim()) setMedioOtroError("");
+                      }}
+                    />
+                    {medioOtroError && (
+                      <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="8" x2="12" y2="12"/>
+                          <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span>{medioOtroError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {editAct.medios.filter(m => m.trim()).length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
-                    {editAct.medios.map(m => (
+                    {editAct.medios.filter(m => m.trim()).map(m => (
                       <span key={m} style={{ fontSize: 11.5, background: "#f0fdf4", color: "#166534", padding: "2px 8px", borderRadius: 99, fontWeight: 500, border: "1px solid #bbf7d0" }}>{m}</span>
                     ))}
                   </div>
@@ -2730,14 +2929,14 @@ function Step3Matriz({
                 <button
                   className="btn btn-secondary"
                   style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { onSave(matriz); guardarYSiguiente(); }}
+                  onClick={handleGuardarYSiguiente}
                 >
                   Guardar y configurar siguiente pendiente →
                 </button>
               )}
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => setEditId(null)}>Cancelar</button>
-                <button className="btn btn-primary btn-sm" onClick={() => { onSave(matriz); setEditId(null); }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => handleOpenEdit(null)}>Cancelar</button>
+                <button className="btn btn-primary btn-sm" onClick={handleGuardarActividad}>
                   Guardar actividad
                 </button>
               </div>
@@ -2767,7 +2966,7 @@ function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, s
       <Stepper current={4} maxReached={maxReached} />
 
       <div style={{ padding: "20px 28px 0" }}>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Revisar matriz de actividades</h1>
@@ -2845,8 +3044,8 @@ function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, s
                     { label: "Desde", val: a.desde ? a.desde.split("-").reverse().join("/") : "—" },
                     { label: "Hasta", val: a.hasta ? a.hasta.split("-").reverse().join("/") : "—" },
                     { label: "Responsables", val: a.responsables.length ? a.responsables.join(", ") : "—" },
-                    { label: "Recursos", val: a.recursos.length ? a.recursos.join(", ") : "—" },
-                    { label: "Medios de verificación", val: a.medios.length ? a.medios.join(", ") : "—" },
+                    { label: "Recursos", val: a.recursos.filter(r => r.trim()).length ? a.recursos.filter(r => r.trim()).join(", ") : "—" },
+                    { label: "Medios de verificación", val: a.medios.filter(m => m.trim()).length ? a.medios.filter(m => m.trim()).join(", ") : "—" },
                   ].map((col, j) => (
                     <div key={j}>
                       <div style={{ fontSize: 10.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{col.label}</div>
@@ -3031,7 +3230,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
 
       <div style={{ padding: "20px 28px 0" }}>
         <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>
-          Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo
+          Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo
         </div>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>
           Contenido del Plan de Trabajo
@@ -3243,6 +3442,8 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
   saving?: boolean; onSave?: () => void;
 }) {
   const [showModal, setShowModal] = useState(false);
+  const [editingId,setEditingId] = useState<number | null>(null);
+  const annexFileRef=useRef<HTMLInputElement>(null);
   const [modalNombre, setModalNombre] = useState("");
   const [modalDesc, setModalDesc] = useState("");
   const [modalFile, setModalFile] = useState("");
@@ -3253,7 +3454,9 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
 
   const handleAddAnexo = () => {
     if (!modalNombre.trim()) return;
-    setAnexos([...anexos, { id: Date.now(), nombre: modalNombre, descripcion: modalDesc, archivo: modalFile || "archivo_adjunto.pdf" }]);
+    const next={id:editingId || Date.now(),nombre:modalNombre.trim(),descripcion:modalDesc,archivo:modalFile || "anexo_DEMO.pdf"};
+    setAnexos(editingId ? anexos.map(a => a.id === editingId ? next : a) : [...anexos,next]);
+    setEditingId(null);
     setModalNombre(""); setModalDesc(""); setModalFile("");
     setShowModal(false);
   };
@@ -3270,8 +3473,8 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,47,86,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#fff", borderRadius: 12, width: 480, padding: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 18, fontFamily: "'DM Sans',sans-serif" }}>Agregar anexo</h2>
+          <div style={{ background: "#fff", borderRadius: 12, width: 480, maxHeight:"90vh",overflowY:"auto", padding: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 18, fontFamily: "'DM Sans',sans-serif" }}>{editingId ? "Editar anexo" : "Agregar anexo"}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label className="form-label required">Nombre del anexo</label>
@@ -3288,7 +3491,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input className="form-input" placeholder="Seleccionar archivo..."
                     value={modalFile} onChange={e => setModalFile(e.target.value)} readOnly />
-                  <button className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap" }}>
+                  <input type="file" ref={annexFileRef} style={{display:"none"}} onChange={e => setModalFile(e.target.files?.[0]?.name || "")} /><button onClick={() => annexFileRef.current?.click()} className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Examinar
                   </button>
@@ -3297,7 +3500,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleAddAnexo} disabled={!modalNombre.trim()}>Agregar anexo</button>
+              <button className="btn btn-primary" onClick={handleAddAnexo} disabled={!modalNombre.trim()}>{editingId ? "Guardar cambios" : "Agregar anexo"}</button>
             </div>
           </div>
         </div>
@@ -3306,7 +3509,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
       <Stepper current={5} maxReached={maxReached} />
 
       <div style={{ padding: "20px 28px 0" }}>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Mis Planes de Trabajo &rsaquo; Nuevo Plan de Trabajo</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Anexos</h1>
         <p style={{ fontSize: 13, color: "#6b7a8d" }}>
           Indique si el Plan de Trabajo incluirá anexos y organice los elementos que formarán parte del documento.
@@ -3362,7 +3565,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                   Anexos del documento
                   <span style={{ marginLeft: 8, fontSize: 11.5, color: "#6b7a8d", fontWeight: 400 }}>{anexos.length} {anexos.length === 1 ? "elemento" : "elementos"}</span>
                 </h3>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
+                <button className="btn btn-primary btn-sm" onClick={() => {setEditingId(null);setModalNombre("");setModalDesc("");setModalFile("");setShowModal(true);}}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   AGREGAR ANEXO
                 </button>
@@ -3404,18 +3607,18 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                       {/* Reorder + actions */}
                       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <button onClick={() => mover(idx, -1)} disabled={idx === 0} style={{
+                          <button title="Subir anexo" aria-label="Subir anexo" onClick={() => mover(idx, -1)} disabled={idx === 0} style={{
                             width: 22, height: 20, background: "none", border: "1px solid #e2e8f0",
                             borderRadius: 3, cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center",
                             opacity: idx === 0 ? 0.3 : 1,
                           }}>↑</button>
-                          <button onClick={() => mover(idx, 1)} disabled={idx === anexos.length - 1} style={{
+                          <button title="Bajar anexo" aria-label="Bajar anexo" onClick={() => mover(idx, 1)} disabled={idx === anexos.length - 1} style={{
                             width: 22, height: 20, background: "none", border: "1px solid #e2e8f0",
                             borderRadius: 3, cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center",
                             opacity: idx === anexos.length - 1 ? 0.3 : 1,
                           }}>↓</button>
                         </div>
-                        <button className="btn btn-ghost btn-xs">Editar</button>
+                        <button title="Editar anexo" aria-label="Editar anexo" className="btn btn-ghost btn-xs" onClick={() => {setEditingId(a.id);setModalNombre(a.nombre);setModalDesc(a.descripcion);setModalFile(a.archivo);setShowModal(true);}}>Editar</button>
                         <button className="btn btn-xs" style={{ background: "#fee2e2", color: "#991b1b", border: "none" }}
                           onClick={() => setAnexos(anexos.filter(x => x.id !== a.id))}>
                           Eliminar
@@ -3493,7 +3696,7 @@ function Step8Confirmacion({ onViewStatus, onBackToList, docEngine }: { onViewSt
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
       {/* Header bar */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "16px 28px" }}>
-        <div style={{ fontSize: 12, color: "#94a3b8" }}>Mis Planes de Trabajo &rsaquo; Plan de Trabajo</div>
+        <div style={{ fontSize: 12, color: "#94a3b8" }}>Gestión Documental Académica &rsaquo; Plan de Trabajo</div>
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 28px" }}>
@@ -3609,6 +3812,7 @@ const DEFAULT_OBJETIVO = "Organizar y ejecutar 5 eventos académicos institucion
 
 interface PlanDraft {
   fuente: string;
+  collectsPersonalData: boolean;
   grupo: string;
   periodo: string;
   matriz: ActividadMatriz[];
@@ -3630,6 +3834,7 @@ function todayFormatted() {
 
 const DEFAULT_DRAFT: PlanDraft = {
   fuente: "",
+  collectsPersonalData: false,
   grupo: "Unidad de Titulación",
   periodo: "Julio – Diciembre 2026",
   matriz: MATRIZ_INICIAL,
@@ -3669,10 +3874,14 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
   const [draft, setDraftState] = useState<PlanDraft>(loadDraft);
   const [saving, setSaving] = useState(false);
   const [initialEditId, setInitialEditId] = useState<number | null>(null);
+  const [informeEditId, setInformeEditId] = useState<string | undefined>();
+  const [formError, setFormError] = useState("");
 
   const grupoActual = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).find(g => g.nombre === draft.grupo);
   const periodoActual = adminState?.periodos.find(p => p.nombre === draft.periodo);
-  const responsablesGrupo = grupoActual?.miembros.map(m => m.nombreCompleto) || [];
+  const responsablesGrupo = grupoActual?.miembros.filter(m => !adminState || adminState.usuarios.some(u => u.id === m.usuarioId && u.estado === "ACTIVO")).map(m => m.nombreCompleto) || [];
+  const gruposDisponibles = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).filter(g => g.estado === "ACTIVO" && g.miembros.some(m => canonicalDemoActorId(m.usuarioId) === docEngine?.currentUser.id));
+  const matrizDocumental = draft.matriz.map(a => ({...a, responsablesEtiqueta: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? `Responsable ${grupoActual?.tipo === "Comisión" ? "de la comisión" : grupoActual?.tipo === "Unidad" ? "de la unidad" : grupoActual?.tipo === "Club" ? "del club" : "del grupo"}` : undefined}));
 
   function cargarPlan(docId: string) {
     const doc = docEngine?.documents.find(d => d.id === docId);
@@ -3680,7 +3889,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
     let saved: Partial<PlanDraft> = {};
     try { saved = JSON.parse(localStorage.getItem(`${DRAFT_KEY}:${docId}`) || "{}"); } catch {}
     const a = doc.currentArtifact;
-    setDraftState({...DEFAULT_DRAFT, grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m,categoria:"Actividad",tipo:"otra",descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
+    setDraftState({...DEFAULT_DRAFT, grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", collectsPersonalData:a.collectsPersonalData || false, justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m,categoria:"Actividad",tipo:"otra",descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
   }
 
   function updateDraft(changes: Partial<PlanDraft>) {
@@ -3713,7 +3922,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
       if (targetDocId) docEngine.iniciarCorreccion(targetDocId);
     }
 
-    setSub("step3edit");
+    setSub("step1");
   }
 
   // Derive status from docEngine if present
@@ -3730,13 +3939,15 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         docEngine ? (
           <MisDocumentosView
             docEngine={docEngine}
-            onNewPlan={() => { docEngine.crearNuevoDocumento("PLAN_TRABAJO", {grupo: "Unidad de Titulación"}); setDraftState({...DEFAULT_DRAFT, justificacion: (adminState?.grupos || GRUPOS_ADMIN_INICIALES).find(g => g.nombre === "Unidad de Titulación")?.descripcion || "", fechaElaboracion: todayFormatted()}); setSub("step1"); }}
-            onNewInforme={() => setSub("wizardInforme")}
+            grupos={gruposDisponibles} periodos={adminState?.periodos || []}
+            onNewPlan={(grupo, periodo) => { const selectedGroup=gruposDisponibles.find(g => g.nombre === grupo); docEngine.crearNuevoDocumento("PLAN_TRABAJO", {grupo,periodo}); setDraftState({...structuredClone(DEFAULT_DRAFT),grupo,periodo,matriz:[],objetivo:"",justificacion:selectedGroup?.descripcion || "",fechaElaboracion:todayFormatted()}); setMaxReached(1); setFormError(""); setSub("step1"); }}
+            onNewInforme={() => {setInformeEditId(undefined); setSub("wizardInforme");}}
+            onContinuarInforme={id => {setInformeEditId(id); setSub("wizardInforme");}}
             onContinuarPlan={(docId) => {
               docEngine.seleccionarDocumento(docId);
               cargarPlan(docId);
               setInitialEditId(null);
-              setSub("step3edit");
+              setSub("step1");
             }}
             onCorregirPlan={(docId) => {
               docEngine.seleccionarDocumento(docId);
@@ -3770,7 +3981,8 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
       )}
       {sub !== "list" && docEngine?.docMaster.documentState === "EN CORRECCIÓN" && <details style={{padding:"8px 28px"}}><summary>Ver observaciones y resaltados del documento devuelto</summary><div style={{height:650}}><DocumentPdfPageViewer artifact={docEngine.currentArtifact} formalVersion={docEngine.docMaster.formalVersion} reviewRound={docEngine.docMaster.reviewRound} documentState="EN CORRECCIÓN" observations={docEngine.observations} flowStages={docEngine.flowStages} currentUser={{nombre:docEngine.currentArtifact.elaborador.nombre,cargo:docEngine.currentArtifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} onResolveObservacion={id => docEngine.resolverObservacion(docEngine.docMaster.id,id)} /></div></details>}
       {sub === "step1" && (
-        <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} onChange={v => saveDraft(v)} grupos={adminState?.grupos || GRUPOS_ADMIN_INICIALES} periodos={adminState?.periodos || []} maxReached={maxReached} onNext={() => {
+        <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} elaborador={docEngine?.currentUser.nombre || DOCENTE.nombre} error={formError} onSave={() => saveDraft({})} onChange={v => {setFormError("");saveDraft(v.grupo && v.grupo !== draft.grupo ? {...v,matriz:[],justificacion:gruposDisponibles.find(g => g.nombre === v.grupo)?.descripcion || "",objetivo:""} : v);}} grupos={gruposDisponibles} periodos={adminState?.periodos.filter(p => p.estado === "ACTIVO") || []} maxReached={maxReached} onNext={() => {
+          if (docEngine?.documents.some(d => d.id !== docEngine.docMaster.id && d.documentType === "PLAN_TRABAJO" && d.grupo === draft.grupo && d.periodo === draft.periodo && d.currentArtifact.elaborador.id === docEngine.currentUser.id)) {setFormError("Ya existe un Plan para este docente, grupo y período. Continúe el documento existente.");return;}
           if (docEngine) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual?.id); if(flow && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
           setMaxReached(m => Math.max(m, 2)); setSub("step4"); }} onCancel={() => setSub("list")} />
       )}
@@ -3778,7 +3990,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <Step2Actividades grupoNombre={draft.grupo} periodoNombre={draft.periodo} catalogo={adminState ? adminState.actividadesCatalogo.filter(a => a.estado === "ACTIVO" && (a.gruposAsociadosNombres.includes(draft.grupo) || grupoActual?.actividades.some(g => g.actividadId === a.id))).map(a => ({id:adminState.actividadesCatalogo.indexOf(a)+1,nombre:a.nombre,descripcion:a.descripcion,categoria:a.categoria,tipo:grupoActual?.actividades.find(g => g.actividadId === a.id)?.obligatoriedad === "OBLIGATORIA" ? "obligatoria" : "opcional"})) : ACTIVIDADES_CATALOGO} matriz={draft.matriz} onChange={m => saveDraft({ matriz: m })} maxReached={maxReached} onPrev={() => setSub("step4")} onNext={() => { setMaxReached(m => Math.max(m, 4)); setSub("step3edit"); }} />
       )}
       {sub === "step3edit" && (
-        <><label className="form-label" style={{padding:"12px 28px"}}>Fuente de la matriz<input className="form-input" value={draft.fuente} onChange={e => saveDraft({fuente:e.target.value})} placeholder="Documento, grupo u otra fuente" /></label><Step3Matriz
+        <><label style={{padding:"12px 28px",fontSize:13}}><input type="checkbox" checked={draft.collectsPersonalData} onChange={e => saveDraft({collectsPersonalData:e.target.checked})} /> Esta planificación recopila datos personales. Incluir nota de protección de datos.</label><label className="form-label" style={{padding:"12px 28px"}}>Fuente de la matriz<input className="form-input" value={draft.fuente} onChange={e => saveDraft({fuente:e.target.value})} placeholder="Documento, grupo u otra fuente" /></label><Step3Matriz
           maxReached={maxReached}
           responsablesGrupo={responsablesGrupo}
           recursosCatalogo={(adminState?.recursos || RECURSOS_CATALOGO_INICIALES).filter(r => r.estado === "ACTIVO").map(r => r.nombre)}
@@ -3814,7 +4026,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           saving={saving}
           onSave={() => saveDraft({})}
           onPrev={() => setSub("step1")}
-          onNext={() => { setMaxReached(m => Math.max(m, 3)); setSub("step2"); }}
+          onNext={() => { saveDraft({}); setMaxReached(m => Math.max(m, 3)); setSub("step2"); }}
         />
       )}
       {sub === "step5" && (
@@ -3827,7 +4039,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           saving={saving}
           onSave={() => saveDraft({})}
           onPrev={() => setSub("step3review")}
-          onNext={() => { setMaxReached(m => Math.max(m, 6)); setSub("step6"); }}
+          onNext={() => { saveDraft({}); setMaxReached(m => Math.max(m, 6)); setSub("step6"); }}
         />
       )}
       {sub === "step6" && (
@@ -3837,9 +4049,9 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           artifact={(() => {
             const base = docEngine?.currentArtifact;
             if (!base) throw new Error("Documento no seleccionado");
-            const matriz = draft.matriz.map(a => ({...a, responsables: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? [`Integrantes ${grupoActual?.tipo === "Club" ? "del Club" : grupoActual?.tipo === "Unidad" ? "de la Unidad" : grupoActual?.tipo === "Comisión" ? "de la Comisión" : "del grupo"}`] : a.responsables}));
+            const matriz = matrizDocumental;
             const pages = buildDocumentPages("PLAN_TRABAJO",matriz.length,docEngine?.flowStages || []);
-            return {...base,grupo:draft.grupo,periodo:draft.periodo,fuente:draft.fuente,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""})),pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
+            return {...base,grupo:draft.grupo,periodo:draft.periodo,fuente:draft.fuente,collectsPersonalData:draft.collectsPersonalData,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""})),pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
           })()}
           onPrev={() => setSub("step5")}
           onNext={() => {
@@ -3849,7 +4061,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
               docEngine.actualizarDatosBasicos(id, {grupo:draft.grupo, periodo:draft.periodo});
               const flow = adminState?.flujos.find(f => f.grupoId === grupoActual?.id);
               if (flow && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
-              docEngine.generarArtefacto(id, {fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: draft.matriz.map(a => ({...a, responsables: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? [`Integrantes ${grupoActual?.tipo === "Club" ? "del Club" : grupoActual?.tipo === "Unidad" ? "de la Unidad" : grupoActual?.tipo === "Comisión" ? "de la Comisión" : "del grupo"}`] : a.responsables})), tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
+              docEngine.generarArtefacto(id, {collectsPersonalData:draft.collectsPersonalData,fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: matrizDocumental, tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
             }
             saveDraft({}); setMaxReached(m => Math.max(m, 7)); setSub("step7");
           }}
@@ -4704,12 +4916,31 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userRole, setUserRole] = useState<"docente" | "revisor" | "admin">("docente");
   const [planesViewKey, setPlanesViewKey] = useState(0);
-  const seguimientoState = useSeguimientoState();
-  const adminState = useAdminState();
-  const notifState = useNotificacionesState(userRole);
   const auditoriaState = useAuditoriaState();
+  const adminState = useAdminState();
   const docEngine = useDocumentEngine(auditoriaState.registrarEvento, {flujos:adminState.flujos,usuarios:adminState.usuarios});
-  const reportesState = useReportesState(userRole);
+  const sessionAdmin=adminState.usuarios.find(u => canonicalDemoActorId(u.id) === docEngine.currentUser.id);
+  const sessionDisplay={nombre:docEngine.currentUser.nombre,nombreCorto:docEngine.currentUser.nombre,correo:sessionAdmin?.correo || "",avatar:sessionAdmin ? sessionAdmin.nombres[0]+sessionAdmin.apellidos[0] : "DE",rol:userRole === "admin" ? "Administrador" : userRole === "revisor" ? "Revisor" : "Docente"};
+  const reviewerGroupNames=adminState.flujos.filter(f => f.etapas.some(e => e.revisoresIds?.some(id => canonicalDemoActorId(id) === docEngine.currentUser.id))).map(f => f.grupoNombre);
+  const notifState = useNotificacionesState(userRole, docEngine.currentUser.id);
+  const seguimientoState = useSeguimientoState({documents:docEngine.documents,currentUser:docEngine.currentUser,currentRole:userRole,reviewerGroupNames,closedPeriodNames:adminState.periodos.filter(p=>p.estado === "CERRADO").map(p=>p.nombre),onAuditLog:auditoriaState.registrarEvento,onNotification:notifState.agregarNotificacion});
+  const reportesState = useReportesState(userRole,{documents:docEngine.documents,actividades:seguimientoState.actividades,currentUserName:docEngine.currentUser.nombre,reviewerGroupNames,periodosAdmin:adminState.periodos});
+  const prevDocumentEvents=useRef(new Set<string>());
+  useEffect(() => {
+    for (const doc of docEngine.documents) {
+      const targets = doc.documentState === "DEVUELTO" || doc.documentState === "VALIDADO"
+        ? [{id: doc.currentArtifact.elaborador.id || "", role: "Docente" as const}]
+        : doc.flowStages.filter(stage => stage.estado === "EN_CURSO" && stage.actorRole !== "docente" && stage.actorId).map(stage => ({id: stage.actorId!, role: "Revisor" as const}));
+      for (const target of targets) {
+        const id = `notification-${doc.id}-${doc.reviewRound}-${doc.documentState}-${target.id}`;
+        if (!target.id || prevDocumentEvents.current.has(id)) continue;
+        prevDocumentEvents.current.add(id);
+        const returned = doc.documentState === "DEVUELTO";
+        const approved = doc.documentState === "VALIDADO";
+        notifState.agregarNotificacion({id, destinatarioRol: target.role, destinatarioUsuarioId: target.id, titulo: returned ? "Documento devuelto" : approved ? "Documento validado" : "Documento asignado a revisión", mensaje: doc.nombre, fechaHora: doc.fechaUltimaActualizacion, tiempoRelativo: "Escenario DEMO", tipo: returned ? "PLAN_DEVUELTO" : approved ? "PLAN_APROBADO" : "PLAN_PENDIENTE_REVISION", leida: false, objetoRelacionado: {documentId: doc.id, tipo: "Plan de Trabajo", nombre: doc.nombre, grupo: doc.grupo, accionLabel: "Abrir documento", accionDestino: target.role === "Docente" ? "planes" : "bandeja", modalDirecto: returned ? "obsPlan" : target.role === "Revisor" ? "revisionPlan" : undefined}});
+      }
+    }
+  }, [docEngine.documents]);
   const [adminSelectedGrupoId, setAdminSelectedGrupoId] = useState<string | null>(null);
   const [adminSelectedFlujoGrupoId, setAdminSelectedFlujoGrupoId] = useState<string | null>(null);
   const [planInitialObsModal, setPlanInitialObsModal] = useState(false);
@@ -4718,14 +4949,12 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
-      docEngine.simularSesionDemo("usr-carlos-02","Ing. Carlos López, Mg.");
       setUserRole("revisor");
       setView("bandeja");
     } else if (userRole === "revisor") {
       setUserRole("admin");
       setView("adminInicio");
     } else {
-      docEngine.simularSesionDemo("usr-andrea-01","Ing. Andrea Pérez, Mg.");
       setUserRole("docente");
       setView("planes");
       setPlanesViewKey(k => k + 1);
@@ -4748,6 +4977,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   }
 
   function handleNotificationAction(notif: NotificacionItem) {
+    const targetDocId=notif.objetoRelacionado.documentId;
+    if(targetDocId) {docEngine.seleccionarDocumento(targetDocId);setPlanesViewKey(k=>k+1);}
     const dest = notif.objetoRelacionado.accionDestino as AppView;
     const modalDirecto = notif.objetoRelacionado.modalDirecto;
     const actId = notif.objetoRelacionado.actividadId;
@@ -4812,6 +5043,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
       <Sidebar
+        sessionUser={sessionDisplay}
         view={view} setView={setView} onLogout={onLogout}
         collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed}
         userRole={userRole} onRoleSwitch={handleRoleSwitch}
@@ -4819,6 +5051,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <TopBar
+          sessionUser={sessionDisplay}
           view={view}
           userRole={userRole}
           noLeidasCount={notifState.noLeidasCount}
@@ -4828,6 +5061,11 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           onNavigateToNotificaciones={() => setView("notificaciones")}
           onSelectAction={handleNotificationAction}
         />
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 20px",background:"#eff6ff",borderBottom:"1px solid #bfdbfe",fontSize:12}}>
+          <label>Sesión DEMO: <select aria-label="Cambiar persona de la sesión DEMO" value={sessionAdmin?.id || ""} onChange={e => {const u=adminState.usuarios.find(u => u.id === e.target.value);if(u){docEngine.simularSesionDemo(u.id,u.nombreCompleto);setPlanesViewKey(k=>k+1);setView(u.rol === "Administrador" ? "adminInicio" : u.rol.includes("Revisor") ? "bandeja" : "planes");setUserRole(u.rol === "Administrador" ? "admin" : u.rol.includes("Revisor") ? "revisor" : "docente");}}}>{adminState.usuarios.filter(u => u.estado === "ACTIVO").map(u => <option key={u.id} value={u.id}>{u.nombreCompleto}</option>)}</select></label>
+          <span>Cambiar contexto conserva esta identidad.</span>
+          <button className="btn btn-ghost btn-xs" onClick={() => {docEngine.restablecerDemo();setPlanesViewKey(k=>k+1);setView("planes");}}>Restablecer documentos DEMO</button>
+        </div>
         <main style={{ flex: 1, overflowY: "auto", background: "#f0f4f8" }}>
           {view === "inicio" && (
             <DashboardInicio
@@ -4859,6 +5097,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "actividades" && (
             seguimientoState.actividadSeleccionada ? (
               <DetalleActividadView
+                currentUserName={docEngine.currentUser.nombre}
                 actividad={seguimientoState.actividadSeleccionada}
                 onBack={() => {
                   seguimientoState.setActividadSeleccionadaId(null);
@@ -4870,7 +5109,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               />
             ) : (
               <MisActividadesView
-                actividades={seguimientoState.actividades}
+                currentUserName={docEngine.currentUser.nombre}
+              actividades={seguimientoState.actividades}
                 onSelectActividad={(id) => {
                   setActividadModalDirecto(null);
                   seguimientoState.setActividadSeleccionadaId(id);
@@ -4881,6 +5121,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           )}
           {view === "evidencias" && (
             <MisEvidenciasView
+              currentUserName={docEngine.currentUser.nombre}
               actividades={seguimientoState.actividades}
               onCargarEvidencia={seguimientoState.cargarEvidencia}
               onReemplazarEvidencia={seguimientoState.reemplazarEvidencia}
@@ -4893,6 +5134,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "evidenciasValidar" && (
             seguimientoState.evidenciaSeleccionada && seguimientoState.itemEvidenciaActivo ? (
               <RevisarEvidenciaView
+                currentUserName={docEngine.currentUser.nombre}
                 item={seguimientoState.itemEvidenciaActivo}
                 onBack={() => seguimientoState.setEvidenciaSeleccionada(null)}
                 onValidar={(actividadId: string, medioId: string) => {
@@ -4931,8 +5173,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               onActionNavigate={handleNotificationAction}
             />
           )}
-          {view === "perfil" && <PerfilView userRole={userRole} />}
-          {(view === "bandeja" || view === "planesRevision" || view === "grupos") && (
+          {view === "perfil" && <PerfilView userRole={userRole} currentUser={sessionAdmin} />}
+          {(view === "bandeja" || view === "planesRevision") && (
             <RevisorDocumentEngineView
               docEngine={docEngine}
               userRole={userRole}
@@ -4943,6 +5185,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
             />
           )}
 
+          {view === "grupos" && <GruposInstitucionalesView grupos={adminState.grupos.filter(g=>g.miembros.some(m=>canonicalDemoActorId(m.usuarioId) === docEngine.currentUser.id))} onSelectGrupo={id=>{setAdminSelectedGrupoId(id);setView("adminGrupos");}} onCrearGrupo={adminState.crearGrupo} />}
           {/* Módulo 7 — Administración y Configuración Institucional */}
           {view === "adminInicio" && (
             <AdminDashboardView

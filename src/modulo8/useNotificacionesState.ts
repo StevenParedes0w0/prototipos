@@ -7,17 +7,31 @@ import {
   NOTIFICACIONES_ADMIN,
 } from "./mockDataAuditoria";
 
-export function useNotificacionesState(userRole: "docente" | "revisor" | "admin") {
+export function useNotificacionesState(userRole: "docente" | "revisor" | "admin", currentUserId?: string) {
   const [notificacionesDocente, setNotificacionesDocente] = useState<NotificacionItem[]>(NOTIFICACIONES_DOCENTE);
   const [notificacionesRevisor, setNotificacionesRevisor] = useState<NotificacionItem[]>(NOTIFICACIONES_REVISOR);
   const [notificacionesAdmin, setNotificacionesAdmin] = useState<NotificacionItem[]>(NOTIFICACIONES_ADMIN);
 
   // Seleccionar notificaciones según el rol activo
   const notificacionesActuales = useMemo(() => {
-    if (userRole === "admin") return notificacionesAdmin;
-    if (userRole === "revisor") return notificacionesRevisor;
-    return notificacionesDocente;
-  }, [userRole, notificacionesAdmin, notificacionesRevisor, notificacionesDocente]);
+    const source = userRole === "admin" ? notificacionesAdmin : userRole === "revisor" ? notificacionesRevisor : notificacionesDocente;
+    if (!currentUserId) return source;
+    const aliases: Record<string, string[]> = {
+      "usr-andrea-01": ["usr-andrea-01", "docente-andrea", "usr-1"],
+      "usr-carlos-02": ["usr-carlos-02", "revisor-carlos", "usr-2"],
+      "usr-patricia-03": ["usr-patricia-03", "revisor-patricia", "usr-3"],
+      "usr-laura-05": ["usr-laura-05", "admin-laura", "usr-5"],
+    };
+    const accepted = aliases[currentUserId] || [currentUserId];
+    return source.filter(item => accepted.includes(item.destinatarioUsuarioId));
+  }, [userRole, currentUserId, notificacionesAdmin, notificacionesRevisor, notificacionesDocente]);
+
+  const agregarNotificacion = (item: NotificacionItem) => {
+    const add = (prev: NotificacionItem[]) => prev.some(existing => existing.id === item.id) ? prev : [item, ...prev];
+    if (item.destinatarioRol === "Administrador") setNotificacionesAdmin(add);
+    else if (item.destinatarioRol === "Revisor") setNotificacionesRevisor(add);
+    else setNotificacionesDocente(add);
+  };
 
   // Contador de no leídas reactivo
   const noLeidasCount = useMemo(() => {
@@ -80,5 +94,6 @@ export function useNotificacionesState(userRole: "docente" | "revisor" | "admin"
     toggleLeida,
     marcarTodasLeidas,
     restablecerDemo,
+    agregarNotificacion,
   };
 }

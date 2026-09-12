@@ -1,11 +1,11 @@
 import React, { useState, useRef } from "react";
-import { ActividadEjecucion, MedioVerificacion } from "./types";
+import { ActividadEjecucion, MedioVerificacion, ArchivoEvidenciaInput } from "./types";
 
 interface ModalCargaEvidenciaProps {
   actividad: ActividadEjecucion;
   medio: MedioVerificacion;
   onClose: () => void;
-  onCargar: (archivo: { nombre: string; tamano: string }) => void;
+  onCargar: (archivo: ArchivoEvidenciaInput) => void;
 }
 
 export default function ModalCargaEvidencia({
@@ -30,7 +30,7 @@ export default function ModalCargaEvidencia({
     setErrorMsg(null);
 
     // Validate PDF
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") && (!file.type || file.type === "application/pdf");
     if (!isPdf) {
       setErrorMsg("Solo se permiten archivos PDF.");
       setSelectedFile(null);
@@ -38,7 +38,7 @@ export default function ModalCargaEvidencia({
     }
 
     // Validate size (max 10MB)
-    if (file.size > MAX_SIZE_BYTES) {
+    if (file.size <= 0 || file.size > MAX_SIZE_BYTES) {
       setErrorMsg("El archivo supera el tamaño máximo permitido (10 MB).");
       setSelectedFile(null);
       return;
@@ -58,6 +58,7 @@ export default function ModalCargaEvidencia({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (e.dataTransfer.files.length !== 1) { setErrorMsg("Seleccione exactamente un archivo PDF por medio."); return; }
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndSetFile(e.dataTransfer.files[0]);
     }
@@ -78,6 +79,8 @@ export default function ModalCargaEvidencia({
     onCargar({
       nombre: selectedFile.nombre,
       tamano: selectedFile.tamano,
+      url: selectedFile.rawFile ? URL.createObjectURL(selectedFile.rawFile) : undefined,
+      sizeBytes: selectedFile.rawFile?.size,
     });
   };
 
@@ -97,6 +100,8 @@ export default function ModalCargaEvidencia({
         borderRadius: 12,
         width: 520,
         maxWidth: "100%",
+        maxHeight: "90vh",
+        overflowY: "auto",
         boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
         overflow: "hidden",
       }}>

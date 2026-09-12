@@ -19,6 +19,7 @@ export type TipoNotificacion =
   | "ADMIN_CATALOGO_ACTUALIZADO";
 
 export interface ObjetoRelacionadoNotificacion {
+  documentId?: string;
   tipo: "Plan de Trabajo" | "Evidencia" | "Actividad" | "Configuración";
   nombre: string;
   grupo?: string;
@@ -44,6 +45,7 @@ export interface NotificacionItem {
 }
 
 export type ModuloAuditoria =
+  | "Informes"
   | "Planes de Trabajo"
   | "Actividades"
   | "Evidencias"
@@ -117,3 +119,6 @@ export interface TrazabilidadObjeto {
   subtitulo: string;
   hitos: TrazabilidadHito[];
 }
+
+export type AuditContext = Pick<AuditoriaEvento, "modulo" | "grupo" | "periodo" | "objetoId" | "tipoObjeto">;
+export type AuditLogger = (tipo: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string, context?: Partial<AuditContext>) => void;

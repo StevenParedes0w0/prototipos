@@ -139,7 +139,7 @@ export const INITIAL_ARTIFACT: DocumentArtifact = {
   titulo: "Plan de Trabajo: Comisión de Eventos Académicos",
   formalVersion: "1.0",
   reviewRound: 1,
-  pageCount: 5,
+  get pageCount() { return this.pages?.length ?? 0; },
   generatedAt: "07/09/2026 09:15",
   generatedBy: "Ing. Andrea Pérez, Mg.",
   grupo: "Comisión de Eventos Académicos",
@@ -217,7 +217,7 @@ export const INITIAL_ARTIFACT_EVENTOS_CORRECCION: DocumentArtifact = {
       role: "docente",
       fecha: "05/09/2026",
       hora: "23:41",
-      ubicacion: "Página 5 — Firmas de Responsabilidad: Elaborado por",
+      ubicacion: "Firmas de Responsabilidad: Elaborado por",
     },
   ],
 };
@@ -286,7 +286,7 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
   titulo: "SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN",
   formalVersion: "1.0",
   reviewRound: 1,
-  pageCount: 5,
+  get pageCount() { return this.pages?.length ?? 0; },
   generatedAt: "07/09/2026 10:00",
   generatedBy: "Ing. Andrea Pérez, Mg.",
   grupo: "Unidad de Titulación",
@@ -436,7 +436,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
         role: "docente",
         fecha: "05/09/2026",
         hora: "09:00",
-        ubicacion: "Página 5 — Firmas de Responsabilidad: Elaborado por",
+        ubicacion: "Firmas de Responsabilidad: Elaborado por",
       },
       {
         actorId: "usr-carlos-02",
@@ -445,7 +445,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
         role: "revisor",
         fecha: "06/09/2026",
         hora: "10:30",
-        ubicacion: "Página 5 — Firmas de Responsabilidad: Revisado por",
+        ubicacion: "Firmas de Responsabilidad: Revisado por",
       },
       {
         actorId: "usr-patricia-03",
@@ -454,7 +454,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
         role: "validador",
         fecha: "06/09/2026",
         hora: "15:00",
-        ubicacion: "Página 5 — Firmas de Responsabilidad: Validado por",
+        ubicacion: "Firmas de Responsabilidad: Validado por",
       },
     ],
     historialCambios: [

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ActividadEjecucion, MedioVerificacion } from "./types";
-import { DOCENTE_ACTUAL } from "./useActividadesState";
+import { DOCENTE_ACTUAL, plazoEvidenciaVencido } from "./useActividadesState";
+import { descargarEvidencia } from "./evidencePdf";
 import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
 import VisorPdfModal from "./VisorPdfModal";
@@ -8,6 +9,8 @@ import ModalAuditoria from "./ModalAuditoria";
 import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
 
 interface DetalleActividadViewProps {
+  currentUserName?: string;
+
   actividad: ActividadEjecucion;
   onBack: () => void;
   onCargarEvidencia: (actividadId: string, medioId: string, archivo: { nombre: string; tamano: string }) => void;
@@ -16,6 +19,7 @@ interface DetalleActividadViewProps {
 }
 
 export default function DetalleActividadView({
+  currentUserName = DOCENTE_ACTUAL,
   actividad,
   onBack,
   onCargarEvidencia,
@@ -28,8 +32,6 @@ export default function DetalleActividadView({
     if (initialModalDirecto?.tipo === "visor") {
       return (
         actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
-        actividad.medios.find(m => m.estado === "VALIDADA") ||
-        actividad.medios[0] ||
         null
       );
     }
@@ -40,8 +42,6 @@ export default function DetalleActividadView({
     if (initialModalDirecto?.tipo === "observacion") {
       return (
         actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
-        actividad.medios.find(m => m.estado === "OBSERVADA") ||
-        actividad.medios[0] ||
         null
       );
     }
@@ -52,15 +52,11 @@ export default function DetalleActividadView({
     if (initialModalDirecto?.tipo === "observacion") {
       const target =
         actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
-        actividad.medios.find(m => m.estado === "OBSERVADA") ||
-        actividad.medios[0] ||
         null;
       setMedioParaObservacion(target);
     } else if (initialModalDirecto?.tipo === "visor") {
       const target =
         actividad.medios.find(m => m.id === initialModalDirecto.medioId) ||
-        actividad.medios.find(m => m.estado === "VALIDADA") ||
-        actividad.medios[0] ||
         null;
       setMedioParaVer(target);
     }
@@ -74,16 +70,16 @@ export default function DetalleActividadView({
     }, 4000);
   };
 
-  const isVencida = actividad.estado === "VENCIDA";
-  const esResponsable = actividad.responsables.includes(DOCENTE_ACTUAL);
-  const todasCargadas = actividad.medios.length > 0 && actividad.medios.every(m => m.estado === "CARGADA");
-  const cargadasCount = actividad.medios.filter(m => m.estado === "CARGADA").length;
+  const isVencida = plazoEvidenciaVencido(actividad);
+  const esResponsable = actividad.responsables.includes(currentUserName);
+  const todasCargadas = actividad.medios.length > 0 && actividad.medios.every(m => !!m.archivoVigente);
+  const cargadasCount = actividad.medios.filter(m => !!m.archivoVigente).length;
   const totalMedios = actividad.medios.length;
   const porcentajeMedios = totalMedios > 0 ? Math.round((cargadasCount / totalMedios) * 100) : 0;
 
   const handleCargaSubmit = (archivo: { nombre: string; tamano: string }) => {
     if (!medioParaCargar) return;
-    if (!esResponsable) {
+    if (!esResponsable || isVencida) {
       showToast("Operación denegada: usted no es responsable de esta actividad.");
       return;
     }
@@ -94,7 +90,7 @@ export default function DetalleActividadView({
 
   const handleReemplazarSubmit = (archivo: { nombre: string; tamano: string }, motivo?: string) => {
     if (!medioParaReemplazar) return;
-    if (!esResponsable) {
+    if (!esResponsable || isVencida) {
       showToast("Operación denegada: usted no es responsable de esta actividad.");
       return;
     }
@@ -447,7 +443,7 @@ export default function DetalleActividadView({
         {/* List of Medios */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {actividad.medios.map((medio) => {
-            const isCargada = medio.estado === "CARGADA" && medio.archivoVigente;
+            const isCargada = !!medio.archivoVigente;
 
             if (isCargada) {
               {/* Screen 04 — Evidencia Cargada */}
@@ -579,13 +575,7 @@ export default function DetalleActividadView({
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
-                        const element = document.createElement("a");
-                        const file = new Blob([`Descarga institucional de ${medio.archivoVigente?.nombre}`], { type: "text/plain" });
-                        element.href = URL.createObjectURL(file);
-                        element.download = medio.archivoVigente?.nombre || "evidencia.pdf";
-                        document.body.appendChild(element);
-                        element.click();
-                        document.body.removeChild(element);
+                        descargarEvidencia(actividad, medio);
                       }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

@@ -13,6 +13,9 @@ import {
   PLANES_HISTORICOS_DEMO,
   PERIODOS_INICIALES,
 } from "./mockDataReportes";
+import type { DocumentMasterState } from "../documentEngine/types";
+import type { ActividadEjecucion } from "../modulo5/types";
+import type { PeriodoAcademico } from "../modulo7/types";
 
 const FILTROS_INICIALES: FiltrosReportes = {
   periodo: "Julio – Diciembre 2026",
@@ -23,8 +26,17 @@ const FILTROS_INICIALES: FiltrosReportes = {
   busqueda: "",
 };
 
-export function useReportesState(userRole: "docente" | "revisor" | "admin" = "docente") {
-  const [planesActuales] = useState<ReportePlanItem[]>(REPORTES_PLANES_ACTUALES);
+type ReportesOptions = { documents?: DocumentMasterState[]; actividades?: ActividadEjecucion[]; currentUserName?: string; reviewerGroupNames?: string[]; periodosAdmin?: PeriodoAcademico[] };
+
+export function useReportesState(userRole: "docente" | "revisor" | "admin" = "docente", options: ReportesOptions = {}) {
+  const planesActuales = useMemo<ReportePlanItem[]>(() => {
+    if (!options.documents) return REPORTES_PLANES_ACTUALES;
+    return options.documents.filter(doc => doc.documentType === "PLAN_TRABAJO").map(doc => {
+      const actividades = (options.actividades || []).filter(activity => activity.planId === doc.id);
+      const evidence = actividades.flatMap(activity => activity.medios);
+      return {id: doc.id, codigo: doc.codigo, nombre: doc.nombre, grupo: doc.grupo, docente: doc.currentArtifact.elaborador.nombre, periodo: doc.periodo, version: doc.formalVersion, estado: doc.operationalState || doc.documentState, actividadesTotal: actividades.length || doc.currentArtifact.matriz?.length || 0, actividadesCompletas: actividades.filter(activity => activity.estado === "EVIDENCIAS COMPLETAS").length, evidenciasRequeridas: evidence.length, evidenciasCargadas: evidence.filter(item => item.archivoVigente).length, evidenciasValidadas: evidence.filter(item => item.estadoValidacion === "VALIDADA").length, evidenciasObservadas: evidence.filter(item => item.estadoValidacion === "OBSERVADA").length, evidenciasPendientes: evidence.filter(item => !item.archivoVigente || item.estadoValidacion === "PENDIENTE DE VALIDACIÓN").length};
+    });
+  }, [options.documents, options.actividades]);
   const [planesHistoricos] = useState<PlanHistorico[]>(PLANES_HISTORICOS_DEMO);
   const [periodos, setPeriodos] = useState<PeriodoResumenCierre[]>(PERIODOS_INICIALES);
   const [filtros, setFiltros] = useState<FiltrosReportes>(FILTROS_INICIALES);
@@ -60,15 +72,15 @@ export function useReportesState(userRole: "docente" | "revisor" | "admin" = "do
   // Filtrado según el rol
   const planesPorRol = useMemo(() => {
     if (userRole === "docente") {
-      return planesActuales.filter(p => p.docente.includes("Andrea Pérez"));
+      return planesActuales.filter(p => p.docente === (options.currentUserName || "Ing. Andrea Pérez, Mg."));
     }
     if (userRole === "revisor") {
       // Carlos López solo tiene asignada la "Unidad de Titulación"
-      return planesActuales.filter(p => p.grupo === "Unidad de Titulación");
+      return planesActuales.filter(p => (options.reviewerGroupNames || ["Unidad de Titulación"]).includes(p.grupo));
     }
     // Administrador: todos los grupos
     return planesActuales;
-  }, [planesActuales, userRole]);
+  }, [planesActuales, userRole, options.currentUserName, options.reviewerGroupNames]);
 
   // Filtrado reactivo de planes actuales
   const planesFiltrados = useMemo(() => {

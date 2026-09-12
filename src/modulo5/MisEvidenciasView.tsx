@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { ActividadEjecucion, MedioVerificacion } from "./types";
-import { DOCENTE_ACTUAL } from "./useActividadesState";
+import { DOCENTE_ACTUAL, plazoEvidenciaVencido } from "./useActividadesState";
 import VisorPdfModal from "./VisorPdfModal";
 import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
@@ -10,6 +10,8 @@ import { Eye, MessageSquare, RotateCcw, History } from "../components/icons";
 import { TableActionButton } from "../components/TableActionButton";
 
 interface MisEvidenciasViewProps {
+  currentUserName?: string;
+
   actividades: ActividadEjecucion[];
   onCargarEvidencia: (actividadId: string, medioId: string, archivo: { nombre: string; tamano: string }) => void;
   onReemplazarEvidencia: (actividadId: string, medioId: string, archivo: { nombre: string; tamano: string }, motivo?: string) => void;
@@ -17,6 +19,7 @@ interface MisEvidenciasViewProps {
 }
 
 export default function MisEvidenciasView({
+  currentUserName = DOCENTE_ACTUAL,
   actividades,
   onCargarEvidencia,
   onReemplazarEvidencia,
@@ -65,7 +68,7 @@ export default function MisEvidenciasView({
     if (medio.estadoValidacion === "VALIDADA" || medio.estado === "VALIDADA") return "VALIDADA";
     if (medio.estadoValidacion === "OBSERVADA" || medio.estado === "OBSERVADA") return "OBSERVADA";
     if (medio.archivoVigente) return "PENDIENTE DE VALIDACIÓN";
-    if (medio.estado === "PLAZO VENCIDO" || actividad.estado === "VENCIDA") return "PLAZO VENCIDO";
+    if (medio.estado === "PLAZO VENCIDO" || plazoEvidenciaVencido(actividad)) return "PLAZO VENCIDO";
     return "PENDIENTE DE CARGA";
   };
 
@@ -73,7 +76,7 @@ export default function MisEvidenciasView({
   const evidenciasFiltradas = useMemo(() => {
     return evidenciasList.filter(({ actividad, medio }) => {
       // Regla de responsable
-      if (filtroAlcance === "mis" && !actividad.responsables.includes(DOCENTE_ACTUAL)) return false;
+      if (filtroAlcance === "mis" && !actividad.responsables.includes(currentUserName)) return false;
 
       if (filtroPeriodo !== "Todos los períodos" && actividad.periodo !== filtroPeriodo) return false;
       if (filtroPlan !== "Todos los planes" && actividad.planNombre !== filtroPlan) return false;
@@ -104,7 +107,7 @@ export default function MisEvidenciasView({
 
       return true;
     });
-  }, [evidenciasList, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, filtroMedio, busqueda, filtroAlcance]);
+  }, [evidenciasList, currentUserName, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, filtroMedio, busqueda, filtroAlcance]);
 
   const estadoBadgeStyle: Record<string, { bg: string; color: string; dot: string; icon?: string }> = {
     "VALIDADA":                 { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
@@ -282,8 +285,8 @@ export default function MisEvidenciasView({
             ) : (
               evidenciasFiltradas.map(({ actividad, medio }) => {
                 const isCargada = Boolean(medio.archivoVigente);
-                const isVencida = medio.estado === "PLAZO VENCIDO" || actividad.estado === "VENCIDA";
-                const esResponsable = actividad.responsables.includes(DOCENTE_ACTUAL);
+                const isVencida = medio.estado === "PLAZO VENCIDO" || plazoEvidenciaVencido(actividad);
+                const esResponsable = actividad.responsables.includes(currentUserName);
                 const estadoVis = getEstadoVisual(medio, actividad);
                 const sBadge = estadoBadgeStyle[estadoVis] || estadoBadgeStyle["PENDIENTE DE CARGA"];
 
@@ -635,7 +638,7 @@ export default function MisEvidenciasView({
         <ModalVerObservacionDocente
           medio={activeItem.medio}
           actividad={activeItem.actividad}
-          puedeReemplazar={!activeItem.actividad.estado.includes("VENCIDA") && activeItem.actividad.responsables.includes(DOCENTE_ACTUAL)}
+          puedeReemplazar={!plazoEvidenciaVencido(activeItem.actividad) && activeItem.actividad.responsables.includes(currentUserName)}
           onClose={() => {
             setActiveItem(null);
             setModalType(null);

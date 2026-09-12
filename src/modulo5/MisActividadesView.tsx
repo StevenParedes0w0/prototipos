@@ -3,6 +3,8 @@ import { ActividadEjecucion } from "./types";
 import { DOCENTE_ACTUAL, getDiasRestantes } from "./useActividadesState";
 
 interface MisActividadesViewProps {
+  currentUserName?: string;
+
   actividades: ActividadEjecucion[];
   onSelectActividad: (id: string) => void;
   resumen: {
@@ -16,6 +18,7 @@ interface MisActividadesViewProps {
 }
 
 export default function MisActividadesView({
+  currentUserName = DOCENTE_ACTUAL,
   actividades,
   onSelectActividad,
   resumen,
@@ -51,7 +54,7 @@ export default function MisActividadesView({
     return actividades
       .filter((a) => {
         // Regla: Mis Actividades contiene únicamente actividades asignadas al docente autenticado
-        if (filtroAlcance === "mis" && !a.responsables.includes(DOCENTE_ACTUAL)) return false;
+        if (filtroAlcance === "mis" && !a.responsables.includes(currentUserName)) return false;
 
         if (filtroPeriodo !== "Todos los períodos" && a.periodo !== filtroPeriodo) return false;
         if (filtroPlan !== "Todos los planes" && a.planNombre !== filtroPlan) return false;
@@ -68,7 +71,7 @@ export default function MisActividadesView({
         return true;
       })
       .sort((a, b) => getPrioridadEstado(a) - getPrioridadEstado(b));
-  }, [actividades, filtroAlcance, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, busqueda]);
+  }, [actividades, currentUserName, filtroAlcance, filtroPeriodo, filtroPlan, filtroGrupo, filtroEstado, busqueda]);
 
   // Indicator text helper centralizado
   const getIndicadorPlazo = (act: ActividadEjecucion) => {
@@ -333,7 +336,7 @@ export default function MisActividadesView({
               </tr>
             ) : (
               actividadesFiltradas.map((act) => {
-                const cargadas = act.medios.filter((m) => m.estado === "CARGADA").length;
+                const cargadas = act.medios.filter((m) => !!m.archivoVigente).length;
                 const total = act.medios.length;
                 const indicador = getIndicadorPlazo(act);
                 const sBadge = badgeEstadoStyle[act.estado] || badgeEstadoStyle["PENDIENTE"];
@@ -346,7 +349,7 @@ export default function MisActividadesView({
                         <span style={{ fontWeight: 700, color: "#1e2a3a", fontSize: 13.5 }}>
                           {act.nombre}
                         </span>
-                        {!act.responsables.includes(DOCENTE_ACTUAL) && (
+                        {!act.responsables.includes(currentUserName) && (
                           <span style={{
                             fontSize: 10.5,
                             fontWeight: 700,
@@ -369,7 +372,7 @@ export default function MisActividadesView({
                         <span style={{ fontSize: 11, color: "#64748b" }}>
                           {act.tipo}
                         </span>
-                        {!act.responsables.includes(DOCENTE_ACTUAL) && (
+                        {!act.responsables.includes(currentUserName) && (
                           <>
                             <span style={{ fontSize: 11, color: "#94a3b8" }}>•</span>
                             <span style={{ fontSize: 11, color: "#b45309", fontWeight: 500 }}>

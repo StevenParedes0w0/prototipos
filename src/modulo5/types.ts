@@ -14,6 +14,7 @@ export interface EventoAuditoria {
 }
 
 export interface VersionArchivoEvidencia {
+  url?: string;
   version: number;
   nombreArchivo: string;
   tamano: string;
@@ -50,6 +51,11 @@ export interface MedioVerificacion {
 }
 
 export interface ActividadEjecucion {
+  planId?: string;
+  planVersion?: string;
+  docenteElaborador?: string;
+  sourceActivityId?: number;
+  soloLectura?: boolean;
   id: string;
   nombre: string;
   categoria: string; // e.g. "POA", "Plan de Mejoras"
@@ -64,6 +70,13 @@ export interface ActividadEjecucion {
   recursos: string[];
   medios: MedioVerificacion[];
   estado: EstadoActividad;
+}
+
+export interface ArchivoEvidenciaInput {
+  nombre: string;
+  tamano: string;
+  url?: string;
+  sizeBytes?: number;
 }
 
 export interface FiltrosActividades {

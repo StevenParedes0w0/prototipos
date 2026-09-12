@@ -939,7 +939,7 @@ export default function DocumentPdfPageViewer({
                                   {act.hasta ? act.hasta.split("-").reverse().join("/") : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155" }}>
-                                  {act.responsables?.join(", ") || "Docente Responsable"}
+                                  {act.responsablesEtiqueta || act.responsables?.join(", ") || "Docente Responsable"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155", fontSize: 8 }}>
                                   {act.recursos && act.recursos.length > 0 ? (
@@ -966,7 +966,7 @@ export default function DocumentPdfPageViewer({
                           Fuente: {artifact.fuente || "—"}<br />Elaborado por: {artifact.grupo}
                         </div>
 
-                        {artifact.grupo.includes("Datos Personales") && (
+                        {artifact.collectsPersonalData && (
                           <div style={{ fontSize: 7.5, color: "#64748b", fontStyle: "italic", marginTop: 10, lineHeight: 1.4 }}>
                             Nota: Conforme a la Ley Orgánica de Protección de Datos Personales, la información y registros generados en el presente plan serán tratados con estricta confidencialidad y para los fines institucionales autorizados.
                           </div>

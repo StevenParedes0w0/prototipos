@@ -90,6 +90,7 @@ export interface MedioVerificacionCatalogo {
 }
 
 export interface EtapaFlujo {
+  destinatarioNombre?: string;
   actionMode?: "SIGN_AND_APPROVE" | "APPROVE_ONLY";
   id: string;
   numero: number;

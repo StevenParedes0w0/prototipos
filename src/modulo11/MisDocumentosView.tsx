@@ -1,3 +1,4 @@
+import type { GrupoInstitucional, PeriodoAcademico } from "../modulo7/types";
 import React, { useState } from "react";
 import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import { DocumentMasterState, DocumentType } from "../documentEngine/types";
@@ -7,7 +8,10 @@ import { TableActionButton } from "../components/TableActionButton";
 
 interface MisDocumentosViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
-  onNewPlan: () => void;
+  onNewPlan: (grupo:string,periodo:string) => void;
+  grupos: GrupoInstitucional[];
+  periodos: PeriodoAcademico[];
+  onContinuarInforme: (docId:string) => void;
   onNewInforme: () => void;
   onContinuarPlan: (docId: string) => void;
   onCorregirPlan: (docId: string) => void;
@@ -17,12 +21,23 @@ interface MisDocumentosViewProps {
 export default function MisDocumentosView({
   docEngine,
   onNewPlan,
+  grupos,periodos,onContinuarInforme,
   onNewInforme,
   onContinuarPlan,
   onCorregirPlan,
   onNavigateActividades,
 }: MisDocumentosViewProps) {
-  const { documents, seleccionarDocumento } = docEngine;
+  const { seleccionarDocumento } = docEngine;
+  const documents = docEngine.documents.filter(d => d.currentArtifact.elaborador.id === docEngine.currentUser.id);
+  const [showPlanModal,setShowPlanModal]=useState(false);
+  const [newGroup,setNewGroup]=useState("");
+  const [newPeriod,setNewPeriod]=useState(periodos.find(p => p.estado === "ACTIVO")?.nombre || "");
+  const duplicate=documents.find(d => d.documentType === "PLAN_TRABAJO" && d.grupo === newGroup && d.periodo === newPeriod);
+  const continueDocument=(doc:DocumentMasterState) => {
+    if(doc.documentType === "INFORME") {if(doc.documentState === "DEVUELTO")docEngine.iniciarCorreccion(doc.id);onContinuarInforme(doc.id);}
+    else if(["DEVUELTO","EN CORRECCIÓN"].includes(doc.documentState))onCorregirPlan(doc.id);
+    else onContinuarPlan(doc.id);
+  };
 
   // Modals state
   const [showTipoModal, setShowTipoModal] = useState(false);
@@ -30,7 +45,7 @@ export default function MisDocumentosView({
   const [showObsModalDoc, setShowObsModalDoc] = useState<DocumentMasterState | null>(null);
 
   // Filters state
-  const [filtroPeriodo, setFiltroPeriodo] = useState("Julio – Diciembre 2026");
+  const [filtroPeriodo, setFiltroPeriodo] = useState("Todos los períodos");
   const [filtroTipo, setFiltroTipo] = useState<string>("Todos los tipos");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [filtroGrupo, setFiltroGrupo] = useState("Todos");
@@ -111,7 +126,7 @@ export default function MisDocumentosView({
         </div>
         <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "16px 20px" }}>
           <div style={{ fontSize: 12, color: "#64748b" }}>Informes</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#7e22ce", fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af", fontFamily: "'DM Sans', sans-serif" }}>
             {informesCount}
           </div>
         </div>
@@ -146,8 +161,7 @@ export default function MisDocumentosView({
               value={filtroPeriodo}
               onChange={(e) => setFiltroPeriodo(e.target.value)}
             >
-              <option>Julio – Diciembre 2026</option>
-              <option>Enero – Junio 2026</option>
+              {Array.from(new Set(documents.map(d => d.periodo))).map(p => <option key={p}>{p}</option>)}
               <option>Todos los períodos</option>
             </select>
           </div>
@@ -175,9 +189,7 @@ export default function MisDocumentosView({
               onChange={(e) => setFiltroGrupo(e.target.value)}
             >
               <option>Todos</option>
-              <option>Unidad de Titulación</option>
-              <option>Comisión de Eventos Académicos</option>
-              <option>Club Académico de Software</option>
+              {Array.from(new Set(documents.map(d => d.grupo))).map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
 
@@ -191,7 +203,7 @@ export default function MisDocumentosView({
             >
               <option>Todos</option>
               <option>BORRADOR</option>
-              <option>EN REVISIÓN</option>
+              <option>EN REVISIÓN</option><option>LISTO PARA FIRMA</option><option>EN VALIDACIÓN FINAL</option>
               <option>DEVUELTO</option>
               <option>EN CORRECCIÓN</option>
               <option>VALIDADO</option>
@@ -212,7 +224,7 @@ export default function MisDocumentosView({
       </div>
 
       {/* Main Documents Table */}
-      <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+      <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "auto" }}>
         <table className="data-table">
           <thead>
             <tr>
@@ -255,8 +267,8 @@ export default function MisDocumentosView({
                           fontWeight: 700,
                           padding: "2px 8px",
                           borderRadius: 4,
-                          background: isPlan ? "#eff6ff" : "#f3e8ff",
-                          color: isPlan ? "#1e40af" : "#7e22ce",
+                          background: isPlan ? "#eff6ff" : "#eff6ff",
+                          color: isPlan ? "#1e40af" : "#1e40af",
                         }}
                       >
                         {isPlan ? "Plan de Trabajo" : "Informe"}
@@ -326,20 +338,20 @@ export default function MisDocumentosView({
                               variant="constructive"
                               onClick={() => {
                                 seleccionarDocumento(doc.id);
-                                onCorregirPlan(doc.id);
+                                continueDocument(doc);
                               }}
                             />
                           </>
                         )}
 
-                        {doc.documentState === "BORRADOR" && (
+                        {["BORRADOR","LISTO PARA FIRMA"].includes(doc.documentState) && (
                           <TableActionButton
                             title="Continuar elaboración"
                             icon={FilePenLine}
                             variant="constructive"
                             onClick={() => {
                               seleccionarDocumento(doc.id);
-                              if (isPlan) onContinuarPlan(doc.id);
+                              continueDocument(doc);
                             }}
                           />
                         )}
@@ -358,7 +370,7 @@ export default function MisDocumentosView({
                               variant="constructive"
                               onClick={() => {
                                 seleccionarDocumento(doc.id);
-                                onCorregirPlan(doc.id);
+                                continueDocument(doc);
                               }}
                             />
                           </>
@@ -373,6 +385,13 @@ export default function MisDocumentosView({
         </table>
       </div>
 
+      {showPlanModal && <div role="dialog" aria-modal="true" aria-label="Seleccionar grupo y período" style={{position:"fixed",inset:0,background:"#0f233ca6",zIndex:360,display:"grid",placeItems:"center",padding:20}}><div style={{background:"white",padding:24,borderRadius:12,width:520,maxWidth:"100%"}}>
+        <h2>Nuevo Plan de Trabajo</h2><label className="form-label">Grupo institucional<select className="form-select" value={newGroup} onChange={e=>setNewGroup(e.target.value)}><option value="">Seleccione un grupo</option>{grupos.map(g=><option key={g.id}>{g.nombre}</option>)}</select></label>
+        <label className="form-label">Período<select className="form-select" value={newPeriod} onChange={e=>setNewPeriod(e.target.value)}><option value="">Seleccione un período</option>{periodos.filter(p=>p.estado === "ACTIVO").map(p=><option key={p.id}>{p.nombre}</option>)}</select></label>
+        {!grupos.length && <p>No tiene grupos activos asignados. El administrador puede gestionar su pertenencia.</p>}
+        {duplicate && <p role="alert">Ya existe un Plan para este docente, grupo y período. Consulte o continúe el documento existente.</p>}
+        <div style={{display:"flex",gap:8,marginTop:16}}><button className="btn btn-ghost" onClick={()=>setShowPlanModal(false)}>Cancelar</button><button className="btn btn-primary" disabled={!newGroup || !newPeriod || !!duplicate} onClick={()=>{setShowPlanModal(false);onNewPlan(newGroup,newPeriod);}}>Crear borrador</button></div>
+      </div></div>}
       {/* MODAL 1: SELECCIONAR TIPO DE DOCUMENTO */}
       {showTipoModal && (
         <div
@@ -394,7 +413,7 @@ export default function MisDocumentosView({
               width: 620,
               maxWidth: "100%",
               boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
-              overflow: "hidden",
+              overflow: "auto",
             }}
           >
             <div style={{ padding: "20px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -406,7 +425,7 @@ export default function MisDocumentosView({
                   Seleccione el tipo de documento institucional que desea generar
                 </div>
               </div>
-              <button onClick={() => setShowTipoModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 20 }}>
+              <button title="Cerrar" aria-label="Cerrar" onClick={() => setShowTipoModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 20 }}>
                 ✕
               </button>
             </div>
@@ -435,7 +454,7 @@ export default function MisDocumentosView({
                 }}
                 onClick={() => {
                   setShowTipoModal(false);
-                  onNewPlan();
+                  setNewGroup(grupos[0]?.nombre || "");setShowPlanModal(true);
                 }}
               >
                 <div>
@@ -545,7 +564,7 @@ export default function MisDocumentosView({
               maxWidth: "100%",
               maxHeight: "85vh",
               boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-              overflow: "hidden",
+              overflow: "auto",
               display: "flex",
               flexDirection: "column",
             }}
@@ -598,7 +617,7 @@ export default function MisDocumentosView({
               )}
 
               <div style={{ fontSize: 12, color: "#64748b", background: "#f8fafc", padding: "10px 12px", borderRadius: 6 }}>
-                Haga clic en <strong>CONTINUAR CORRECCIÓN</strong> para ajustar el documento y resolver las observaciones en la nueva versión formal.
+                Haga clic en <strong>CONTINUAR CORRECCIÓN</strong> para ajustar el documento y resolver las observaciones en una nueva ronda de revisión, conservando la versión formal.
               </div>
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -612,7 +631,7 @@ export default function MisDocumentosView({
                   const docId = showObsModalDoc.id;
                   setShowObsModalDoc(null);
                   seleccionarDocumento(docId);
-                  onCorregirPlan(docId);
+                  const doc=documents.find(d=>d.id===docId);if(doc)continueDocument(doc);
                 }}
               >
                 CONTINUAR CORRECCIÓN

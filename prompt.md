@@ -1,1968 +1,497 @@
-# PROMPT MAESTRO — REFACTORIZACIÓN POST-REUNIÓN INSTITUCIONAL
+Lee COMPLETAMENTE antes de modificar cualquier archivo:
 
-## Sistema de Gestión Documental Académica — FISEI / UTA
+1. `AGENTS.md`
+2. `requirements.md`
+3. `implementation-status.md`
+4. Todo el contenido de la carpeta `Documentos_guia/`, incluyendo documentos institucionales, formatos, referencias visuales y cualquier archivo relacionado.
 
-Estás trabajando sobre un prototipo avanzado en **React + TypeScript + Vite** de un sistema institucional para la FISEI — Universidad Técnica de Ambato.
+NO empieces a modificar código hasta haber terminado de revisar esas fuentes y haber inspeccionado suficientemente el repositorio actual.
 
-El sistema ya posee múltiples módulos funcionales y un motor documental compartido. **NO se debe reconstruir el proyecto desde cero ni reemplazar componentes aprobados innecesariamente.**
+# OBJETIVO
 
-Tu trabajo consiste en realizar una **refactorización transversal posterior a una reunión de validación con usuarios institucionales**, incorporando las observaciones obtenidas sin destruir las funcionalidades existentes.
+Quiero que realices una auditoría integral del mockup interactivo actual y posteriormente implementes todas las correcciones necesarias para que los requisitos CONFIRMADOS del proyecto estén correctamente representados y sean demostrables de extremo a extremo.
 
----
-
-# 1. OBJETIVO GENERAL
-
-Ajustar el sistema actual para que:
-
-1. El proceso de elaboración de Planes de Trabajo siga el mismo orden lógico que el documento institucional.
-2. El flujo de creación sea más natural para el docente.
-3. Las actividades puedan gestionarse con mayor flexibilidad.
-4. Responsables, recursos y medios de verificación respondan a escenarios reales.
-5. La fecha de elaboración tenga comportamiento documental correcto.
-6. El Plan T1 mantenga fidelidad con el formato institucional.
-7. El Informe T2 continúe derivando correctamente información del Plan.
-8. La revisión permita vincular visualmente una observación con una parte concreta del documento.
-9. La firma del elaborador se exprese como **finalización de su elaboración**, no como una decisión manual de enrutamiento.
-10. Los flujos de aprobación puedan variar según grupo institucional.
-11. Las acciones en tablas sean más compactas mediante iconos comprensibles.
-12. No se inventen reglas relacionadas con procesos institucionales todavía no confirmados, especialmente QIPOC.
-
----
-
-# 2. REGLA FUNDAMENTAL: NO REGRESIONES
-
-Antes de modificar código, revisar la arquitectura existente.
-
-NO reemplazar componentes funcionales solo por preferencia personal.
-
-NO modificar la identidad visual institucional general.
-
-NO volver a introducir funcionalidades o errores que ya fueron corregidos.
-
-Deben conservarse obligatoriamente las siguientes reglas.
-
-### 2.1 Motor multidocumento
-
-Plan e Informe son entidades documentales completamente independientes.
-
-Crear, editar, firmar o enviar un Informe NO puede modificar el Plan del cual deriva.
-
-Todas las operaciones documentales deben continuar trabajando contra un:
-
-```ts
-targetDocId
-```
-
-explícito o mecanismo equivalente seguro.
-
-Debe mantenerse la arquitectura basada en mutaciones aisladas de documentos.
-
----
-
-### 2.2 Plan e Informe independientes
-
-Escenario de referencia:
-
-```text
-Plan de Trabajo — Unidad de Titulación
-VALIDADO
-EN EJECUCIÓN
-Firmas: 3 de 3
-```
-
-Crear posteriormente un Informe asociado a ese Plan NO debe cambiar absolutamente ninguno de esos valores.
-
-Ejemplo esperado:
-
-```text
-PLAN
-VALIDADO
-EN EJECUCIÓN
-3/3 firmas
-```
-
-y simultáneamente:
-
-```text
-INFORME
-BORRADOR
-o
-FIRMADO POR ELABORADOR
-o
-EN REVISIÓN
-```
-
-según el punto del flujo.
-
----
-
-### 2.3 Versión formal ≠ ronda de revisión
-
-Conservar estrictamente esta diferencia:
-
-```ts
-formalVersion = "1.0"
-reviewRound = 1
-```
-
-Una devolución por observaciones NO genera:
-
-```text
-Versión 2.0
-```
-
-La corrección genera una nueva ronda de revisión.
-
-Ejemplo:
-
-```text
-Versión formal 1.0
-Ronda 1
-→ DEVUELTO
-→ EN CORRECCIÓN
-→ Ronda 2
-```
-
-Una versión formal 2.0 únicamente puede surgir por una decisión institucional externa/formal.
-
----
-
-### 2.4 Artefactos anteriores
-
-Cuando una nueva ronda comienza:
-
-* conservar artefacto anterior;
-* conservar firmas anteriores como históricas;
-* convertir observaciones resueltas en históricas;
-* crear nuevo artefacto;
-* solicitar nuevamente las firmas correspondientes.
-
-Nunca sobrescribir silenciosamente el documento anterior.
-
----
-
-### 2.5 T1 y T2
-
-Mantener los formatos:
-
-```text
-UTA-SGC-A-2-1-P7-T1
-UTA-SGC-A-2-1-P7-T2
-```
-
-Mantener la fidelidad visual ya alcanzada.
-
-No volver a introducir:
-
-* QR inventados;
-* hashes ficticios;
-* seriales ficticios;
-* códigos criptográficos ficticios;
-* sellos inexistentes;
-* cargos institucionales inventados;
-* autoridades fijas no confirmadas;
-* metadatos técnicos visibles dentro del A4.
-
----
-
-# 3. CORRECCIÓN PRINCIPAL — ORDEN DEL WIZARD DEL PLAN T1
-
-La secuencia actual debe revisarse.
-
-En la validación institucional se indicó que la introducción de la información debe guardar relación con el orden del documento.
-
-La secuencia conceptual correcta debe ser:
-
-```text
-1. Información General
-2. Contenido
-3. Actividades
-4. Matriz de Actividades
-5. Anexos
-6. Previsualización
-7. Firma y Finalización
-```
-
-Si actualmente “Actividades” y “Matriz de Actividades” son pantallas separadas, pueden seguir siéndolo.
-
-Lo importante es que:
-
-```text
-Información General
-↓
-Justificación / Objetivo
-↓
-Actividades
-↓
-Matriz
-↓
-Anexos
-↓
-Previsualización
-↓
-Firma
-```
-
-No debe volver a suceder:
-
-```text
-Información General
-→ Actividades
-→ Matriz
-→ Contenido
-```
-
-porque ese fue uno de los problemas detectados.
-
----
-
-# 4. PASO 1 — INFORMACIÓN GENERAL
-
-Mantener los datos institucionales ya existentes.
-
-Revisar especialmente:
-
-* Unidad académica;
-* Facultad;
-* Carrera;
-* Grupo institucional;
-* Período académico;
-* Fecha de elaboración.
-
-Evitar campos redundantes.
-
-La Carrera debe depender conceptualmente de la Facultad correspondiente.
-
-No convertir esta pantalla en un formulario gigante.
-
-Usar información precargada del usuario cuando esté disponible.
-
----
-
-# 5. FECHA DE ELABORACIÓN — CORRECCIÓN IMPORTANTE
-
-Actualmente debe existir una diferencia conceptual entre:
-
-```text
-fecha actual del sistema
-```
-
-y:
-
-```text
-fecha de elaboración del documento
-```
-
-La fecha de elaboración NO puede cambiar cuando posteriormente:
-
-* un revisor abre el documento;
-* otro usuario firma;
-* el documento cambia de etapa;
-* se consulta el documento días después.
-
-La fecha debe consolidarse cuando el elaborador finaliza formalmente la elaboración.
-
-Modelo conceptual sugerido:
-
-```ts
-draftCreatedAt
-elaborationFinalizedAt
-```
-
-o equivalente.
-
-El documento A4 debe mostrar:
-
-```text
-Fecha de elaboración = fecha consolidada al finalizar la elaboración
-```
-
-Una vez establecida:
-
-```text
-NO modificar automáticamente.
-```
-
-No usar la fecha actual cada vez que el componente renderiza.
-
----
-
-# 6. PASO 2 — CONTENIDO DEL PLAN
-
-Esta etapa debe contener como mínimo:
-
-```text
-1. JUSTIFICACIÓN
-2. OBJETIVO
-```
-
-Mantener el asistente IA ya existente.
-
-La IA:
-
-* propone;
-* compara texto original vs sugerido;
-* NO sobrescribe automáticamente;
-* requiere que el docente acepte explícitamente.
-
----
-
-# 7. PRECARGA DE JUSTIFICACIÓN
-
-Incorporar capacidad de cargar un **texto base editable** para la Justificación.
-
-Ejemplo conceptual:
-
-```text
-Texto institucional/preconfigurado
-↓
-docente puede:
-- editarlo;
-- ampliarlo;
-- reemplazarlo;
-- eliminarlo.
-```
-
-NO debe ser un texto obligatorio inmutable.
-
-La fuente del texto puede ser una plantilla/configuración DEMO por grupo.
-
-No inventar contenido normativo nuevo.
-
----
-
-# 8. PASO 3 — ACTIVIDADES
-
-Debe existir realmente la posibilidad de:
-
-```text
-+ AGREGAR ACTIVIDAD
-```
-
-No limitar el prototipo a actividades precargadas.
-
-Una actividad podrá provenir de:
-
-* POA;
-* Plan de Mejoras;
-* Acción de Mejora;
-* otra categoría configurada;
-* actividad libre.
-
-Debe existir una opción:
-
-```text
-Actividad
-```
-
-o:
-
-```text
-Otra actividad
-```
-
-para cuando no corresponda a POA, Plan de Mejora o Acción de Mejora.
-
-No obligar al docente a inventar una categoría institucional.
-
----
-
-# 9. CREACIÓN DE ACTIVIDAD LIBRE
-
-Permitir ingresar:
-
-```text
-Nombre de actividad *
-Categoría (opcional)
-```
-
-Si se utiliza:
-
-```text
-Otra
-```
-
-permitir:
-
-```text
-Especificar categoría
-```
-
-pero la categoría NO debe convertirse en requisito para crear una actividad ordinaria.
-
----
-
-# 10. PASO 4 — MATRIZ DE ACTIVIDADES
-
-La matriz debe mantener la estructura institucional T1.
-
-Cada actividad debe permitir configurar:
-
-```text
-Actividad
-Cronograma:
-  Desde
-  Hasta
-Responsable(s)
-Recursos
-Medios de verificación
-```
-
-Mantener fecha completa:
-
-```text
-DD/MM/YYYY
-```
-
-Validar:
-
-```text
-Desde <= Hasta
-```
-
-y mantener las restricciones ya existentes relacionadas con período y feriados.
-
-No eliminar validaciones funcionales previamente aprobadas.
-
----
-
-# 11. RESPONSABLES — REFACTORIZACIÓN
-
-Este punto debe mejorar significativamente.
-
-Actualmente debe permitirse:
-
-```text
-1 responsable
-N responsables
-Todos los integrantes del grupo
-```
-
-Regla:
-
-```text
-mínimo = 1
-```
-
-La interfaz debería utilizar selección múltiple con checkboxes.
-
-Ejemplo:
-
-```text
-☑ Andrea Pérez
-☑ Carlos López
-☐ Juan ...
-☐ María ...
-
-□ Seleccionar todos
-```
-
-Cuando se seleccionen todos los integrantes del grupo, evitar imprimir una lista innecesariamente enorme.
-
-Mostrar una denominación colectiva según el tipo de grupo.
-
-Ejemplos conceptuales:
-
-Para Comisión:
-
-```text
-Integrantes de la Comisión
-```
-
-Para Unidad:
-
-```text
-Integrantes de la Unidad
-```
-
-Para Club:
-
-```text
-Integrantes del Club
-```
-
-NO hardcodear:
-
-```text
-Responsables de la comisión
-```
-
-para todos los tipos de grupo.
-
-La estructura debe derivarse del objeto `Grupo institucional`.
-
----
-
-# 12. RESPONSABLES Y BASE DE DATOS
-
-El selector debe consumir conceptualmente miembros asociados al grupo.
-
-Para el prototipo puede usar mock data, pero la arquitectura debe representar:
-
-```text
-Usuario
-↕
-Membresía de Grupo
-↕
-Grupo Institucional
-```
-
-No usar listas totalmente independientes sin relación con el grupo.
-
-No implementar backend real si no es necesario para el prototipo.
-
----
-
-# 13. RECURSOS — CATÁLOGO + OTRO
-
-Mantener el catálogo administrable existente.
-
-El docente debe poder:
-
-```text
-☑ Material digital
-☑ Sistema institucional
-☐ Documentación física
-☐ Laboratorio
-...
-```
-
-Agregar:
-
-```text
-☐ Otro
-```
-
-Al seleccionar Otro:
-
-```text
-Especifique el recurso
-[________________________]
-```
-
-Permitir múltiples recursos.
-
----
-
-# 14. MEDIOS DE VERIFICACIÓN — CATÁLOGO + OTRO
-
-Misma lógica.
-
-Ejemplos disponibles DEMO pueden incluir:
-
-```text
-Informe
-Acta
-Registro
-Resolución
-Registro fotográfico
-Certificado
-Ficha
-```
-
-pero NO convertir esta lista en una lista normativa cerrada.
-
-Agregar:
-
-```text
-Otro
-```
-
-con:
-
-```text
-Especifique el medio de verificación
-```
-
-Mantener la regla existente:
-
-```text
-Cada medio seleccionado requiere exactamente 1 PDF durante la ejecución.
-```
-
-No confundir:
-
-```text
-medio de verificación
-```
-
-con:
-
-```text
-archivo/evidencia cargado posteriormente.
-```
-
----
-
-# 15. ADMINISTRACIÓN DE CATÁLOGOS
-
-Administración debe seguir permitiendo configurar:
-
-```text
-Actividades
-Recursos
-Medios de verificación
-```
-
-No duplicar catálogos.
-
-Las opciones personalizadas creadas mediante “Otro” no necesariamente deben convertirse automáticamente en elementos globales del catálogo.
-
-Evitar esa decisión automática.
-
----
-
-# 16. FUENTE Y ELABORADO POR — T1
-
-Actualmente revisar el pie de:
-
-```text
-Tabla 1.- Matriz de actividades
-```
-
-Deben considerarse dos conceptos diferentes.
-
-## Fuente
-
-Debe ser editable.
-
-Ejemplo:
-
-```text
-Fuente:
-[________________________]
-```
-
-Puede corresponder a:
-
-* una comisión;
-* un documento;
-* una resolución;
-* otra fuente institucional.
-
-No asumir automáticamente siempre la misma.
-
----
-
-## Elaborado por
-
-Debe generarse automáticamente.
-
-Debe derivarse del grupo institucional responsable de la planificación.
-
-Ejemplo conceptual:
-
-```text
-Elaborado por: Unidad de Titulación
-```
-
-o:
-
-```text
-Elaborado por: Comisión de Eventos Académicos
-```
-
-NO pedir al docente escribir ese dato manualmente.
-
-NO confundirlo con el nombre individual del usuario si el formato institucional hace referencia al órgano responsable.
-
-Mantener la apariencia exacta exigida por T1.
-
----
-
-# 17. HISTORIAL DE CAMBIOS
-
-Primera entrada creada automáticamente.
-
-Para Plan:
-
-```text
-Versión: v1.0
-Descripción del cambio: Elaboración del Plan de Trabajo
-Fecha de actualización: <fecha consolidada>
-```
-
-Para Informe:
-
-```text
-Versión: v1.0
-Descripción del cambio: Elaboración inicial del Informe
-Fecha de actualización: <fecha correspondiente>
-```
-
-No utilizar:
-
-```text
-Emisión inicial
-```
-
-si contradice el texto acordado para el escenario.
-
----
-
-# 18. ÚLTIMO PASO DEL DOCENTE — CAMBIAR CONCEPTO
-
-Actualmente pueden existir textos como:
-
-```text
-Firma y Envío
-ENVIAR A REVISIÓN
-FIRMAR Y CONTINUAR
-```
-
-Para el elaborador, cambiar el concepto principal a:
-
-```text
-FIRMA Y FINALIZACIÓN
-```
-
-CTA principal:
-
-```text
-FIRMAR Y FINALIZAR
-```
-
-Texto auxiliar:
-
-```text
-Al finalizar, el documento continuará automáticamente al siguiente nivel configurado del flujo institucional.
-```
-
-El docente NO debe tener que decidir manualmente:
-
-```text
-“¿a quién envío?”
-```
-
-Eso lo determina el flujo.
-
----
-
-# 19. TRANSICIÓN INTERNA DE ESTADOS
-
-Internamente puede seguir existiendo algo equivalente a:
-
-```text
-LISTO PARA FIRMA
-↓
-FIRMADO POR ELABORADOR
-↓
-EN REVISIÓN
-```
-
-Pero desde UX debe percibirse como una operación coherente.
-
-Ejemplo:
-
-```text
-[FIRMAR Y FINALIZAR]
-```
-
-Firma correcta:
-
-```text
-✓ Documento firmado correctamente.
-La elaboración ha finalizado.
-El documento continúa al siguiente nivel de revisión.
-```
-
-Después:
-
-```text
-EN REVISIÓN
-```
-
-No dejar al usuario atrapado en una pantalla esperando presionar otro botón redundante.
-
----
-
-# 20. FIRMA ELECTRÓNICA
-
-Mantener el modal existente.
-
-Debe incluir:
-
-```text
-Documento
-Grupo
-Firmante
-Cargo
-
-Certificado .p12 / .pfx
-Contraseña del certificado
-Ubicación dentro del documento
-Confirmación de revisión
-```
-
-Mantener:
-
-```text
-El certificado y su contraseña se utilizan únicamente durante el proceso de firma y no se almacenan permanentemente.
-```
-
-Mantener únicamente en interfaz:
-
-```text
-Mecanismo de firma sujeto a integración institucional.
-```
-
-NO incorporar esta advertencia dentro del documento A4.
-
----
-
-# 21. UBICACIÓN DE FIRMA
-
-Mantener `signatureSlots` reales.
-
-NO volver a usar:
-
-```ts
-pageCount - 1
-```
-
-como heurística principal.
-
-NO hardcodear:
-
-```text
-Página 4
-Página 5
-```
-
-Debe derivarse de la estructura real:
-
-```ts
-artifact.pages
-artifact.signatureSlots
-```
-
-Cada slot debe identificar:
-
-```ts
-role
-action
-label
-pageIndex
-pageNumber
-```
-
----
-
-# 22. INFORME T2 DERIVADO DEL PLAN
-
-Mantener la funcionalidad existente.
-
-Al seleccionar:
-
-```text
-Derivado de un Plan de Trabajo
-```
-
-el sistema debe cargar automáticamente las actividades correspondientes al Plan seleccionado.
-
-NO duplicarlas manualmente.
-
-El docente únicamente debe completar información de ejecución.
-
-Ejemplo:
-
-```text
-Actividad
-Medio de verificación
-% de ejecución
-Observaciones
-```
-
----
-
-# 23. QUITAR NOTAS INNECESARIAS DEL T2
-
-En el documento final NO mostrar instrucciones destinadas al usuario como:
+Este proyecto es exclusivamente un MOCKUP INTERACTIVO DE ALTA FIDELIDAD.
 
-```text
-Nota 1...
-Nota 2...
-Si deriva de...
-```
+NO debes convertirlo en una implementación productiva.
 
-cuando dichas instrucciones solo explican cómo llenar el formato.
+No implementar:
+- backend real;
+- servicios externos reales;
+- infraestructura productiva;
+- criptografía real;
+- certificados reales;
+- firma electrónica productiva;
+- almacenamiento remoto;
+- APIs externas reales;
+- autenticación institucional real;
+- despliegues productivos;
 
-Si el Informe está derivado del Plan:
+salvo que alguna pieza ya exista y sea estrictamente necesaria para mantener funcionando el mockup.
 
-```text
-mostrar directamente la tabla.
-```
+Cuando una funcionalidad necesite simular comportamiento real, utiliza datos y lógica DEMO coherentes.
 
-No explicar dentro del documento por qué aparece.
-
----
-
-# 24. INFORME INDEPENDIENTE
-
-Mantener posibilidad funcional si ya existe.
-
-Pero no mezclarlo con un informe derivado.
-
-Cuando sea independiente:
-
-```text
-NO importar matriz del Plan.
-```
-
-Utilizar la estructura textual prevista para el formato.
-
-No inventar procesos que no estén definidos.
-
----
-
-# 25. PAGINACIÓN DINÁMICA
-
-NO volver a hardcodear:
-
-```ts
-pageCount: 5
-```
-
-El total debe derivarse de:
-
-```ts
-artifact.pages.length
-```
-
-o fuente equivalente tipada.
-
-Mantener:
-
-```ts
-DocumentPage[]
-```
-
-en el artefacto.
-
-El visor debe funcionar con:
-
-```text
-3
-4
-5
-6
-8
-N páginas
-```
-
----
-
-# 26. REVISIÓN DOCUMENTAL — NUEVA MEJORA SOLICITADA
-
-Incorporar una herramienta simple para relacionar visualmente una observación con una zona del documento.
-
-NO crear un editor PDF complejo.
-
-NO agregar decenas de herramientas.
-
-Agregar solamente:
-
-```text
-RESALTAR Y OBSERVAR
-```
-
-o equivalente.
-
----
-
-# 27. FUNCIONAMIENTO DEL RESALTADO
-
-Flujo deseado:
-
-```text
-1. Revisor abre documento.
-2. Activa modo “Resaltar”.
-3. Selecciona visualmente una zona de la página.
-4. Se crea un resaltado semitransparente.
-5. Sistema abre campo:
-   “Agregar observación”
-6. Revisor escribe observación.
-7. Guardar.
-```
-
-La observación queda vinculada a:
-
-```ts
-pageNumber
-anchor
-observationId
-```
-
----
-
-# 28. REPRESENTACIÓN DEL ANCLA
-
-Si el visor permite overlay HTML sobre el A4, usar coordenadas normalizadas.
-
-Modelo conceptual:
-
-```ts
-interface DocumentObservationAnchor {
-  pageNumber: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-```
-
-Los valores deberían ser relativos:
-
-```text
-0..1
-```
-
-y no píxeles absolutos.
-
-Así el resaltado continúa alineado aunque cambie el zoom.
-
----
-
-# 29. RELACIÓN OBSERVACIÓN ↔ RESALTADO
-
-Mostrar un número pequeño:
-
-```text
-1
-2
-3
-```
-
-junto al highlight.
-
-En panel lateral:
-
-```text
-Observación 1
-Página 3
-
-“Corregir redacción del objetivo...”
-
-[IR AL RESALTADO]
-```
-
-Al pulsar:
-
-```text
-IR AL RESALTADO
-```
-
-navegar a la página y enfocar visualmente la anotación.
-
----
-
-# 30. SIMPLICIDAD DE LA HERRAMIENTA
-
-Solo implementar inicialmente:
-
-```text
-Resaltado rectangular/selección
-+
-Observación
-```
-
-NO implementar:
-
-* dibujo libre;
-* lápiz;
-* tachado;
-* flechas;
-* múltiples colores manuales;
-* editor tipo Acrobat;
-* edición del contenido PDF;
-* comentarios flotantes complejos.
-
-La reunión solicitó algo fácil de comprender.
-
----
-
-# 31. INMUTABILIDAD DEL ARTEFACTO
-
-MUY IMPORTANTE.
-
-El resaltado NO modifica el artefacto firmado.
-
-Debe vivir como metadata del proceso de revisión:
-
-```ts
-DocumentObservation
-```
-
-El artefacto A4 permanece inmutable.
-
-Conceptualmente:
-
-```text
-Artefacto firmado
-+
-capa de revisión
-```
-
-No:
-
-```text
-artefacto firmado modificado.
-```
-
----
-
-# 32. DEVOLUCIÓN CON OBSERVACIONES
-
-Mantener:
-
-```text
-EN REVISIÓN
-→ DEVUELTO
-→ EN CORRECCIÓN
-```
-
-Cuando se devuelve:
-
-* observaciones permanecen activas;
-* resaltados permanecen visibles para el elaborador;
-* elaborador puede acceder directamente a la observación;
-* no modificar formalVersion.
-
----
-
-# 33. NUEVA RONDA
-
-Cuando el docente termine de corregir:
-
-```text
-PREPARAR NUEVA RONDA
-```
-
-Internamente:
-
-* artefacto anterior → histórico;
-* firmas anteriores → históricas;
-* observaciones resueltas → históricas;
-* nuevo artefacto;
-* `reviewRound + 1`;
-* firma nuevamente requerida.
-
-Mantener:
-
-```text
-formalVersion = 1.0
-```
-
-salvo decisión institucional.
-
----
-
-# 34. FLUJOS CONFIGURABLES POR GRUPO
-
-Mantener y reforzar esta capacidad.
-
-Cada:
-
-```text
-Grupo institucional
-```
-
-puede disponer de su propio:
-
-```text
-Flujo de aprobación
-```
-
-No asumir que todas las comisiones siguen exactamente:
-
-```text
-Docente
-→ Carlos
-→ Patricia
-```
-
-Eso es solamente un escenario DEMO.
-
----
-
-# 35. TIPOS DE ETAPA
-
-Revisar si el modelo actual soporta adecuadamente distintos tipos de etapa.
-
-Debe permitir conceptualmente:
-
-```text
-Elaboración
-Revisión con firma
-Validación con firma
-Aprobación/registro sin firma individual
-```
-
-Si es necesario ampliar el modelo, hacerlo de manera limpia.
-
-Ejemplo conceptual:
-
-```ts
-actionMode:
-  | "SIGN_AND_APPROVE"
-  | "APPROVE_ONLY"
-```
-
-No implementar todavía un proceso externo real.
-
----
-
-# 36. CONSEJO DIRECTIVO / ETAPAS SIN FIRMA PERSONAL
-
-La reunión indicó que puede haber procesos donde la siguiente instancia sea un órgano y no una persona individual.
-
-Por tanto, permitir conceptualmente una etapa como:
-
-```text
-Consejo Directivo
-```
-
-sin tener que inventar:
-
-```text
-Nombre del firmante
-Cargo del firmante
-Firma electrónica individual
-```
-
-Pero:
-
-NO configurar automáticamente Consejo Directivo para todos los grupos.
-
-Debe depender del flujo configurado.
-
----
-
-# 37. QIPOC — NO IMPLEMENTAR COMO REGLA DEFINITIVA
-
-IMPORTANTE.
-
-Durante la reunión NO quedó definido definitivamente:
-
-* quién envía por QIPOC;
-* cuándo se descarga;
-* quién vuelve a registrar el documento;
-* quién adjunta el respaldo;
-* si el coordinador valida después;
-* qué evidencia se exige;
-* si QIPOC forma parte del sistema o es externo.
-
-Por tanto:
-
-**NO crear un flujo QIPOC definitivo.**
-
-NO hardcodear:
-
-```text
-Docente → QIPOC → Coordinador
-```
-
-NO hardcodear:
-
-```text
-Coordinador debe subir QIPOC
-```
-
-NO hardcodear:
-
-```text
-QIPOC obligatorio
-```
-
----
-
-# 38. TRATAMIENTO TEMPORAL DE QIPOC
-
-Si es necesario mostrar conceptualmente algo, usar únicamente una etiqueta neutral:
-
-```text
-Proceso institucional externo
-Pendiente de validación
-```
-
-o no mostrarlo todavía.
-
-Puede dejarse un extension point en el modelo, pero sin comportamiento productivo.
-
-No alterar el flujo actual basándose en una hipótesis.
-
----
-
-# 39. ACCIONES DE TABLAS — USAR ICONOS
-
-Refactorizar progresivamente las columnas:
-
-```text
-ACCIONES
-```
-
-de las tablas principales.
-
-Actualmente existen demasiados botones con texto.
-
-Ejemplo actual:
-
-```text
-VER
-VER OBSERVACIONES
-CONTINUAR CORRECCIÓN
-ACTIVIDADES
-CONTINUAR
-```
-
-Convertir mayormente a iconos.
-
----
-
-# 40. ICONOS PROPUESTOS
-
-Ejemplos conceptuales:
-
-```text
-👁 / Eye
-Ver documento
-
-✏️ / Pencil
-Continuar edición / Corregir
-
-💬 / MessageSquare
-Ver observaciones
-
-📋 / ListChecks
-Actividades
-
-▶ / Play
-Continuar
-
-⬇ / Download
-Descargar
-
-🕘 / History
-Historial
-```
-
-Preferir iconos de la librería ya usada en el proyecto.
-
-NO introducir una nueva librería si ya existe Lucide, Heroicons u otra equivalente.
-
----
-
-# 41. TOOLTIP Y ACCESIBILIDAD
-
-Cada botón iconográfico DEBE incluir:
-
-```html
-title="Ver documento"
-```
-
-y:
-
-```html
-aria-label="Ver documento"
-```
-
-Ejemplo:
-
-```tsx
-<button
-  title="Ver observaciones"
-  aria-label="Ver observaciones"
->
-  <MessageSquare />
-</button>
-```
-
-Nunca dejar un icono sin explicación.
-
----
-
-# 42. EXCEPCIONES AL USO DE ICONOS
-
-No convertir absolutamente todos los CTA a iconos.
-
-Mantener texto en acciones importantes como:
-
-```text
-FIRMAR Y FINALIZAR
-DEVOLVER DOCUMENTO
-APROBAR Y FIRMAR
-GUARDAR
-CANCELAR
-NUEVO DOCUMENTO
-```
-
-Los iconos deben utilizarse principalmente en:
-
-```text
-tablas
-filas
-acciones compactas
-```
-
----
-
-# 43. ESTADOS VISUALES
-
-Mantener semántica:
-
-```text
-Azul → acción primaria / institucional
-Verde → completado / validado
-Amarillo → requiere atención / corrección
-Rojo → error / destructivo
-Gris → pendiente / neutral
-```
-
-No volver a introducir morado como color dominante.
-
----
-
-# 44. FORMATOS T1/T2 — NO TOCAR SIN NECESIDAD
-
-La fidelidad visual actual requirió múltiples correcciones.
-
-Por tanto:
-
-NO rediseñar los A4.
-
-NO “modernizar” las plantillas.
-
-NO cambiar arbitrariamente:
-
-* tipografía;
-* tamaños;
-* espaciados;
-* portada;
-* footer;
-* tablas;
-* encabezado;
-* índice;
-* firmas;
-* control de cambios.
-
-Modificar únicamente lo necesario para los nuevos requerimientos funcionales.
-
----
-
-# 45. NO REINTRODUCIR TÍTULO DUPLICADO
-
-El T2 debe continuar mostrando:
-
-```text
-INFORME DE: SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
-```
-
-y nunca:
-
-```text
-INFORME DE: INFORME DE SEGUIMIENTO...
-```
-
-Mantener la normalización existente.
-
 ---
-
-# 46. `currentUser` Y CONTEXTO
-
-Mantener distinción estricta:
 
-```text
-currentUser = persona autenticada
-activeContext = rol/contexto utilizado
-```
+# FUENTES DE VERDAD Y PRIORIDAD
 
-Cambiar contexto NO puede convertir a Andrea en Carlos.
+Aplica esta prioridad cuando encuentres contradicciones:
 
-En DEMO puede simularse otra sesión.
+1. `requirements.md`
+   - Fuente principal de requisitos funcionales y decisiones confirmadas en reuniones.
 
-Pero una misma persona no debe cambiar de identidad por seleccionar un rol.
+2. Documentos institucionales dentro de `Documentos_guia/`
+   - Fuente principal para fidelidad documental, estructura, terminología y apariencia de los formatos oficiales.
 
----
+3. `implementation-status.md`
+   - Describe qué existe actualmente, qué está incompleto y qué problemas conocidos deben revisarse.
+   - NO debe interpretarse como especificación superior a `requirements.md`.
 
-# 47. FIRMA E IDENTIDAD
+4. Código actual
+   - Representa el estado de implementación, pero NO debe considerarse automáticamente correcto.
 
-Cada firma debe comprobar:
+5. `AGENTS.md`
+   - Define reglas de trabajo, restricciones técnicas, convenciones y comportamiento esperado del agente.
 
-```text
-currentUser.id === signer.id
-```
+Si detectas una contradicción que no pueda resolverse con estas fuentes:
 
-y:
+NO inventes una solución institucional.
 
-```text
-signer está asignado a la etapa actual
-```
+Mantén el comportamiento:
+- configurable;
+- neutral;
+- DEMO;
+- o explícitamente pendiente de decisión institucional,
 
-No permitir firmar por otro usuario mediante cambio de vista.
+según corresponda.
 
 ---
 
-# 48. T2 — PORCENTAJES
+# FASE 1 — AUDITORÍA ANTES DE IMPLEMENTAR
 
-En Informe derivado:
+Primero inspecciona el sistema actual contra todas las fuentes anteriores.
 
-```text
-0..100
-```
+No te limites a los archivos mencionados en `implementation-status.md`.
 
-Validar numéricamente.
+Debes localizar TODOS los consumidores de cada comportamiento afectado.
 
-No permitir:
+Revisa, entre otros:
 
-```text
--10
-150
-texto
-```
+- modelos y tipos;
+- datos DEMO;
+- hooks;
+- estado global/local;
+- navegación;
+- vistas;
+- wizards;
+- modales;
+- tablas;
+- drawers;
+- componentes compartidos;
+- motor documental;
+- generación de artefactos;
+- flujos de aprobación;
+- firmas simuladas;
+- revisiones;
+- observaciones;
+- evidencias;
+- informes;
+- planes de trabajo;
+- administración;
+- auditoría;
+- notificaciones;
+- reportes;
+- histórico;
+- cierre de períodos;
+- permisos por actor;
+- localStorage;
+- componentes reutilizados;
+- estilos;
+- textos;
+- datos duplicados;
+- estados derivados;
+- contadores;
+- relaciones entre documentos.
 
-La tabla A4 debe mostrar:
+Construye INTERNAMENTE una matriz:
 
-```text
-85%
-100%
-```
+REQUISITO
+→ ESTADO ACTUAL
+→ DISCREPANCIA
+→ ARCHIVOS AFECTADOS
+→ DEPENDENCIAS
+→ CORRECCIÓN NECESARIA
 
-sin barras visuales.
+No hace falta mostrarme esta matriz completa por chat.
 
 ---
-
-# 49. T2 — CORRESPONDENCIA CON T1
-
-Si T2 deriva de T1:
-
-La cantidad y nombre de actividades deben provenir del Plan relacionado.
 
-Nunca utilizar actividades DEMO distintas al Plan real seleccionado.
+# FASE 2 — ORDEN DE IMPLEMENTACIÓN
 
-Ejemplo:
+Después de la auditoría crea internamente un plan por dependencias.
 
-```text
-Plan Unidad de Titulación
-5 actividades
-```
+Implementa en este orden:
 
-→ Informe derivado:
+## 1. Problemas estructurales
 
-```text
-exactamente esas actividades
-```
+Corrige primero cualquier problema que pueda generar inconsistencias en múltiples módulos.
 
-hasta que el modelo institucional permita otra regla.
+Ejemplos:
 
----
-
-# 50. PRUEBAS MANUALES OBLIGATORIAS
-
-Después de implementar, ejecutar los siguientes escenarios.
-
-## ESCENARIO A — Orden del Plan
+- estado compartido accidentalmente;
+- mutaciones entre documentos;
+- identidad del usuario;
+- contexto activo;
+- relaciones Plan ↔ Informe;
+- datos DEMO inconsistentes;
+- estados documentales;
+- versiones formales;
+- rondas de revisión;
+- artefactos documentales;
+- flujo de aprobación;
+- permisos;
+- contadores derivados;
+- paginación;
+- páginas dinámicas;
+- slots de firma;
+- persistencia;
+- duplicación de fuentes de estado.
 
-Crear nuevo Plan.
+Evita parches locales si existe una causa estructural común.
 
-Confirmar:
-
-```text
-Información General
-→ Contenido
-→ Actividades
-→ Matriz
-→ Anexos
-→ Previsualización
-→ Firma y Finalización
-```
-
 ---
-
-## ESCENARIO B — Fecha
-
-Crear Plan el:
 
-```text
-07/09/2026
-```
+## 2. Fidelidad documental
 
-Finalizar elaboración.
+Revisa minuciosamente los formatos institucionales disponibles en `Documentos_guia/`.
 
-Cambiar de sesión/revisor.
+Los documentos fuente tienen prioridad para:
 
-Abrir posteriormente.
+- estructura;
+- encabezados;
+- tablas;
+- textos;
+- denominaciones;
+- numeración;
+- tipografía cuando pueda reproducirse razonablemente en el mockup;
+- tamaños relativos;
+- espaciado;
+- alineación;
+- orientación;
+- portada;
+- índices;
+- matrices;
+- firmas;
+- historial;
+- footer;
+- distribución vertical;
+- saltos de página.
 
-Debe continuar mostrando:
+No inventes elementos institucionales.
 
-```text
-07/09/2026
-```
+No añadir:
 
-No fecha del revisor.
+- códigos QR ficticios;
+- hashes ficticios;
+- seriales;
+- sellos digitales inventados;
+- resoluciones inexistentes;
+- autoridades no confirmadas;
+- normativas no confirmadas;
+- metadatos criptográficos falsos.
 
----
-
-## ESCENARIO C — Nueva actividad
-
-Agregar:
-
-```text
-Actividad: Reunión de seguimiento académico
-Categoría: Actividad
-```
+La interfaz moderna del sistema puede conservar su diseño actual.
 
-Debe aparecer en matriz.
+La fidelidad estricta aplica principalmente al DOCUMENTO FORMAL renderizado.
 
 ---
 
-## ESCENARIO D — Responsables
+## 3. Funcionalidades pendientes
 
-Probar:
+Implementa todos los requisitos confirmados que todavía no estén correctamente demostrados.
 
-```text
-1 responsable
-2 responsables
-todos los integrantes
-```
+No basta con que exista un componente.
 
-Los tres casos deben ser válidos.
+El flujo debe poder probarse desde la interfaz.
 
----
+Comprueba especialmente flujos completos como:
 
-## ESCENARIO E — Otro recurso
+CREAR
+→ EDITAR
+→ PREVISUALIZAR
+→ FIRMAR SIMULADAMENTE
+→ ENVIAR
+→ REVISAR
+→ OBSERVAR / DEVOLVER / APROBAR
+→ CORREGIR
+→ NUEVA RONDA
+→ VALIDAR
 
-Seleccionar:
+cuando el requisito correspondiente exista.
 
-```text
-Otro
-```
+Comprueba también la relación:
 
-Escribir recurso.
+PLAN DE TRABAJO
+→ ACTIVIDADES
+→ EVIDENCIAS
+→ INFORME
 
-Debe guardarse correctamente.
+sin que un documento pueda mutar o sobrescribir accidentalmente a otro.
 
 ---
-
-## ESCENARIO F — Otro medio
-
-Seleccionar:
-
-```text
-Otro
-```
 
-Escribir medio.
+# FASE 3 — UX Y CONSISTENCIA
 
-Debe conservarse en la matriz.
+Revisa la aplicación completa buscando:
 
----
-
-## ESCENARIO G — T2 derivado
+- acciones redundantes;
+- botones innecesariamente verbosos;
+- tablas demasiado anchas;
+- modales sin scroll;
+- drawers incompletos;
+- elementos que desaparecen;
+- acciones sin feedback;
+- botones habilitados incorrectamente;
+- errores silenciosos;
+- información duplicada;
+- estados contradictorios;
+- datos DEMO que cambian según la pantalla;
+- terminología inconsistente;
+- acciones destructivas ambiguas;
+- navegación sin retorno claro.
 
-Crear Informe a partir del Plan Unidad de Titulación.
+En tablas, utiliza preferentemente ICONOS para acciones frecuentes cuando sea comprensible.
 
-Debe importar automáticamente las actividades del Plan.
-
----
+Cada icono debe incluir como mínimo:
 
-## ESCENARIO H — Aislamiento
+- `title`;
+- `aria-label`;
 
-Firmar Informe.
+describiendo claramente su acción.
 
-Verificar:
+No conviertas absolutamente todas las acciones en iconos si ello perjudica la comprensión.
 
-```text
-Informe → cambia estado.
-Plan → absolutamente intacto.
-```
+Las acciones principales de flujo pueden conservar texto.
 
 ---
 
-## ESCENARIO I — Firma finalización
+# FASE 4 — VALIDACIÓN DE DATOS DEMO
 
-Elaborador pulsa:
+Los datos DEMO deben ser coherentes entre todas las pantallas.
 
-```text
-FIRMAR Y FINALIZAR
-```
+Un mismo:
 
-Firma correctamente.
+- usuario;
+- grupo;
+- actividad;
+- documento;
+- fecha;
+- período;
+- estado;
+- versión;
+- ronda;
+- evidencia;
+- observación;
+- firmante;
 
-Resultado esperado:
+debe mantener la misma información en todos sus consumidores.
 
-```text
-EN REVISIÓN
-```
+NO arregles inconsistencias creando múltiples copias diferentes del mismo dato si puede existir una fuente común.
 
-sin requerir un segundo botón redundante de envío.
+Los escenarios DEMO deben permitir demostrar los casos importantes del sistema.
 
 ---
-
-## ESCENARIO J — Observación resaltada
-
-Revisor abre página 3.
-
-Resalta zona.
-
-Registra:
 
-```text
-“Revisar la redacción de este párrafo.”
-```
+# FASE 5 — PROTECCIÓN CONTRA REGRESIONES
 
-Debe quedar:
+No destruyas funcionalidades que actualmente estén correctas.
 
-```text
-Página 3
-Resaltado 1
-Observación 1
-```
+Antes de cambiar una implementación compartida, localiza sus consumidores.
 
-Botón:
+No hagas refactors cosméticos masivos sin necesidad.
 
-```text
-IR AL RESALTADO
-```
+No reemplaces componentes estables únicamente por preferencia personal.
 
-debe llevar a esa región.
+No elimines datos o comportamientos existentes salvo que contradigan explícitamente los requisitos.
 
----
-
-## ESCENARIO K — devolución
-
-Revisor devuelve.
-
-Docente debe visualizar:
+No utilices comandos destructivos de Git.
 
-* observación;
-* página;
-* resaltado.
+No hagas:
 
-Formal version:
+`git reset --hard`
 
-```text
-1.0
-```
+ni descartes cambios existentes del usuario.
 
-Ronda:
+Si existe trabajo no relacionado con esta tarea, consérvalo.
 
-```text
-1
-```
-
 ---
-
-## ESCENARIO L — nueva ronda
 
-Docente corrige.
+# FASE 6 — REVISIÓN FINAL COMPLETA
 
-Prepara reenvío.
+Cuando termines de implementar, recorre nuevamente los requisitos.
 
-Resultado:
+No des por cumplido un requisito simplemente porque exista código relacionado.
 
-```text
-formalVersion = 1.0
-reviewRound = 2
-```
+Comprueba que sea realmente:
 
----
+- visible;
+- interactuable;
+- coherente;
+- demostrable;
+- consistente con el actor correspondiente.
 
-## ESCENARIO M — iconos
+Busca además regresiones transversales.
 
-Todas las acciones compactas de una tabla deben:
+Revisa especialmente:
 
-* mostrar icono;
-* mostrar tooltip/title;
-* tener `aria-label`;
-* ejecutar la misma acción que antes.
-
----
+- Docente;
+- Revisor;
+- Coordinador;
+- Validador final;
+- Administrador;
 
-# 51. PRUEBAS DE REGRESIÓN IMPORTANTES
-
-Confirmar que continúan funcionando:
-
-```text
-Plan VALIDADO / EN EJECUCIÓN
-Informe independiente del Plan
-Revisión
-Devolución
-Corrección
-Nueva ronda
-Firma del revisor
-Validación final
-Auditoría
-Notificaciones
-Histórico
-Admin
-Catálogos
-Plantillas T1/T2
-```
+cuando dichos actores correspondan al escenario DEMO.
 
 ---
 
-# 52. TYPESCRIPT
+# VERIFICACIÓN TÉCNICA
 
-Ejecutar:
+Al terminar ejecuta por separado o encadenados correctamente:
 
 ```bash
 npx tsc --noEmit
-```
+npm run build
+````
 
-Debe terminar con:
-
-```text
-0 errores.
-```
-
-NO solucionar errores utilizando indiscriminadamente:
-
-```ts
-any
-```
-
-Si el modelo requiere una nueva estructura, tiparla correctamente.
-
----
-
-# 53. BUILD
-
-Ejecutar:
+O:
 
 ```bash
-npm run build
+npx tsc --noEmit && npm run build
 ```
 
-Debe terminar correctamente.
+Si aparece un error:
+
+NO te limites a reportarlo.
+
+Investiga la causa, corrígelo y vuelve a ejecutar las comprobaciones.
+
+No finalices la tarea con errores de TypeScript o build evitables.
 
 ---
 
-# 54. NO HACER
+# REPORTE FINAL
 
-No:
+Crea en la raíz del proyecto:
 
-* reconstruir la aplicación;
-* cambiar toda la paleta;
-* cambiar T1/T2 sin necesidad;
-* implementar backend;
-* implementar firma criptográfica real;
-* implementar QIPOC real;
-* inventar reglamentos;
-* inventar resoluciones;
-* inventar autoridades;
-* inventar hashes;
-* inventar QR;
-* eliminar historial;
-* mezclar Plan e Informe;
-* usar una variable global para modificar documentos;
-* hardcodear `pageCount`;
-* hardcodear páginas de firma;
-* generar versión 2.0 por una devolución;
-* convertir resaltados de revisión en modificaciones del artefacto firmado.
+`reporte.md`
 
----
+Debe contener:
 
-# 55. CRITERIO DE ÉXITO
+## 1. Problemas encontrados
 
-El resultado debe sentirse como una mejora del sistema existente, no como otro prototipo distinto.
+Agrupados por:
 
-Debe poder demostrarse esta historia completa:
+* estructurales;
+* funcionales;
+* documentales;
+* UX;
+* datos DEMO;
+* consistencia;
+* regresiones detectadas.
 
-```text
-DOCENTE
-↓
-crea Plan siguiendo el orden del formato
-↓
-define contenido
-↓
-define actividades
-↓
-completa matriz
-↓
-revisa documento
-↓
-firma y finaliza
-↓
+## 2. Cambios realizados
 
-REVISOR
-↓
-revisa documento
-↓
-resalta una zona
-↓
-registra observación
-↓
-devuelve
-↓
+Explica brevemente qué se corrigió y por qué.
 
-DOCENTE
-↓
-corrige
-↓
-genera Ronda 2
-↓
-firma y finaliza nuevamente
-↓
+## 3. Archivos modificados
 
-REVISOR
-↓
-aprueba y firma
-↓
+Archivo + propósito principal de la modificación.
 
-SIGUIENTE ETAPA CONFIGURADA
-↓
-continúa según flujo institucional
-```
+## 4. Requisitos cumplidos
 
-Y paralelamente:
+Relaciona las correcciones con requisitos concretos de `requirements.md`.
 
-```text
-PLAN VALIDADO
-↓
-EJECUCIÓN DE ACTIVIDADES
-↓
-EVIDENCIAS
-↓
-INFORME T2 DERIVADO DEL PLAN
-```
+## 5. Requisitos pendientes por decisión institucional
 
-sin alterar el Plan original.
+Incluye ÚNICAMENTE requisitos realmente no definidos institucionalmente.
+
+No confundas:
+“no implementado”
+con
+“pendiente de decisión institucional”.
+
+Si un requisito está definido pero faltaba implementarlo, debes implementarlo.
+
+## 6. Pruebas automáticas realizadas
+
+Incluye resultado de:
+
+* `npx tsc --noEmit`
+* `npm run build`
+
+## 7. Pruebas manuales que debo realizar
+
+Dame instrucciones EXACTAS y cortas:
+
+Inicio
+→ menú
+→ opción
+→ botón
+→ acción
+→ resultado esperado.
+
+Organízalas por escenario.
+
+Prioriza pruebas de extremo a extremo y zonas modificadas.
 
 ---
 
-# 56. ENTREGABLE FINAL DEL AGENTE
+# REGLAS IMPORTANTES
 
-Al terminar, NO respondas únicamente “implementado”.
+No inventes requisitos institucionales.
 
-Genera un reporte detallado con:
+No conviertas este proyecto en producción.
 
-```text
-1. Archivos modificados
-2. Cambios de modelo
-3. Cambios del wizard T1
-4. Cambios en actividades
-5. Cambios en responsables
-6. Cambios en recursos
-7. Cambios en medios de verificación
-8. Cambios en fecha de elaboración
-9. Cambios en Fuente / Elaborado por
-10. Cambios en Firma y Finalización
-11. Cambios en revisión y resaltados
-12. Cambios en flujos configurables
-13. Cambios de iconos en tablas
-14. Resultado de pruebas manuales
-15. Resultado de tsc
-16. Resultado de build
-17. Elementos deliberadamente NO implementados
-18. Riesgos o puntos todavía pendientes
-```
+No implementes tecnología innecesaria para el mockup.
 
-En el apartado de elementos NO implementados debe aparecer explícitamente:
+No cambies arbitrariamente decisiones ya confirmadas.
 
-```text
-QIPOC / procedimiento institucional externo:
-PENDIENTE DE VALIDACIÓN INSTITUCIONAL.
-No se ha creado una regla definitiva.
-```
+No soluciones síntomas si existe una causa estructural común.
+
+No asumas que `implementation-status.md` contiene todos los archivos afectados.
+
+No confíes automáticamente en datos mock existentes: contrástalos con los requisitos.
+
+No declares un requisito cumplido sin comprobar su representación en la interfaz.
+
+No finalices después de una corrección parcial si existen más discrepancias confirmadas.
+
+Trabaja hasta dejar representados correctamente todos los requisitos confirmados que sean viables dentro del alcance del mockup interactivo.
 
 ---
+
+# COMUNICACIÓN DURANTE LA EJECUCIÓN
+
+Por el chat escribe respuestas MÍNIMAS.
+
+Evita narrar cada archivo que lees o cada pequeño cambio realizado.
+
+Solo informa cuando:
+
+* exista un bloqueo real;
+* exista una contradicción que ninguna fuente pueda resolver;
+* necesites una decisión mía que sea realmente imprescindible;
+* ocurra un problema que imposibilite continuar;
+* hayas finalizado.
+
+No pidas confirmación para decisiones que ya estén determinadas por los documentos.
+
+Si algo puede resolverse razonablemente mediante las fuentes disponibles, resuélvelo y continúa.
+
+Al finalizar, dame únicamente:
+
+1. estado general;
+2. cantidad/resumen de correcciones relevantes;
+3. resultado de TypeScript;
+4. resultado de build;
+5. ubicación de `reporte.md`.

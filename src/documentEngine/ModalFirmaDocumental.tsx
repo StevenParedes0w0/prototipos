@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface ModalFirmaDocumentalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFirmar: (certFile: string, ubicacion: string) => void;
+  onFirmar: (certFile: string, ubicacion: string) => boolean | void;
   tituloDocumento?: string;
   grupo?: string;
   formalVersion?: string;
@@ -27,23 +27,38 @@ export default function ModalFirmaDocumental({
   ubicacionSugerida = "Ubicación no disponible",
   accionTexto = "FIRMAR DOCUMENTO",
 }: ModalFirmaDocumentalProps) {
-  const [certFile, setCertFile] = useState("andrea_perez_firma.p12");
-  const [certPass, setCertPass] = useState("••••••••");
+  const [certFile, setCertFile] = useState("");
+  const [certPass, setCertPass] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [ubicacion, setUbicacion] = useState(ubicacionSugerida);
   const [confirmado, setConfirmado] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCertFile(""); setCertPass(""); setConfirmado(false);
+      setShowPass(false); setUbicacion(ubicacionSugerida); setError("");
+    }
+  }, [isOpen, actorNombre, ubicacionSugerida]);
 
   if (!isOpen) return null;
 
-  const canSign = certFile.trim().length > 0 && certPass.trim().length > 0 && confirmado && !isSigning;
+  const validCertificate = /\.(p12|pfx)$/i.test(certFile.trim());
+  const canSign = validCertificate && certPass.trim().length > 0 && confirmado && !isSigning;
 
   const handleEjecutarFirma = () => {
     if (!canSign) return;
     setIsSigning(true);
     setTimeout(() => {
       setIsSigning(false);
-      onFirmar(certFile, ubicacion);
+      const accepted = onFirmar(certFile, ubicacion);
+      if (accepted === false) {
+        setError("No se pudo firmar. Verifique la identidad, la etapa activa y el certificado seleccionado.");
+        setCertPass("");
+        return;
+      }
       setCertPass("");
       setCertFile("");
       setConfirmado(false);
@@ -169,23 +184,25 @@ export default function ModalFirmaDocumental({
               Archivo de certificado (.p12 / .pfx)
             </label>
             <div style={{ display: "flex", gap: 8 }}>
+              <input type="file" accept=".p12,.pfx" ref={fileRef} style={{display:"none"}} onChange={event => {setCertFile(event.target.files?.[0]?.name || "");setError("");}} />
               <input
                 className="form-input"
                 value={certFile}
-                onChange={(e) => setCertFile(e.target.value)}
+                readOnly
                 placeholder="Seleccione archivo .p12 o .pfx"
                 style={{ flex: 1, fontSize: 13 }}
               />
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setCertFile(`${actorNombre.toLowerCase().replace(/[^a-z]/g, "_")}_cert.p12`)}
+                onClick={() => fileRef.current?.click()}
                 style={{ whiteSpace: "nowrap", fontSize: 12 }}
               >
                 Examinar…
               </button>
             </div>
           </div>
+          {certFile && !validCertificate && <div role="alert" style={{fontSize:12,color:"#b91c1c"}}>Seleccione un archivo .p12 o .pfx.</div>}
 
           <div>
             <label className="form-label required" style={{ fontSize: 12.5, marginBottom: 5 }}>
@@ -236,10 +253,11 @@ export default function ModalFirmaDocumental({
             <input
               className="form-input"
               value={ubicacion}
-              onChange={(e) => setUbicacion(e.target.value)}
+              readOnly
               style={{ fontSize: 12.5, background: "#f8fafc", color: "#334155" }}
             />
           </div>
+          {error && <div role="alert" style={{fontSize:12,color:"#b91c1c"}}>{error}</div>}
 
           {/* Privacy Message */}
           <div

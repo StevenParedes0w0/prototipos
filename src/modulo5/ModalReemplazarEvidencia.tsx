@@ -1,11 +1,11 @@
 import React, { useState, useRef } from "react";
-import { ActividadEjecucion, MedioVerificacion } from "./types";
+import { ActividadEjecucion, MedioVerificacion, ArchivoEvidenciaInput } from "./types";
 
 interface ModalReemplazarEvidenciaProps {
   actividad: ActividadEjecucion;
   medio: MedioVerificacion;
   onClose: () => void;
-  onReemplazar: (archivo: { nombre: string; tamano: string }, motivo?: string) => void;
+  onReemplazar: (archivo: ArchivoEvidenciaInput, motivo?: string) => void;
 }
 
 export default function ModalReemplazarEvidencia({
@@ -17,6 +17,7 @@ export default function ModalReemplazarEvidencia({
   const [selectedFile, setSelectedFile] = useState<{
     nombre: string;
     tamano: string;
+    rawFile?: File;
   } | null>(null);
   const [motivo, setMotivo] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -29,14 +30,14 @@ export default function ModalReemplazarEvidencia({
   const validateAndSetFile = (file: File) => {
     setErrorMsg(null);
 
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") && (!file.type || file.type === "application/pdf");
     if (!isPdf) {
       setErrorMsg("Solo se permiten archivos PDF.");
       setSelectedFile(null);
       return;
     }
 
-    if (file.size > MAX_SIZE_BYTES) {
+    if (file.size <= 0 || file.size > MAX_SIZE_BYTES) {
       setErrorMsg("El archivo supera el tamaño máximo permitido (10 MB).");
       setSelectedFile(null);
       return;
@@ -48,12 +49,14 @@ export default function ModalReemplazarEvidencia({
     setSelectedFile({
       nombre: file.name,
       tamano: sizeStr,
+      rawFile: file,
     });
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (e.dataTransfer.files.length !== 1) { setErrorMsg("Seleccione exactamente un archivo PDF por medio."); return; }
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndSetFile(e.dataTransfer.files[0]);
     }
@@ -75,6 +78,8 @@ export default function ModalReemplazarEvidencia({
       {
         nombre: selectedFile.nombre,
         tamano: selectedFile.tamano,
+      url: selectedFile.rawFile ? URL.createObjectURL(selectedFile.rawFile) : undefined,
+      sizeBytes: selectedFile.rawFile?.size,
       },
       motivo.trim() || undefined
     );
@@ -96,6 +101,8 @@ export default function ModalReemplazarEvidencia({
         borderRadius: 12,
         width: 540,
         maxWidth: "100%",
+        maxHeight: "90vh",
+        overflowY: "auto",
         boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
         overflow: "hidden",
       }}>

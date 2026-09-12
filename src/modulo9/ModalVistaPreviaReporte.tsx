@@ -235,7 +235,7 @@ export default function ModalVistaPreviaReporte({
                   Facultad de Ingeniería en Sistemas, Electrónica e Industrial (FISEI)
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                  Sistema de Gestión de Planes de Trabajo y Evidencias Docentes
+                  Gestión Documental Académica
                 </div>
               </div>
 
