@@ -1,3 +1,5 @@
+import { TableActionButton } from "../components/TableActionButton";
+import { Eye, FilePenLine } from "../components/icons";
 import React, { useState } from "react";
 import { useDocumentEngine } from "./useDocumentEngine";
 import DocumentPdfPageViewer from "./DocumentPdfPageViewer";
@@ -53,14 +55,14 @@ export default function RevisorDocumentEngineView({
 
   const handleEjecutarFirma = (certFile: string, ubicacion: string) => {
     if (actorInfo.role === "validador") {
-      docEngine.validarYFirmarFinal(actorInfo.nombre, actorInfo.cargo, ubicacion);
+      docEngine.validarYFirmarFinal(docMaster.id, actorInfo.nombre, actorInfo.cargo, ubicacion);
     } else {
-      docEngine.aprobarYFirmarRevisor(actorInfo.nombre, actorInfo.cargo, ubicacion);
+      docEngine.aprobarYFirmarRevisor(docMaster.id, actorInfo.nombre, actorInfo.cargo, ubicacion);
     }
   };
 
   const handleEjecutarDevolucion = (motivo: string) => {
-    docEngine.devolverDocumento(actorInfo.nombre, motivo);
+    docEngine.devolverDocumento(docMaster.id, actorInfo.nombre, motivo);
     setSub("devuelto");
   };
 
@@ -131,12 +133,12 @@ export default function RevisorDocumentEngineView({
               }}
             >
               <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                Actor Demo:
+                Simular sesión DEMO:
               </span>
               {reviewAndValidationStages.map((stage) => (
                 <button
                   key={stage.id}
-                  onClick={() => setSelectedStageId(stage.id)}
+                  onClick={() => {setSelectedStageId(stage.id); docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName);}}
                   style={{
                     padding: "4px 10px",
                     borderRadius: 6,
@@ -269,15 +271,12 @@ export default function RevisorDocumentEngineView({
                       </span>
                     </td>
                     <td>
-                      <button
-                        className="btn btn-primary btn-sm"
+                      <TableActionButton icon={isDocValidated ? Eye : FilePenLine} title={isDocValidated ? "Ver documento" : "Revisar documento"}
                         onClick={() => {
                           docEngine.seleccionarDocumento(doc.id);
                           setSub("revision");
                         }}
-                      >
-                        {isDocValidated ? "VER DOCUMENTO" : "REVISAR"}
-                      </button>
+                      />
                     </td>
                   </tr>
                 );
@@ -412,12 +411,12 @@ export default function RevisorDocumentEngineView({
         {/* Actor toggle for DEMO testing */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-            Rol / Actor activo:
+            Simular sesión DEMO:
           </span>
           <select
             className="form-select"
             value={selectedStageId}
-            onChange={(e) => setSelectedStageId(e.target.value)}
+            onChange={(e) => {setSelectedStageId(e.target.value); const stage=flowStages.find(s => s.id === e.target.value); if(stage) docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName);}}
             style={{ width: "auto", fontSize: 12, padding: "4px 24px 4px 8px" }}
           >
             {reviewAndValidationStages.map((st) => (
@@ -443,11 +442,11 @@ export default function RevisorDocumentEngineView({
           observations={observations}
           flowStages={flowStages}
           currentUser={actorInfo}
-          onOpenFirmar={() => setShowFirmarModal(true)}
+          onOpenFirmar={() => {if(activeStage.actionMode === "APPROVE_ONLY") docEngine.aprobarSinFirma(docMaster.id, activeStage.id); else setShowFirmarModal(true);}}
           onOpenDevolver={() => setShowDevolverModal(true)}
-          onAddObservacion={(pag, txt, sec, tip) => internalDocEngine.agregarObservacion(internalDocEngine.docMaster.id, pag, txt, sec, tip, actorInfo.nombre)}
-          onEditObservacion={(id, texto) => internalDocEngine.editarObservacion(internalDocEngine.docMaster.id, id, texto)}
-          onDeleteObservacion={(id) => internalDocEngine.eliminarObservacion(internalDocEngine.docMaster.id, id)}
+          onAddObservacion={(pag, txt, sec, tip, anchor) => docEngine.agregarObservacion(docMaster.id, pag, txt, sec, tip, actorInfo.nombre, anchor)}
+          onEditObservacion={(id, texto) => docEngine.editarObservacion(docMaster.id, id, texto)}
+          onDeleteObservacion={(id) => docEngine.eliminarObservacion(docMaster.id, id)}
         />
       </div>
 
@@ -462,11 +461,7 @@ export default function RevisorDocumentEngineView({
         reviewRound={docMaster.reviewRound}
         actorNombre={actorInfo.nombre}
         actorCargo={actorInfo.cargo}
-        ubicacionSugerida={
-          actorInfo.role === "validador"
-            ? "Página 4 — Firmas de Responsabilidad: Validado por"
-            : "Página 4 — Firmas de Responsabilidad: Revisado por"
-        }
+        ubicacionSugerida={(() => {const slot=currentArtifact.signatureSlots?.find(s => s.stageId === activeStage.id) || currentArtifact.signatureSlots?.find(s => s.role === actorInfo.role); return slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible";})()}
         accionTexto={actorInfo.role === "validador" ? "VALIDAR Y FIRMAR" : "APROBAR Y FIRMAR"}
       />
 

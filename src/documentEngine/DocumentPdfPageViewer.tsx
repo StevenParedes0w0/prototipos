@@ -1,5 +1,6 @@
+import { MATRIX_ROWS_PER_PAGE } from "./pagination";
 import React, { useState, useRef } from "react";
-import { DocumentArtifact, DocumentObservation, FlowStageNode } from "./types";
+import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
 
 interface DocumentPdfPageViewerProps {
@@ -16,7 +17,8 @@ interface DocumentPdfPageViewerProps {
   };
   onOpenFirmar: () => void;
   onOpenDevolver: () => void;
-  onAddObservacion: (pagina: number, texto: string, seccion: string, tipo: "general" | "seccion") => void;
+  onAddObservacion: (pagina: number, texto: string, seccion: string, tipo: "general" | "seccion", anchor?: DocumentObservationAnchor) => void;
+  onResolveObservacion?: (id: number) => void;
   onEditObservacion?: (id: number, texto: string) => void;
   onDeleteObservacion?: (id: number) => void;
   readOnly?: boolean;
@@ -33,13 +35,19 @@ export default function DocumentPdfPageViewer({
   onOpenFirmar,
   onOpenDevolver,
   onAddObservacion,
+  onResolveObservacion,
   onEditObservacion,
   onDeleteObservacion,
   readOnly = false,
 }: DocumentPdfPageViewerProps) {
   const isPlan = artifact.documentType === "PLAN_TRABAJO";
-  const totalPages = artifact.pageCount || (artifact as any).pages?.length || 5;
+  const totalPages = artifact.pages?.length || artifact.pageCount;
   const [currentPage, setCurrentPage] = useState(1);
+  const [highlightMode, setHighlightMode] = useState(false);
+  const [anchor, setAnchor] = useState<DocumentObservationAnchor>();
+  const [focusedObservation, setFocusedObservation] = useState<number>();
+  const dragStart = useRef<{x: number; y: number} | null>(null);
+  const canHighlight = !readOnly && currentUser.role !== "docente" && (documentState === "EN REVISIÓN" || documentState === "EN VALIDACIÓN FINAL");
   const [zoom, setZoom] = useState(100);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +90,9 @@ export default function DocumentPdfPageViewer({
     currentUser.cargo.includes("Autoridad");
   const isRevisor = currentUser.role === "revisor" && !isValidador;
 
-  const isAlreadySignedByMe = artifact.signatures.some(
+  const activeActorStage = flowStages.find(s => s.estado === "EN_CURSO" && s.actorName === currentUser.nombre);
+  const approveOnly = activeActorStage?.actionMode === "APPROVE_ONLY";
+  const isAlreadySignedByMe = !activeActorStage && artifact.signatures.some(
     (s) => s.actor === currentUser.nombre || ((currentUser as any).id && s.actorId === (currentUser as any).id)
   );
   const isDocumentValidated = documentState === "VALIDADO" || documentState === "EN EJECUCIÓN";
@@ -96,12 +106,14 @@ export default function DocumentPdfPageViewer({
   const LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   // Dynamic orientation per page: Page 4 of Plan is Landscape
-  const isLandscape = isPlan && currentPage === 4;
+  const isLandscape = isPlan && currentPage >= 4 && currentPage < totalPages;
 
   const handleCreateObs = () => {
     if (!obsTexto.trim()) return;
     const sec = obsTipo === "seccion" ? (obsSeccion || `Página ${currentPage}`) : "General";
-    onAddObservacion(currentPage, obsTexto.trim(), sec, obsTipo);
+    onAddObservacion(currentPage, obsTexto.trim(), sec, obsTipo, anchor);
+    setAnchor(undefined);
+    setHighlightMode(false);
     setObsTexto("");
     setObsSeccion("");
     setShowAddObsDrawer(false);
@@ -273,7 +285,7 @@ export default function DocumentPdfPageViewer({
               color: "#0f172a",
             }}
           >
-            {artifact.generatedAt.split(" ")[0]}
+            {(artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0])}
           </td>
         </tr>
       </tbody>
@@ -550,6 +562,7 @@ export default function DocumentPdfPageViewer({
             </div>
           </div>
 
+          {canHighlight && <button className="btn btn-secondary" aria-pressed={highlightMode} onClick={() => {setHighlightMode(!highlightMode); setAnchor(undefined);}}>{highlightMode ? "Cancelar resaltado" : "RESALTAR Y OBSERVAR"}</button>}
           {/* PDF Page Canvas Scrollable Viewport */}
           <div
             ref={containerRef}
@@ -585,6 +598,14 @@ export default function DocumentPdfPageViewer({
                 transition: "max-width 0.2s ease, min-height 0.2s ease",
               }}
             >
+              <div className="review-overlay" style={{position: "absolute", inset: 0, zIndex: 10, pointerEvents: highlightMode ? "auto" : "none", cursor: highlightMode ? "crosshair" : "default", touchAction: "none"}}
+                onPointerDown={e => { if (!highlightMode) return; const r=e.currentTarget.getBoundingClientRect(); dragStart.current={x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}; e.currentTarget.setPointerCapture(e.pointerId); }}
+                onPointerMove={e => {if (!dragStart.current) return; const r=e.currentTarget.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const start=dragStart.current; setAnchor({pageNumber:currentPage,x:Math.min(start.x,x),y:Math.min(start.y,y),width:Math.abs(start.x-x),height:Math.abs(start.y-y)});}}
+                onPointerUp={() => {dragStart.current=null; if(anchor && anchor.width > .005 && anchor.height > .005) {setObsTipo("seccion");setShowAddObsDrawer(true);} }}
+                onPointerCancel={() => {dragStart.current=null;setAnchor(undefined);}}>
+                {observations.filter(o => o.anchor && o.ronda === reviewRound && o.anchor.pageNumber === currentPage).map(o => <div key={o.id} id={`highlight-${o.id}`} style={{position:"absolute",left:`${o.anchor!.x*100}%`,top:`${o.anchor!.y*100}%`,width:`${o.anchor!.width*100}%`,height:`${o.anchor!.height*100}%`,background:"rgba(250,204,21,.3)",border:focusedObservation===o.id ? "3px solid #2563eb" : "1px solid #ca8a04"}}><span style={{background:"#854d0e",color:"white",padding:"1px 4px",fontSize:11}}>{observations.indexOf(o)+1}</span></div>)}
+                {anchor && anchor.pageNumber===currentPage && <div style={{position:"absolute",left:`${anchor.x*100}%`,top:`${anchor.y*100}%`,width:`${anchor.width*100}%`,height:`${anchor.height*100}%`,background:"rgba(250,204,21,.3)",border:"1px solid #ca8a04"}} />}
+              </div>
               {/* Watermark if not validated */}
               {!isDocumentValidated && (
                 <div
@@ -906,16 +927,16 @@ export default function DocumentPdfPageViewer({
                             </tr>
                           </thead>
                           <tbody>
-                            {(artifact.matriz || []).map((act, i) => (
+                            {(artifact.matriz || []).slice((currentPage - 4) * MATRIX_ROWS_PER_PAGE, (currentPage - 3) * MATRIX_ROWS_PER_PAGE).map((act, i) => (
                               <tr key={act.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#0f172a", fontWeight: 600, lineHeight: 1.3 }}>
                                   {act.nombre}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px", textAlign: "center", color: "#334155", fontSize: 8 }}>
-                                  {act.desde || "—"}
+                                  {act.desde ? act.desde.split("-").reverse().join("/") : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px", textAlign: "center", color: "#334155", fontSize: 8 }}>
-                                  {act.hasta || "—"}
+                                  {act.hasta ? act.hasta.split("-").reverse().join("/") : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155" }}>
                                   {act.responsables?.join(", ") || "Docente Responsable"}
@@ -942,7 +963,7 @@ export default function DocumentPdfPageViewer({
                         </table>
 
                         <div style={{ fontSize: 8, color: "#475569", fontStyle: "italic", marginTop: 6 }}>
-                          Fuente: Elaborado por: {artifact.generatedBy || "Docente Responsable"}
+                          Fuente: {artifact.fuente || "—"}<br />Elaborado por: {artifact.grupo}
                         </div>
 
                         {artifact.grupo.includes("Datos Personales") && (
@@ -1019,8 +1040,8 @@ export default function DocumentPdfPageViewer({
                               </tr>
                             </thead>
                             <tbody>
-                              {flowStages.map((stage, idx) => {
-                                const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
+                              {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY").map((stage, idx) => {
+                                const sig = artifact.signatures.find((s) => s.stageId ? s.stageId === stage.id : s.actorId ? s.actorId === stage.actorId : s.actor === stage.actorName);
                                 const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
 
                                 let accionTitulo = "Elaborado por:";
@@ -1128,9 +1149,9 @@ export default function DocumentPdfPageViewer({
                               ) : (
                                 <tr>
                                   <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", fontWeight: 700 }}>v{formalVersion}</td>
-                                  <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>Emisión inicial de Plan de Trabajo</td>
+                                  <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>Elaboración del Plan de Trabajo</td>
                                   <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#64748b" }}>
-                                    {artifact.generatedAt.split(" ")[0]}
+                                    {(artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0])}
                                   </td>
                                 </tr>
                               )}
@@ -1254,7 +1275,7 @@ export default function DocumentPdfPageViewer({
                       </div>
                     )}
 
-                    {currentPage === 3 && (
+                    {currentPage >= 3 && currentPage <= totalPages - 2 && (
                       <div style={{ flex: 1, padding: "8px 0" }}>
                         <div style={{ marginBottom: 22 }}>
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 10 }}>
@@ -1269,12 +1290,6 @@ export default function DocumentPdfPageViewer({
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 8 }}>
                             2. DESARROLLO DE ACTIVIDADES
                           </div>
-                          {artifact.informeData?.informeOrigen === "DERIVADO_PLAN" && (
-                            <div style={{ fontSize: 9.5, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
-                              NOTA: Cuando el informe tenga por objeto la ejecución de un Plan de Trabajo... Nota 1: la tabla 1 se debe utilizar en caso de que el informe derive del plan de trabajo.
-                            </div>
-                          )}
-                          
                           {artifact.informeData?.actividadesInforme && artifact.informeData.actividadesInforme.length > 0 ? (
                             <div>
                               <div style={{ fontSize: 9, color: "#475569", fontStyle: "italic", marginBottom: 6 }}>
@@ -1290,7 +1305,7 @@ export default function DocumentPdfPageViewer({
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {artifact.informeData.actividadesInforme.map((a) => (
+                                  {artifact.informeData.actividadesInforme.slice((currentPage - 3) * MATRIX_ROWS_PER_PAGE, (currentPage - 2) * MATRIX_ROWS_PER_PAGE).map((a) => (
                                     <tr key={a.id}>
                                       <td style={{ border: "1px solid #475569", padding: "6px 8px", color: "#0f172a" }}>
                                         {a.actividad}
@@ -1336,7 +1351,7 @@ export default function DocumentPdfPageViewer({
                       </div>
                     )}
 
-                    {currentPage === 4 && (
+                    {currentPage === totalPages - 1 && (
                       <div style={{ flex: 1, padding: "4px 0" }}>
                         <div style={{ marginBottom: 18 }}>
                           <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 13.5, fontWeight: 800, color: "#323E4F", textTransform: "uppercase", marginBottom: 4 }}>
@@ -1429,8 +1444,8 @@ export default function DocumentPdfPageViewer({
                               </tr>
                             </thead>
                             <tbody>
-                              {flowStages.slice(0, 2).map((stage, idx) => {
-                                const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
+                              {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY" && s.actorRole !== "validador").map((stage, idx) => {
+                                const sig = artifact.signatures.find((s) => s.stageId ? s.stageId === stage.id : s.actorId ? s.actorId === stage.actorId : s.actor === stage.actorName);
                                 const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
 
                                 let accionTitulo = "Elaborado por:";
@@ -1482,7 +1497,7 @@ export default function DocumentPdfPageViewer({
                       </div>
                     )}
 
-                    {currentPage === 5 && (
+                    {currentPage === totalPages && (
                       <div style={{ flex: 1, padding: "4px 0" }}>
                         {/* FIRMAS DE RESPONSABILIDAD (Página 5: Validado/Aprobado) */}
                         <div style={{ marginBottom: 24 }}>
@@ -1496,8 +1511,8 @@ export default function DocumentPdfPageViewer({
                               </tr>
                             </thead>
                             <tbody>
-                              {flowStages.slice(2).map((stage, idx) => {
-                                const sig = artifact.signatures.find((s) => s.actor === stage.actorName || s.actorId === stage.actorId);
+                              {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY" && s.actorRole === "validador").map((stage, idx) => {
+                                const sig = artifact.signatures.find((s) => s.stageId ? s.stageId === stage.id : s.actorId ? s.actorId === stage.actorId : s.actor === stage.actorName);
                                 const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
 
                                 let accionTitulo = "Validado por:";
@@ -1573,7 +1588,7 @@ export default function DocumentPdfPageViewer({
                                 <tr>
                                   <td style={{ border: "1px solid #475569", padding: "5px 6px", fontWeight: 700 }}>v{formalVersion}</td>
                                   <td style={{ border: "1px solid #475569", padding: "5px 6px" }}>Elaboración inicial de Informe institucional</td>
-                                  <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{artifact.generatedAt.split(" ")[0]}</td>
+                                  <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{(artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0])}</td>
                                 </tr>
                               )}
                             </tbody>
@@ -1647,7 +1662,7 @@ export default function DocumentPdfPageViewer({
               </div>
               <div>
                 <span style={{ color: "#64748b" }}>Firmas: </span>
-                <span style={{ fontWeight: 700, color: "#166534" }}>{artifact.signatures.length} de 3</span>
+                <span style={{ fontWeight: 700, color: "#166534" }}>{artifact.signatures.length} de {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY").length}</span>
               </div>
               <div style={{ gridColumn: "span 2" }}>
                 <span style={{ color: "#64748b" }}>Actor en sesión: </span>
@@ -1767,11 +1782,13 @@ export default function DocumentPdfPageViewer({
                           textTransform: "uppercase",
                         }}
                       >
-                        Pág. {obs.pagina} {obs.seccion ? `· ${obs.seccion}` : ""}
+                        Observación {observations.indexOf(obs) + 1} · Pág. {obs.pagina} {obs.seccion ? `· ${obs.seccion}` : ""}
                       </span>
                       <span style={{ fontSize: 10.5, color: "#64748b" }}>Ronda {obs.ronda}</span>
                     </div>
 
+                    {obs.anchor && obs.ronda === reviewRound && <button className="btn btn-ghost btn-xs" onClick={() => {setCurrentPage(obs.anchor!.pageNumber);setFocusedObservation(obs.id);requestAnimationFrame(() => document.getElementById(`highlight-${obs.id}`)?.scrollIntoView({block:"center",behavior:"smooth"}));}}>IR AL RESALTADO</button>}
+                    {isDocente && obs.estado === "activa" && onResolveObservacion && <button className="btn btn-ghost btn-xs" onClick={() => onResolveObservacion(obs.id)}>Marcar como resuelta</button>}
                     {editingObsId === obs.id ? (
                       <div style={{ marginTop: 4 }}>
                         <textarea
@@ -1808,14 +1825,14 @@ export default function DocumentPdfPageViewer({
                                   setEditingObsText(obs.texto);
                                 }}
                                 style={{ background: "none", border: "none", cursor: "pointer", color: "#475569", padding: "1px 4px" }}
-                                title="Editar"
+                                title="Editar" aria-label="Editar observación"
                               >
                                 ✎
                               </button>
                               <button
                                 onClick={() => onDeleteObservacion?.(obs.id)}
                                 style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", padding: "1px 4px" }}
-                                title="Eliminar"
+                                title="Eliminar" aria-label="Eliminar observación"
                               >
                                 ✕
                               </button>
@@ -1887,14 +1904,14 @@ export default function DocumentPdfPageViewer({
                 <>
                   <button
                     className="btn btn-primary"
-                    disabled={hasActiveObservations || isAlreadySignedByMe}
+                    disabled={hasActiveObservations || isAlreadySignedByMe || !activeActorStage || (!approveOnly && !activeActorStage.actorId)}
                     onClick={onOpenFirmar}
                     style={{ justifyContent: "center" }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    VALIDAR Y FIRMAR
+                    {approveOnly ? "APROBAR / REGISTRAR" : "VALIDAR Y FIRMAR"}
                   </button>
                   <button
                     onClick={onOpenDevolver}
@@ -1925,14 +1942,14 @@ export default function DocumentPdfPageViewer({
                 <>
                   <button
                     className="btn btn-primary"
-                    disabled={hasActiveObservations || isAlreadySignedByMe}
+                    disabled={hasActiveObservations || isAlreadySignedByMe || !activeActorStage || (!approveOnly && !activeActorStage.actorId)}
                     onClick={onOpenFirmar}
                     style={{ justifyContent: "center" }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    APROBAR Y FIRMAR
+                    {approveOnly ? "APROBAR / REGISTRAR" : "APROBAR Y FIRMAR"}
                   </button>
                   <button
                     onClick={onOpenDevolver}

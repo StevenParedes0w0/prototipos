@@ -1,3 +1,4 @@
+import { buildDocumentPages, getSignatureSlots } from "../documentEngine/pagination";
 import React, { useState } from "react";
 import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import {
@@ -59,7 +60,7 @@ export default function WizardInformeView({
   const [carrera, setCarrera] = useState<string>(CARRERAS_USUARIO_ANDREA[0]);
   const [grupo, setGrupo] = useState("Unidad de Titulación");
   const [periodo, setPeriodo] = useState("Julio – Diciembre 2026");
-  const [fecha, setFecha] = useState(FECHA_SISTEMA);
+  const [fecha] = useState(() => new Date().toLocaleDateString("es-EC"));
   const [titulo, setTitulo] = useState("Informe de seguimiento de actividades de titulación");
   const [informeOrigen, setInformeOrigen] = useState<"DERIVADO_PLAN" | "INDEPENDIENTE">("DERIVADO_PLAN");
   const [selectedPlanId, setSelectedPlanId] = useState<string>(defaultPlan?.id || "");
@@ -69,7 +70,7 @@ export default function WizardInformeView({
     const targetPlan = documents.find((d) => d.id === planId);
     if (!targetPlan || !targetPlan.currentArtifact.matriz) return [];
     return targetPlan.currentArtifact.matriz.map((m, idx) => ({
-      id: idx + 1,
+      id: m.id,
       actividad: m.nombre,
       mediosVerificacion: (m.medios && m.medios.length > 0) ? m.medios.join("; ") : "Registro institucional",
       porcentajeEjecucion: 100,
@@ -182,24 +183,10 @@ export default function WizardInformeView({
   // Construir artefacto para Previsualización (Paso 7)
   const selectedPlanDoc = documents.find((d) => d.id === selectedPlanId);
   const relatedPlanTitulo = informeOrigen === "DERIVADO_PLAN" ? (selectedPlanDoc?.nombre || `Plan de Trabajo — ${grupo}`) : undefined;
-  const previewPageCount = 5;
-  const previewPages: import("../documentEngine/types").DocumentPage[] = Array.from({ length: previewPageCount }).map((_, i) => {
-    const isPenultimate = i === previewPageCount - 2;
-    const isLast = i === previewPageCount - 1;
-    return {
-      id: `page-${i+1}`,
-      type: "standard",
-      signatureSlots: isPenultimate ? [
-        { role: "docente", action: "ELABORADO_POR", label: "Elaborado por" },
-        { role: "revisor", action: "REVISADO_POR", label: "Revisado por" }
-      ] : isLast ? [
-        { role: "validador", action: "VALIDADO_POR", label: "Validado por" }
-      ] : []
-    };
-  });
-  const previewSignatureSlots = previewPages.flatMap((p, i) => 
-    (p.signatureSlots || []).map(s => ({ ...s, pageIndex: i + 1, pageNumber: i + 1 }))
-  ) as any[];
+  const previewFlow = selectedPlanDoc?.flowStages || docEngine.flowStages;
+  const previewPages = buildDocumentPages("INFORME", informeOrigen === "DERIVADO_PLAN" ? actividadesInforme.length : 0, previewFlow);
+  const previewPageCount = previewPages.length;
+  const previewSignatureSlots = getSignatureSlots(previewPages);
 
   const normalizeInformeTitle = (t: string) => t.replace(/^INFORME DE:\s*/i, "");
 
@@ -253,14 +240,14 @@ export default function WizardInformeView({
             role: "docente",
             fecha: FECHA_SISTEMA,
             hora: "10:30",
-            ubicacion: `Página ${previewSignatureSlots.find((s: any) => s.role === "docente")?.pageNumber || 4} — Firmas de Responsabilidad: Elaborado por`,
+            ubicacion: `Página ${previewSignatureSlots.find(s => s.role === "docente")?.pageNumber || "no disponible"} — Firmas de Responsabilidad: Elaborado por`,
           },
         ]
       : [],
     historialCambios: [
       {
         version: "1.0",
-        descripcion: "Elaboración inicial del Informe institucional",
+        descripcion: "Elaboración inicial del Informe",
         fecha: FECHA_SISTEMA,
       },
     ],
@@ -303,9 +290,11 @@ export default function WizardInformeView({
       anexos: tieneAnexos === "si" ? anexos : [],
     });
 
-    firmarComoElaborador(targetId, certFile, ubicacion);
+    if (!firmarComoElaborador(targetId, certFile, ubicacion)) return;
     setIsSigned(true);
     setShowFirmaModal(false);
+    enviarARevision(targetId);
+    onFinish();
   };
 
   const handleEnviarARevision = () => {
@@ -321,7 +310,7 @@ export default function WizardInformeView({
     { num: 5, label: "Registro de Contactos" },
     { num: 6, label: "Anexos" },
     { num: 7, label: "Previsualización" },
-    { num: 8, label: "Firma y Envío" },
+    { num: 8, label: "Firma y Finalización" },
   ];
 
   return (
@@ -337,8 +326,8 @@ export default function WizardInformeView({
         reviewRound={1}
         actorNombre="Ing. Andrea Pérez, Mg."
         actorCargo="Docente elaborador"
-        ubicacionSugerida="Página 3 — Firmas de Responsabilidad: Elaborado por"
-        accionTexto="FIRMAR INFORME"
+        ubicacionSugerida={`Página ${previewSignatureSlots.find(s => s.role === "docente")?.pageNumber || "no disponible"} — Elaborado por`}
+        accionTexto="FIRMAR Y FINALIZAR"
       />
 
       {/* AI Modal Comparison */}
@@ -537,7 +526,7 @@ export default function WizardInformeView({
                   </div>
                   <div>
                     <label className="form-label required">Fecha de Elaboración</label>
-                    <input className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                    <input className="form-input" value={fecha} readOnly title="La fecha se consolida al finalizar la elaboración" />
                   </div>
                 </div>
 
@@ -1154,7 +1143,7 @@ export default function WizardInformeView({
                   reviewRound={1}
                   documentState={isSigned ? "FIRMADO POR ELABORADOR" : "BORRADOR"}
                   observations={[]}
-                  flowStages={docEngine.flowStages}
+                  flowStages={previewFlow}
                   currentUser={{
                     nombre: "Ing. Andrea Pérez, Mg.",
                     cargo: "Docente elaborador",
@@ -1174,10 +1163,10 @@ export default function WizardInformeView({
             <div>
               <div style={{ marginBottom: 18 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                  Paso 8 de 8 · Firma y Envío
+                  Paso 8 de 8 · Firma y Finalización
                 </span>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "6px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
-                  Firma Electrónica y Envío a Revisión
+                  Firma y Finalización
                 </h1>
                 <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
                   Estampe su firma electrónica de responsabilidad y despache el informe a la bandeja del revisor técnico.
@@ -1208,7 +1197,7 @@ export default function WizardInformeView({
                       style={{ background: "#1a4f8a", border: "none", padding: "10px 18px", fontSize: 13, fontWeight: 700 }}
                       onClick={() => setShowFirmaModal(true)}
                     >
-                      ✍️ FIRMAR DOCUMENTO ELECTRÓNICAMENTE
+                      FIRMAR Y FINALIZAR
                     </button>
                   )}
                 </div>
@@ -1228,7 +1217,7 @@ export default function WizardInformeView({
                       onClick={handleEnviarARevision}
                       style={{ background: "#16a34a", border: "none", padding: "10px 20px", fontSize: 13.5, fontWeight: 800 }}
                     >
-                      ENVIAR A REVISIÓN →
+                      VOLVER A MIS DOCUMENTOS
                     </button>
                   </div>
                 )}

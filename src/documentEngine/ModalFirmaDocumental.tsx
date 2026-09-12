@@ -24,7 +24,7 @@ export default function ModalFirmaDocumental({
   reviewRound = 1,
   actorNombre,
   actorCargo,
-  ubicacionSugerida = "Página 4 — Firmas de Responsabilidad",
+  ubicacionSugerida = "Ubicación no disponible",
   accionTexto = "FIRMAR DOCUMENTO",
 }: ModalFirmaDocumentalProps) {
   const [certFile, setCertFile] = useState("andrea_perez_firma.p12");
@@ -44,6 +44,9 @@ export default function ModalFirmaDocumental({
     setTimeout(() => {
       setIsSigning(false);
       onFirmar(certFile, ubicacion);
+      setCertPass("");
+      setCertFile("");
+      setConfirmado(false);
       onClose();
     }, 600);
   };

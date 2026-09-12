@@ -20,6 +20,7 @@ export default function ConfigurarFlujoView({
   const [toast, setToast] = useState<string | null>(null);
 
   // Form states modal edición
+  const [actionMode, setActionMode] = useState<"SIGN_AND_APPROVE" | "APPROVE_ONLY">("SIGN_AND_APPROVE");
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [tipoResponsable, setTipoResponsable] = useState<EtapaFlujo["tipoResponsable"]>("Revisores");
@@ -30,6 +31,7 @@ export default function ConfigurarFlujoView({
   const openEditar = (etp: EtapaFlujo) => {
     setEtapaEnEdicion(etp);
     setNombre(etp.nombre);
+    setActionMode(etp.actionMode || "SIGN_AND_APPROVE");
     setDescripcion(etp.descripcion);
     setTipoResponsable(etp.tipoResponsable);
     setRevisoresSeleccionados(etp.revisoresIds || []);
@@ -45,8 +47,8 @@ export default function ConfigurarFlujoView({
     }
 
     // Validación 5: No configurar una etapa de revisión sin al menos un revisor
-    if (tipoResponsable === "Revisores" && revisoresSeleccionados.length === 0) {
-      setErrorModal("Una etapa de revisión debe tener al menos un revisor asignado.");
+    if (actionMode === "SIGN_AND_APPROVE" && tipoResponsable !== "Elaborador" && revisoresSeleccionados.length === 0) {
+      setErrorModal("Una etapa con firma debe tener al menos una persona asignada.");
       return;
     }
 
@@ -60,10 +62,11 @@ export default function ConfigurarFlujoView({
       if (item.id !== etapaEnEdicion?.id) return item;
       return {
         ...item,
+        actionMode,
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
         tipoResponsable,
-        revisoresIds: tipoResponsable === "Autoridad" ? [] : revisoresSeleccionados,
+        revisoresIds: actionMode === "APPROVE_ONLY" ? [] : revisoresSeleccionados,
         revisoresNombres,
         reglaAprobacion: tipoResponsable === "Revisores" ? reglaAprobacion : undefined,
       };
@@ -369,6 +372,7 @@ export default function ConfigurarFlujoView({
               </div>
 
               {/* Si es etapa de autoridad */}
+              <label className="form-label">Acción de la etapa<select className="form-select" value={actionMode} onChange={e => setActionMode(e.target.value as "SIGN_AND_APPROVE" | "APPROVE_ONLY")} disabled={tipoResponsable === "Elaborador"}><option value="SIGN_AND_APPROVE">Revisión / aprobación con firma</option><option value="APPROVE_ONLY">Aprobación / registro sin firma individual</option></select></label>
               {tipoResponsable === "Autoridad" && (
                 <div style={{
                   background: "#eff6ff",
@@ -384,7 +388,7 @@ export default function ConfigurarFlujoView({
               )}
 
               {/* Si es etapa de revisión, permitir elegir revisores y regla */}
-              {tipoResponsable === "Revisores" && (
+              {actionMode === "SIGN_AND_APPROVE" && tipoResponsable !== "Elaborador" && (
                 <>
                   <div style={{ marginBottom: 14 }}>
                     <label className="form-label required">Revisores asignados (seleccione uno o varios)</label>

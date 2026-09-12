@@ -29,6 +29,7 @@ export type DocumentState =
   | "EN EJECUCIÓN";
 
 export interface DocumentSignature {
+  stageId?: string;
   actorId?: string;
   actor: string;
   cargo: string;
@@ -40,7 +41,16 @@ export interface DocumentSignature {
   algoritmo?: string;
 }
 
+export interface DocumentObservationAnchor {
+  pageNumber: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface DocumentObservation {
+  anchor?: DocumentObservationAnchor;
   id: number;
   documentoId: string;
   formalVersion: string;
@@ -127,6 +137,8 @@ export interface DocumentArtifact {
   reviewRound: number;   // e.g. 1, 2, 3
   pageCount: number;     // e.g. 3, 4 (o N páginas dinámicas)
   pages?: DocumentPage[]; // Representación de las páginas del documento
+  elaborationFinalizedAt?: string;
+  fuente?: string;
   generatedAt: string;   // e.g. "07/09/2026 09:30"
   generatedBy: string;   // "Ing. Andrea Pérez, Mg."
   grupo: string;         // "Comisión de Eventos Académicos" o "Unidad de Titulación"
@@ -148,11 +160,14 @@ export interface DocumentArtifact {
   tieneAnexos: "si" | "no" | null;
   anexos: AnexoDoc[];
   signatures: DocumentSignature[];
-  signatureSlots?: { role: string; pageIndex: number; label: string; action: string; }[];
+  signatureSlots?: { role: string; pageIndex: number; pageNumber?: number; stageId?: string; label: string; action: string; }[];
   historialCambios?: HistorialCambioFila[];
 }
 
 export interface FlowStageNode {
+  approvalGroup?: string;
+  approvalRule?: "TODOS DEBEN APROBAR" | "AL MENOS UNO";
+  actionMode?: "SIGN_AND_APPROVE" | "APPROVE_ONLY";
   id: string;
   actorId?: string;
   stageName: string; // "ETAPA 1 — Elaboración", "ETAPA 2 — Revisión", "ETAPA 3 — Validación final"
@@ -166,6 +181,7 @@ export interface FlowStageNode {
 }
 
 export interface DocumentMasterState {
+  draftCreatedAt?: string;
   id: string;
   codigo: string;
   codigoFormatoOficial?: "UTA-SGC-A-2-1-P7-T1" | "UTA-SGC-A-2-1-P7-T2" | string;
