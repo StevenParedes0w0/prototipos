@@ -30,6 +30,8 @@ export type DocumentState =
   | "EN EJECUCIÓN";
 
 export interface DocumentSignature {
+  credentialMode?: "manual" | "demo";
+  isDemo?: boolean;
   stageId?: string;
   actorId?: string;
   actor: string;

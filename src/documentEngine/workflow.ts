@@ -37,6 +37,17 @@ export function activateNextStages(stages: FlowStageNode[]): FlowStageNode[] {
   });
 }
 
+export function hasConfiguredNextStage(stages: FlowStageNode[]): boolean {
+  const elaborationIndex = stages.findIndex(stage => stage.actorRole === "docente");
+  if (elaborationIndex < 0) return false;
+  const nextStages = stages.slice(elaborationIndex + 1);
+  if (!nextStages.length) return false;
+  return nextStages.every(stage => {
+    const named = Boolean(stage.stageName.trim()) && !/pendiente de (configuraci[oó]n|asignaci[oó]n)/i.test(`${stage.stageName} ${stage.actorName}`);
+    return named && (stage.actionMode === "APPROVE_ONLY" || Boolean(stage.actorId));
+  });
+}
+
 export function getActiveReviewStages(doc: DocumentMasterState): FlowStageNode[] {
   if (!["EN REVISIÓN", "EN VALIDACIÓN FINAL"].includes(doc.documentState)) return [];
   return activateNextStages(doc.flowStages).filter(s => s.estado === "EN_CURSO" && s.actorRole !== "docente");

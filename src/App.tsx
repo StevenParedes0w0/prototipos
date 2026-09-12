@@ -1,4 +1,4 @@
-import { canonicalDemoActorId, flowFromConfiguration } from "./documentEngine/workflow";
+import { canonicalDemoActorId, flowFromConfiguration, hasConfiguredNextStage } from "./documentEngine/workflow";
 import { buildDocumentPages, getSignatureSlots } from "./documentEngine/pagination";
 import { useState, useRef, useEffect } from "react";
 import logoUta from "./img/Logo UTA-Azul.png";
@@ -3678,14 +3678,18 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngin
   const [open, setOpen] = useState(false);
   const doc = docEngine?.docMaster;
   const slot = doc?.currentArtifact.signatureSlots?.find(s => s.role === "docente");
+  const actorEligible = Boolean(doc && canonicalDemoActorId(doc.currentArtifact.elaborador.id) === canonicalDemoActorId(docEngine?.currentUser.id));
+  const flowConfigured = Boolean(doc && hasConfiguredNextStage(doc.flowStages));
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <Stepper current={7} maxReached={maxReached} />
     <div style={{padding:28}}><h1 style={{fontSize:22,fontWeight:700,color:"#0f2f56"}}>Firma y Finalización</h1>
-      <p style={{margin:"16px 0"}}>Al finalizar, el documento continuará automáticamente al siguiente nivel configurado del flujo institucional.</p>
-      <button className="btn btn-primary" disabled={!slot || doc?.documentState !== "LISTO PARA FIRMA"} onClick={() => setOpen(true)}>FIRMAR Y FINALIZAR</button>
+      <p style={{margin:"16px 0"}}>La firma finaliza la elaboración. Después podrá enviar el documento a la siguiente etapa configurada.</p>
+      {!flowConfigured && <div role="alert" style={{marginBottom:16,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#92400e"}}><strong>El flujo de aprobación de este grupo aún no está completamente configurado.</strong><br/>Solicite al administrador completar la configuración del flujo.</div>}
+      {doc?.documentState === "LISTO PARA FIRMA" && <button className="btn btn-primary" disabled={!slot || !actorEligible || !flowConfigured} onClick={() => setOpen(true)}>FIRMAR Y FINALIZAR ELABORACIÓN</button>}
+      {doc?.documentState === "FIRMADO POR ELABORADOR" && <button className="btn btn-primary" disabled={!flowConfigured} onClick={() => {onEnviarRevision();}}>ENVIAR A REVISIÓN</button>}
       <button className="btn btn-ghost" onClick={onPrev}>Volver a previsualización</button>
     </div>
-    {doc && <ModalFirmaDocumental isOpen={open} onClose={() => setOpen(false)} tituloDocumento={doc.nombre} grupo={doc.grupo} formalVersion={doc.formalVersion} reviewRound={doc.reviewRound} actorNombre={doc.currentArtifact.elaborador.nombre} actorCargo={doc.currentArtifact.elaborador.cargo} ubicacionSugerida={slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible"} accionTexto="FIRMAR Y FINALIZAR" onFirmar={(file, location) => {if(docEngine!.firmarComoElaborador(doc.id,file,location)){onEnviarRevision();onNext();}}} />}
+    {doc && <ModalFirmaDocumental isOpen={open} onClose={() => setOpen(false)} tituloDocumento={doc.nombre} grupo={doc.grupo} formalVersion={doc.formalVersion} reviewRound={doc.reviewRound} actorNombre={doc.currentArtifact.elaborador.nombre} actorCargo={doc.currentArtifact.elaborador.cargo} ubicacionSugerida={slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible"} accionTexto="FIRMAR Y FINALIZAR ELABORACIÓN" actorEligible={actorEligible} hasValidSignatureSlot={Boolean(slot)} onFirmar={(file, location, mode) => docEngine!.firmarComoElaborador(doc.id,file,location,mode)} />}
   </div>;
 }
 
@@ -3912,9 +3916,10 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
 
   function handleEnviarRevision() {
     if (docEngine) {
-      docEngine.enviarARevision(docEngine.docMaster.id);
+      if (!docEngine.enviarARevision(docEngine.docMaster.id)) return;
     }
     saveDraft({ estado: "en-revision", fechaEnvio: todayFormatted() });
+    setSub("step8");
   }
 
   function handleCorregir(targetDocId = docEngine?.docMaster.id) {

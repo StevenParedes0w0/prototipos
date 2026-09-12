@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { canSubmitSignatureCredential, demoSignatureCredential, emptySignatureCredential, SignatureCredentialMode } from "./signatureCredential";
 
 interface ModalFirmaDocumentalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFirmar: (certFile: string, ubicacion: string) => boolean | void;
+  onFirmar: (certFile: string, ubicacion: string, mode: SignatureCredentialMode) => boolean | void;
   tituloDocumento?: string;
   grupo?: string;
   formalVersion?: string;
@@ -12,6 +13,8 @@ interface ModalFirmaDocumentalProps {
   actorCargo: string;
   ubicacionSugerida?: string;
   accionTexto?: string; // "FIRMAR DOCUMENTO", "APROBAR Y FIRMAR", "VALIDAR Y FIRMAR"
+  actorEligible?: boolean;
+  hasValidSignatureSlot?: boolean;
 }
 
 export default function ModalFirmaDocumental({
@@ -26,42 +29,42 @@ export default function ModalFirmaDocumental({
   actorCargo,
   ubicacionSugerida = "Ubicación no disponible",
   accionTexto = "FIRMAR DOCUMENTO",
+  actorEligible = true,
+  hasValidSignatureSlot = ubicacionSugerida !== "Ubicación no disponible",
 }: ModalFirmaDocumentalProps) {
-  const [certFile, setCertFile] = useState("");
-  const [certPass, setCertPass] = useState("");
+  const [credential, setCredential] = useState(emptySignatureCredential);
+  const [manualFile, setManualFile] = useState<File | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [ubicacion, setUbicacion] = useState(ubicacionSugerida);
-  const [confirmado, setConfirmado] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setCertFile(""); setCertPass(""); setConfirmado(false);
+      setCredential(emptySignatureCredential()); setManualFile(null);
       setShowPass(false); setUbicacion(ubicacionSugerida); setError("");
     }
   }, [isOpen, actorNombre, ubicacionSugerida]);
 
   if (!isOpen) return null;
 
-  const validCertificate = /\.(p12|pfx)$/i.test(certFile.trim());
-  const canSign = validCertificate && certPass.trim().length > 0 && confirmado && !isSigning;
+  const validCertificate = /\.(p12|pfx)$/i.test(credential.fileName.trim());
+  const canSign = canSubmitSignatureCredential({ ...credential, hasManualFile: credential.mode === "manual" && Boolean(manualFile) }, actorEligible, hasValidSignatureSlot) && !isSigning;
 
   const handleEjecutarFirma = () => {
     if (!canSign) return;
     setIsSigning(true);
     setTimeout(() => {
       setIsSigning(false);
-      const accepted = onFirmar(certFile, ubicacion);
+      const accepted = onFirmar(credential.fileName, ubicacion, credential.mode);
       if (accepted === false) {
         setError("No se pudo firmar. Verifique la identidad, la etapa activa y el certificado seleccionado.");
-        setCertPass("");
+        setCredential(current => ({ ...current, password: "" }));
         return;
       }
-      setCertPass("");
-      setCertFile("");
-      setConfirmado(false);
+      setCredential(emptySignatureCredential());
+      setManualFile(null);
       onClose();
     }, 600);
   };
@@ -178,16 +181,23 @@ export default function ModalFirmaDocumental({
             </div>
           </div>
 
+          <button type="button" className="btn btn-ghost" onClick={() => { setCredential(demoSignatureCredential(actorNombre)); setManualFile(null); setError(""); }}>
+            Usar certificado DEMO
+          </button>
+          {credential.mode === "demo" && <div role="status" style={{padding:"10px 12px",background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:8,fontSize:12,color:"#92400e"}}>
+            Credencial DEMO — no corresponde a una firma electrónica real.
+          </div>}
+
           {/* Form Fields */}
           <div>
             <label className="form-label required" style={{ fontSize: 12.5, marginBottom: 5 }}>
               Archivo de certificado (.p12 / .pfx)
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <input type="file" accept=".p12,.pfx" ref={fileRef} style={{display:"none"}} onChange={event => {setCertFile(event.target.files?.[0]?.name || "");setError("");}} />
+              <input type="file" accept=".p12,.pfx" ref={fileRef} style={{display:"none"}} onChange={event => {const file=event.target.files?.[0] || null;setManualFile(file);setCredential(current => ({...current,mode:"manual",fileName:file?.name || "",hasManualFile:Boolean(file),password:""}));setError("");}} />
               <input
                 className="form-input"
-                value={certFile}
+                value={credential.fileName}
                 readOnly
                 placeholder="Seleccione archivo .p12 o .pfx"
                 style={{ flex: 1, fontSize: 13 }}
@@ -202,7 +212,7 @@ export default function ModalFirmaDocumental({
               </button>
             </div>
           </div>
-          {certFile && !validCertificate && <div role="alert" style={{fontSize:12,color:"#b91c1c"}}>Seleccione un archivo .p12 o .pfx.</div>}
+          {credential.fileName && !validCertificate && <div role="alert" style={{fontSize:12,color:"#b91c1c"}}>Seleccione un archivo .p12 o .pfx.</div>}
 
           <div>
             <label className="form-label required" style={{ fontSize: 12.5, marginBottom: 5 }}>
@@ -212,8 +222,8 @@ export default function ModalFirmaDocumental({
               <input
                 className="form-input"
                 type={showPass ? "text" : "password"}
-                value={certPass}
-                onChange={(e) => setCertPass(e.target.value)}
+                value={credential.password}
+                onChange={(e) => setCredential(current => ({...current,password:e.target.value}))}
                 placeholder="Ingrese contraseña de su firma"
                 style={{ paddingRight: 38, fontSize: 13 }}
               />
@@ -288,8 +298,8 @@ export default function ModalFirmaDocumental({
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginTop: 2 }}>
             <input
               type="checkbox"
-              checked={confirmado}
-              onChange={(e) => setConfirmado(e.target.checked)}
+              checked={credential.confirmed}
+              onChange={(e) => setCredential(current => ({...current,confirmed:e.target.checked}))}
               style={{ accentColor: "#1a4f8a", marginTop: 2, flexShrink: 0, width: 16, height: 16 }}
             />
             <span style={{ fontSize: 12.5, color: "#334155", lineHeight: 1.5 }}>

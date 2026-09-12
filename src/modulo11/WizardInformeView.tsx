@@ -13,6 +13,7 @@ import {
 } from "../documentEngine/mockDataDocument";
 import DocumentPdfPageViewer from "../documentEngine/DocumentPdfPageViewer";
 import ModalFirmaDocumental from "../documentEngine/ModalFirmaDocumental";
+import { SignatureCredentialMode } from "../documentEngine/signatureCredential";
 
 interface WizardInformeViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
@@ -253,7 +254,7 @@ export default function WizardInformeView({
     ],
   };
 
-  const handleFirmarDocumento = (certFile: string, ubicacion: string) => {
+  const handleFirmarDocumento = (certFile: string, ubicacion: string, mode: SignatureCredentialMode) => {
     let targetId = createdDocId;
     if (!targetId) {
       const newDoc = crearNuevoDocumento("INFORME", {
@@ -290,15 +291,14 @@ export default function WizardInformeView({
       anexos: tieneAnexos === "si" ? anexos : [],
     });
 
-    if (!firmarComoElaborador(targetId, certFile, ubicacion)) return;
+    if (!firmarComoElaborador(targetId, certFile, ubicacion, mode)) return false;
     setIsSigned(true);
     setShowFirmaModal(false);
-    enviarARevision(targetId);
-    onFinish();
+    return true;
   };
 
   const handleEnviarARevision = () => {
-    if (createdDocId) enviarARevision(createdDocId);
+    if (!createdDocId || !enviarARevision(createdDocId)) return;
     onFinish();
   };
 
@@ -328,6 +328,8 @@ export default function WizardInformeView({
         actorCargo="Docente elaborador"
         ubicacionSugerida={`Página ${previewSignatureSlots.find(s => s.role === "docente")?.pageNumber || "no disponible"} — Elaborado por`}
         accionTexto="FIRMAR Y FINALIZAR"
+        actorEligible={true}
+        hasValidSignatureSlot={Boolean(previewSignatureSlots.find(s => s.role === "docente"))}
       />
 
       {/* AI Modal Comparison */}
@@ -1217,7 +1219,7 @@ export default function WizardInformeView({
                       onClick={handleEnviarARevision}
                       style={{ background: "#16a34a", border: "none", padding: "10px 20px", fontSize: 13.5, fontWeight: 800 }}
                     >
-                      VOLVER A MIS DOCUMENTOS
+                      ENVIAR A REVISIÓN
                     </button>
                   </div>
                 )}

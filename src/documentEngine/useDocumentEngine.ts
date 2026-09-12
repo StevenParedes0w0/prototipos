@@ -1,4 +1,5 @@
-import { advanceStage, activateNextStages, canonicalDemoActorId, canActOnStage, getActiveReviewStages, flowFromConfiguration } from "./workflow";
+import { advanceStage, activateNextStages, canonicalDemoActorId, canActOnStage, getActiveReviewStages, flowFromConfiguration, hasConfiguredNextStage } from "./workflow";
+import { SignatureCredentialMode } from "./signatureCredential";
 import { buildDocumentPages, composeArtifactPages, getSignatureSlots } from "./pagination";
 import { useState, useCallback, useRef } from "react";
 import { DocumentMasterState, DocumentArtifact, DocumentObservation, DocumentObservationAnchor, DocumentSignature, DocumentType, ActividadMatrizDoc, AnexoDoc, InformeDataDoc, FlowStageNode } from "./types";
@@ -144,24 +145,34 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     return next?.currentArtifact;
   };
 
-  const firmarComoElaborador = (targetDocId: string, certFile: string, _ubicacion = "") => Boolean(mutateDocument(targetDocId, doc => {
+  const firmarComoElaborador = (targetDocId: string, certFile: string, _ubicacion = "", credentialMode: SignatureCredentialMode = "manual") => {
+    let signed = false;
+    mutateDocument(targetDocId, doc => {
     const stage = doc.flowStages.find(s => s.actorRole === "docente" && canonicalDemoActorId(s.actorId) === sessionRef.current.id);
-    if (!isAuthor(doc) || !stage || doc.documentState !== "LISTO PARA FIRMA" || doc.currentArtifact.signatures.length || !/\.(p12|pfx)$/i.test(certFile) || doc.flowStages.length < 2 || doc.flowStages.some(s => s.actionMode !== "APPROVE_ONLY" && !s.actorId)) return doc;
+    if (!isAuthor(doc) || !stage || !["PENDIENTE", "EN_CURSO"].includes(stage.estado) || doc.documentState !== "LISTO PARA FIRMA" || doc.currentArtifact.signatures.some(s => s.stageId === stage.id) || !/\.(p12|pfx)$/i.test(certFile) || !hasConfiguredNextStage(doc.flowStages)) return doc;
     const slot = doc.currentArtifact.signatureSlots?.find(s => s.stageId === stage.id);
     if (!slot) return doc;
-    const signature: DocumentSignature = { stageId: stage.id, actorId: stage.actorId, actor: doc.currentArtifact.elaborador.nombre, cargo: stage.actorCargo, role: "docente", fecha: documentDate(), hora: documentTime(), ubicacion: `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` };
+    const signature: DocumentSignature = { stageId: stage.id, actorId: stage.actorId, actor: doc.currentArtifact.elaborador.nombre, cargo: stage.actorCargo, role: "docente", fecha: documentDate(), hora: documentTime(), ubicacion: `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}`, credentialMode, isDemo: credentialMode === "demo" };
     const finalizedDate = doc.currentArtifact.elaborationFinalizedAt || documentDate();
     const artifact = { ...doc.currentArtifact, elaborationFinalizedAt: finalizedDate, signatures: [signature], historialCambios: (doc.currentArtifact.historialCambios || []).map((row, i) => i === 0 ? { ...row, fecha: finalizedDate } : row) };
-    const next = advanceStage({ ...doc, currentArtifact: artifact }, stage);
-    return { ...next, flowStages: next.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO", signature } : s), fechaUltimaActualizacion: timestamp() };
-  }, "DOCUMENTO FIRMADO", "Firma simulada del elaborador y finalización: continúa a la siguiente etapa configurada."));
+    signed = true;
+    return { ...doc, documentState: "FIRMADO POR ELABORADOR", currentArtifact: artifact, flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO", signature } : s), fechaUltimaActualizacion: timestamp() };
+    }, "DOCUMENTO FIRMADO", credentialMode === "demo" ? "Firma DEMO del elaborador; no corresponde a una firma electrónica real." : "Firma simulada del elaborador.");
+    return signed;
+  };
 
-  const enviarARevision = (targetDocId: string) => mutateDocument(targetDocId, doc => {
-    if (!isAuthor(doc) || doc.documentState !== "FIRMADO POR ELABORADOR") return doc;
+  const enviarARevision = (targetDocId: string) => {
+    let sent = false;
+    mutateDocument(targetDocId, doc => {
+    if (!isAuthor(doc) || doc.documentState !== "FIRMADO POR ELABORADOR" || !hasConfiguredNextStage(doc.flowStages)) return doc;
     const stages = activateNextStages(doc.flowStages);
     const next = stages.find(s => s.estado === "EN_CURSO");
+    if (!next || next.actorRole === "docente") return doc;
+    sent = true;
     return { ...doc, flowStages: stages, documentState: next?.actorRole === "validador" ? "EN VALIDACIÓN FINAL" : "EN REVISIÓN", fechaUltimaActualizacion: timestamp() };
-  }, "DOCUMENTO ENVIADO A REVISIÓN");
+    }, "DOCUMENTO ENVIADO A REVISIÓN");
+    return sent;
+  };
 
   const ownActiveStage = (doc: DocumentMasterState, actor = sessionRef.current.nombre) => getActiveReviewStages(doc).find(s => canonicalDemoActorId(s.actorId) === sessionRef.current.id && s.actorName === actor);
   const ownObservation = (doc: DocumentMasterState, obs: DocumentObservation) => obs.ronda === doc.reviewRound && obs.estado === "activa" && !obs.congelada && (obs.revisorId ? canonicalDemoActorId(obs.revisorId) === sessionRef.current.id : obs.revisor === sessionRef.current.nombre) && Boolean(ownActiveStage(doc)) && (!obs.stageId || canActOnStage(doc, obs.stageId, sessionRef.current.id));
