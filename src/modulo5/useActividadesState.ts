@@ -11,11 +11,13 @@ export const FECHA_HORA_SISTEMA = `${FECHA_SISTEMA_STR} — ${HORA_SISTEMA_STR}`
 export const FECHA_SISTEMA = new Date(2026, 8, 7, 10, 0, 0); // 8 = Septiembre
 
 export function parseFechaDMY(dmy: string): Date {
+  const iso = dmy.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 23, 59, 59);
   const parts = dmy.split("/").map(Number);
-  if (parts.length === 3) {
+  if (parts.length === 3 && parts.every(Number.isFinite)) {
     return new Date(parts[2], parts[1] - 1, parts[0], 23, 59, 59);
   }
-  return new Date();
+  return new Date(Number.NaN);
 }
 
 export function getDiasRestantes(hastaDmy: string, fechaRef: Date = FECHA_SISTEMA): number {

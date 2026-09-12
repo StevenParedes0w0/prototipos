@@ -1,232 +1,550 @@
-# CORRECCIÓN INTEGRAL PRIORITARIA — CREACIÓN DE PLANES + FIDELIDAD DOCUMENTAL T1
+# AUDITORÍA Y CORRECCIÓN MAESTRA FINAL DEL MOCKUP
+# GESTIÓN DOCUMENTAL ACADÉMICA FISEI — T1, T2, FLUJOS, EVIDENCIAS, ADMINISTRACIÓN, HISTÓRICO Y UX
 
-Antes de modificar cualquier archivo:
+Quiero realizar una AUDITORÍA FINAL COMPLETA del proyecto y corregir TODO lo que todavía esté incompleto, inconsistente, incorrecto, hardcodeado, contradictorio o poco demostrable.
 
-1. Lee COMPLETAMENTE:
-   - `AGENTS.md`
-   - `requirements.md`
-   - `implementation-status.md`
-   - toda la carpeta `Documentos_guia`
-2. Inspecciona el código actual relacionado con:
-   - creación de Plan de Trabajo;
-   - prevención de duplicados;
-   - datos DEMO y restauración DEMO;
-   - motor documental;
-   - composición/paginación T1;
-   - visor A4;
-   - portada institucional;
-   - encabezados;
-   - pies de página;
-   - firmas;
-   - historial de cambios.
-3. No asumas que `implementation-status.md` contiene todos los consumidores.
-4. Busca todos los lugares donde se construyen, clonan, restauran, visualizan o validan Planes de Trabajo.
-5. No me entregues únicamente análisis: IMPLEMENTA las correcciones.
+Esta NO es una tarea de análisis únicamente.
 
-Este proyecto es exclusivamente un MOCKUP INTERACTIVO DE ALTA FIDELIDAD.
-NO implementar backend, API real, base de datos productiva, firma criptográfica real, infraestructura, servicios externos ni integraciones DTIC.
-Las simulaciones deben seguir siendo claramente simulaciones cuando corresponda.
+Debes:
+
+1. estudiar completamente el proyecto;
+2. contrastarlo contra toda la documentación de requisitos;
+3. localizar discrepancias reales;
+4. corregirlas;
+5. probar regresiones;
+6. dejar el mockup preparado para una demostración académica completa de extremo a extremo.
+
+NO te limites al último reporte.
+NO asumas que algo está correcto porque anteriormente se reportó como corregido.
+Comprueba la implementación REAL.
 
 ---
 
-# OBJETIVO DE ESTA PASADA
+# 0. NATURALEZA DEL PROYECTO — REGLA ABSOLUTA
 
-Resolver en una sola intervención dos grupos de problemas:
+Este proyecto es un:
 
-A. El sistema actualmente termina mostrando que prácticamente todas las combinaciones de grupo/período “ya existen”, dificultando o impidiendo crear un Plan nuevo durante la demostración.
+**MOCKUP INTERACTIVO DE ALTA FIDELIDAD**
 
-B. El formato institucional T1 TODAVÍA NO reproduce correctamente varias correcciones visuales indicadas expresamente durante las reuniones, especialmente la portada y el pie de página.
+Su finalidad es:
 
-NO realizar rediseños generales de la aplicación.
-NO cambiar la identidad visual azul institucional.
-NO alterar flujos que ya funcionan correctamente salvo que sean consumidores directos de estas correcciones.
+- demostrar UX;
+- demostrar flujos;
+- demostrar estados;
+- demostrar documentos;
+- demostrar revisión;
+- demostrar evidencias;
+- demostrar administración;
+- demostrar trazabilidad;
+- demostrar comportamiento esperado del futuro sistema.
+
+NO debe convertirse en una implementación productiva.
+
+NO implementar innecesariamente:
+
+- backend real;
+- API productiva;
+- servidor;
+- PostgreSQL;
+- autenticación institucional real;
+- servicios externos;
+- almacenamiento cloud;
+- firma criptográfica real;
+- validación real de certificados;
+- integración DTIC;
+- correo real;
+- QR real;
+- hashes criptográficos;
+- infraestructura;
+- Docker;
+- CI/CD;
+- generación PDF productiva;
+- Excel productivo;
+- notificaciones push reales.
+
+Si una característica necesita backend/integración institucional para existir realmente:
+
+SIMULARLA correctamente en el mockup.
+
+Debe quedar claro cuándo algo es:
+
+- comportamiento DEMO;
+- simulación;
+- configuración pendiente;
+- decisión institucional pendiente.
+
+NO inventar reglas para cubrir vacíos institucionales.
 
 ---
 
-# PARTE A — CORREGIR CREACIÓN Y DETECCIÓN DE PLANES DUPLICADOS
+# 1. FUENTES DE VERDAD
 
-## A1. Regla canónica de unicidad
+ANTES DE MODIFICAR CUALQUIER ARCHIVO, lee COMPLETAMENTE:
 
-La única regla confirmada para impedir Planes duplicados es:
+- `AGENTS.md`
+- `requirements.md`
+- `implementation-status.md`
+- `reporte-correccion-integral.md`, si existe
+- cualquier otro `reporte*.md`
+- toda la carpeta `Documentos_guia`
+- README u otra documentación funcional relevante
+- tests existentes relacionados con document-engine o flujos
 
-`docente autenticado + grupo institucional + período académico`
+Inspecciona también todo el código fuente necesario.
+
+NO asumas que los archivos enumerados en reportes anteriores son los únicos consumidores de cada comportamiento.
+
+Busca referencias globalmente.
+
+---
+
+# 2. PRECEDENCIA DE REQUISITOS
+
+Cuando exista contradicción, utilizar esta prioridad:
+
+1. requerimientos confirmados en `requirements.md`;
+2. aclaraciones institucionales/reuniones registradas en los documentos del proyecto;
+3. `Documentos_guia` para fidelidad documental;
+4. `implementation-status.md`;
+5. comportamiento actual del código.
+
+El código actual NO es fuente de verdad si contradice los requisitos.
+
+NO “preservar” un error por compatibilidad con el mockup anterior.
+
+---
+
+# 3. PRIMERA FASE — AUDITORÍA ANTES DE PROGRAMAR
+
+Antes de implementar cambios:
+
+## 3.1 Construye internamente una matriz
+
+Para cada requisito importante determina:
+
+- requisito;
+- implementado;
+- parcialmente implementado;
+- incorrecto;
+- ausente;
+- pendiente institucional;
+- archivos consumidores;
+- riesgo de regresión.
+
+No hace falta mostrarme la matriz por chat.
+
+Debe servirte para planificar la implementación.
+
+---
+
+# 4. IDENTIDAD, SESIÓN Y CONTEXTO
+
+Verificar completamente la separación entre:
+
+`currentUser`
+
+y
+
+`activeContext`
+
+La identidad autenticada y el contexto/rol NO son lo mismo.
+
+Ejemplo:
+
+Andrea Pérez inicia sesión.
+
+Puede existir contexto:
+
+- Docente;
+- Revisor;
+- Administrador,
+
+si el escenario DEMO lo permite.
+
+Pero cambiar contexto NO debe transformar a Andrea en:
+
+- Carlos;
+- Patricia;
+- Laura;
+- otro usuario.
+
+Para probar acciones de otra persona debe cambiarse explícitamente la persona/sesión DEMO.
+
+Verificar en:
+
+- encabezado;
+- sidebar;
+- Perfil;
+- firmas;
+- observaciones;
+- aprobaciones;
+- evidencias;
+- auditoría;
+- notificaciones;
+- reportes.
+
+Ninguna acción debe registrarse a nombre de una persona distinta a la sesión actual.
+
+---
+
+# 5. GESTIÓN DOCUMENTAL — PLANES E INFORMES
+
+Auditar completamente la bandeja:
+
+`Gestión Documental Académica`
+
+Debe manejar correctamente:
+
+- Plan de Trabajo;
+- Informe;
+- filtros;
+- estados;
+- versiones;
+- rondas;
+- grupo;
+- período;
+- acciones contextuales.
+
+Preferir acciones compactas por iconos cuando sean repetitivas:
+
+- ojo → Ver;
+- lápiz → Editar;
+- continuar/documento → Continuar;
+- comentario → Observaciones;
+- historial → Historial;
+- papelera → Eliminar cuando corresponda.
+
+Todo icono debe tener:
+
+- `title`;
+- `aria-label`.
+
+No convertir acciones primarias importantes como `Firmar`, `Enviar`, `Continuar` o `Guardar` en iconos ambiguos.
+
+---
+
+# 6. UNICIDAD DE PLANES
+
+Regla canónica:
+
+`teacherId + groupId + periodId`
 
 Debe existir como máximo un Plan de Trabajo por esa combinación.
 
-La comparación debe usar identificadores estables, NO nombres visibles.
+Usar IDs estables.
 
-Ejemplo conceptual:
+NO nombres visibles.
 
-```ts
-plan.teacherId === currentUser.id &&
-plan.groupId === selectedGroupId &&
-plan.periodId === selectedPeriodId
-````
+Un Informe NO bloquea un Plan.
 
-NO considerar duplicado solo porque:
+Un Plan de otro período NO bloquea.
 
-* exista otro Plan del mismo período;
-* exista otro Plan del mismo grupo pero de otro docente;
-* exista otro Plan del mismo docente pero de otro grupo;
-* exista otro documento de tipo Informe;
-* exista un Plan histórico de otro período;
-* exista un Plan relacionado a otro grupo;
-* exista un documento DEMO con texto parecido;
-* el nombre visible sea similar.
+Un Plan de otro grupo NO bloquea.
 
-Normalizar estados y modelos sin usar coincidencias parciales por strings.
+Un Plan de otro docente NO bloquea.
 
----
+Si ya existe:
 
-## A2. Auditar la causa real del problema actual
+mostrar información del Plan y la acción correcta:
 
-Actualmente, al abrir:
+- Continuar borrador;
+- Continuar corrección;
+- Ver documento.
 
-`Nuevo documento → Plan de Trabajo`
-
-el sistema termina indicando para muchas o todas las opciones:
-
-> “Ya existe un Plan para este docente, grupo y período.”
-
-NO tapes el problema eliminando simplemente documentos arbitrariamente.
-
-Determina por qué sucede realmente.
-
-Revisar al menos:
-
-* estado de `documents`;
-* `mockDataDocument.ts`;
-* inicialización de DEMO;
-* función de creación;
-* función de búsqueda de duplicados;
-* restauración DEMO;
-* persistencia local;
-* posible acumulación de Planes creados en pruebas;
-* documentos clonados;
-* Planes generados por error;
-* documentos históricos;
-* estado restaurado tras reload;
-* combinación entre datos iniciales y datos persistidos.
-
-Si existen documentos legítimos para una combinación, deben seguir bloqueando el duplicado.
+No crear otro.
 
 ---
 
-## A3. La interfaz debe distinguir claramente un duplicado real
+# 7. DATASET DEMO
 
-Si existe exactamente el Plan:
+Auditar completamente los datos DEMO.
 
-Andrea + Unidad de Titulación + Julio–Diciembre 2026
-
-entonces debe impedir:
-
-Andrea + Unidad de Titulación + Julio–Diciembre 2026
-
-Pero debe seguir permitiendo, por ejemplo:
-
-Andrea + Club Académico de Software + Julio–Diciembre 2026
-
-SI esa combinación exacta todavía no existe.
-
-También debe permitir:
-
-Andrea + Unidad de Titulación + Enero–Junio 2026
-
-SI esa combinación exacta todavía no existe.
-
----
-
-## A4. Mejorar el modal cuando existe el documento
-
-Cuando haya un duplicado REAL, no basta con dejar el botón deshabilitado.
-
-Mostrar:
-
-> Ya existe un Plan de Trabajo para este docente, grupo y período.
-
-Mostrar debajo información del Plan existente:
-
-* grupo;
-* período;
-* versión formal;
-* ronda;
-* estado actual.
-
-Y ofrecer una acción contextual válida:
-
-* `Continuar borrador`, si está en BORRADOR;
-* `Ver documento`, si ya fue firmado/enviado;
-* `Continuar corrección`, si está EN CORRECCIÓN.
-
-NO permitir crear una segunda entidad.
-
-Usar preferentemente iconos cuando la acción sea compacta y el significado sea evidente, con `title` accesible.
-
----
-
-## A5. Entorno DEMO utilizable
-
-El mockup DEBE permitir demostrar la creación de un Plan nuevo.
+Debe ser posible demostrar el sistema sin quedar atrapado.
 
 Después de:
 
 `Restablecer documentos DEMO`
 
-debe existir al menos UNA combinación válida:
+deben existir ejemplos suficientes para demostrar:
 
-`docente actual + grupo disponible + período disponible`
+- BORRADOR;
+- EN REVISIÓN;
+- EN CORRECCIÓN;
+- VALIDADO / EN EJECUCIÓN;
+- Informe;
+- actividad;
+- evidencia pendiente;
+- evidencia observada;
+- evidencia validada;
+- histórico;
+- al menos una combinación libre para crear un Plan.
 
-que NO tenga un Plan existente y permita crear uno desde cero.
+NO llenar todas las combinaciones disponibles.
+
+Grupos canónicos:
+
+- Unidad de Titulación
+- Comisión de Eventos Académicos
+- Comisión de Vinculación con la Sociedad
+- Club Académico de Software
+
+NO introducir grupos inventados.
+
+---
+
+# 8. RESTABLECER DEMO
+
+Debe reemplazar completamente el estado DEMO.
+
+No mezclar:
+
+- documentos anteriores;
+- documentos creados manualmente;
+- snapshots viejos;
+- localStorage incompatible.
+
+Después de reset:
+
+el sistema debe volver exactamente al dataset canónico.
+
+---
+
+# 9. CREACIÓN DE PLAN T1
+
+Auditar los 7 pasos actuales.
+
+Flujo esperado:
+
+1. Información general
+2. Contenido
+3. Actividades
+4. Matriz de actividades
+5. Anexos
+6. Previsualización
+7. Firma y Finalización
+
+Todos deben:
+
+- conservar datos;
+- bloquear avance cuando falten obligatorios;
+- permitir volver atrás;
+- no borrar valores;
+- mostrar estado guardado;
+- permitir guardar borrador.
+
+No introducir pasos adicionales salvo que ya estén justificados por requisitos.
+
+---
+
+# 10. INFORMACIÓN GENERAL
+
+Verificar:
+
+- período;
+- grupo;
+- docente elaborador;
+- plantilla;
+- carrera;
+- versión inicial;
+- estado inicial.
+
+Un docente puede pertenecer a múltiples grupos.
+
+El Plan se relaciona con:
+
+docente + grupo + período.
+
+---
+
+# 11. CONTENIDO DEL PLAN
+
+Debe existir exactamente:
+
+- una Justificación;
+- un Objetivo.
+
+No duplicar campos.
+
+Asistente IA:
+
+- solo propone;
+- no sobrescribe automáticamente;
+- debe mostrar propuesta;
+- permitir aplicar;
+- permitir descartar;
+- conservar original hasta aceptación.
+
+No usar chatbot flotante.
+
+Si el mockup no llama a IA real:
+
+simular correctamente.
+
+---
+
+# 12. ACTIVIDADES
+
+Auditar:
+
+- obligatorias;
+- opcionales;
+- Otra.
+
+Categorías configurables:
+
+- POA;
+- Plan de Mejoras;
+- Acción de Mejora;
+- Otras.
+
+Las obligatorias:
+
+- aparecen seleccionadas;
+- no pueden eliminarse.
+
+Las opcionales:
+
+- pueden seleccionarse/desmarcarse.
+
+`Otra`:
+
+- puede crearla libremente el docente.
+
+No imponer un catálogo rígido para `Otra`.
+
+---
+
+# 13. MATRIZ DE ACTIVIDADES
+
+Cada actividad debe soportar:
+
+- Desde;
+- Hasta;
+- responsables;
+- recursos;
+- medios de verificación.
+
+Las fechas deben quedar dentro del período correspondiente.
+
+Regla confirmada:
+
+una actividad puede abarcar feriados, pero NO debe:
+
+- iniciar en feriado;
+- terminar en feriado.
+
+No inventar prórrogas.
+
+Procedimientos extraordinarios quedan pendientes/configurables.
+
+---
+
+# 14. RESPONSABLES — REVISIÓN ESPECIAL
+
+Esta fue una observación explícita.
+
+Debe permitirse:
+
+- uno;
+- varios;
+- todos los integrantes.
+
+Si se seleccionan TODOS los integrantes del grupo, el documento institucional puede mostrar una denominación colectiva apropiada.
+
+Ejemplos conceptuales:
+
+- `Integrantes de la Unidad`;
+- `Integrantes de la Comisión`;
+- `Integrantes del Club`;
+
+o denominación equivalente derivada del tipo/configuración del grupo.
 
 IMPORTANTE:
 
-No inventes grupos ajenos a los grupos canónicos ya definidos.
+La representación colectiva es SOLO de impresión/documentación.
 
-Grupos institucionales canónicos disponibles:
+Internamente conservar SIEMPRE:
 
-* Unidad de Titulación
-* Comisión de Eventos Académicos
-* Comisión de Vinculación con la Sociedad
-* Club Académico de Software
+- IDs individuales;
+- nombres individuales;
+- trazabilidad.
 
-Puedes reorganizar qué combinaciones existen por defecto en DEMO siempre que mantengas escenarios suficientes para:
+NO sustituir los responsables individuales en el modelo.
 
-* documento BORRADOR;
-* documento EN REVISIÓN;
-* documento EN CORRECCIÓN;
-* Plan VALIDADO/EN EJECUCIÓN;
-* al menos una combinación completamente libre para crear un Plan nuevo.
+Auditar especialmente:
 
-NO llenar todas las combinaciones posibles.
-
----
-
-## A6. Persistencia DEMO
-
-Si el usuario crea manualmente un Plan para una combinación libre, desde ese momento esa combinación sí debe quedar ocupada durante esa sesión/persistencia DEMO.
-
-`Restablecer documentos DEMO` debe volver al dataset canónico.
-
-No mezclar documentos creados en una sesión anterior después del reset.
-
-Verificar especialmente localStorage u otra persistencia usada actualmente.
+- checkbox “Seleccionar todos”;
+- estado indeterminado;
+- desmarcado parcial;
+- impresión T1;
+- pantalla de revisión;
+- ejecución;
+- permisos de evidencia.
 
 ---
 
-# PARTE B — FIDELIDAD DEL FORMATO INSTITUCIONAL T1
+# 15. RECURSOS Y MEDIOS — OPCIÓN “OTRO”
 
-ESTA PARTE ES PRIORITARIA.
+Revalidar la corrección anterior.
 
-No basta con que el documento “se parezca”.
-Debe respetar las observaciones visuales expresadas en las reuniones y los archivos institucionales de `Documentos_guia`.
+Al marcar `Otro`:
 
-Audita el renderer/compositor T1 completo.
+el texto personalizado pasa a ser obligatorio.
+
+No guardar `""`.
+
+Mostrar error inline.
+
+No cerrar drawer.
+
+Enfocar campo.
+
+No contar valores vacíos.
+
+Debe funcionar tanto para:
+
+- Recursos;
+- Medios de verificación.
 
 ---
 
-# B1. PORTADA — POSICIÓN VERTICAL DEL BLOQUE CENTRAL
+# 16. ANEXOS
 
-La portada actual tiene el bloque:
+Debe permitirse elegir:
+
+- Sí;
+- No.
+
+Si Sí:
+
+- añadir;
+- editar;
+- eliminar;
+- ordenar.
+
+No confundir anexos del Plan con evidencias de actividades.
+
+No imponer reglas no confirmadas sobre contenido interno del archivo.
+
+---
+
+# 17. FIDELIDAD DOCUMENTAL T1 — REVISIÓN COMPLETA
+
+Comparar visual y estructuralmente contra los archivos T1 en `Documentos_guia`.
+
+NO comparar únicamente contra la implementación actual.
+
+---
+
+# 18. PORTADA T1
+
+Debe conservar encabezado institucional.
+
+Después:
+
+`UNIVERSIDAD TÉCNICA DE AMBATO`
+
+Luego el bloque:
 
 `UNIDAD ACADÉMICA / ADMINISTRATIVA: ...`
 
@@ -234,615 +552,1316 @@ La portada actual tiene el bloque:
 
 `PERÍODO: ...`
 
-demasiado abajo.
+La observación confirmada de reunión es:
 
-CORREGIRLO.
+EL BLOQUE NO DEBE ESTAR EN LA PARTE INFERIOR.
 
-El bloque debe aparecer visualmente alrededor de la ZONA CENTRAL VERTICAL de la página A4, no pegado hacia el tercio inferior.
+Debe quedar visualmente equilibrado cerca de la zona central vertical.
 
-La intención visual debe ser aproximadamente:
-
-ENCABEZADO INSTITUCIONAL
-↓
-espacio moderado
-↓
-UNIVERSIDAD TÉCNICA DE AMBATO
-↓
-espacio
-↓
-BLOQUE PRINCIPAL DEL DOCUMENTO
-↓
-espacio
-↓
-FOOTER
-
-No debe existir un enorme espacio vacío entre:
+No dejar un espacio desproporcionado entre:
 
 `UNIVERSIDAD TÉCNICA DE AMBATO`
 
-y
+y el bloque institucional.
 
-`UNIDAD ACADÉMICA / ADMINISTRATIVA`.
+No arreglarlo moviendo el canvas externo del visor.
 
-El conjunto:
-
-* UNIDAD ACADÉMICA / ADMINISTRATIVA
-* PLAN DE TRABAJO DE
-* PERÍODO
-
-debe comportarse como un bloque único y estar visualmente equilibrado alrededor de la mitad de la hoja.
-
-NO usar coordenadas absurdamente específicas solo para la captura actual.
-La composición debe resistir:
-
-* nombres cortos;
-* nombres largos de grupos;
-* diferentes períodos;
-* distinta resolución del visor.
+Corregir la composición interna de la página.
 
 ---
 
-# B2. CONTENIDO EXACTO DEL BLOQUE CENTRAL T1
-
-Mantener el formato conceptual:
-
-`UNIDAD ACADÉMICA / ADMINISTRATIVA: Facultad de Ingeniería en Sistemas, Electrónica e Industrial`
-
-`PLAN DE TRABAJO DE: <NOMBRE DEL GRUPO>`
-
-`PERÍODO: <PERÍODO ACADÉMICO>`
-
-Los prefijos deben destacar tipográficamente.
-
-El valor puede continuar en línea o saltar de línea de manera natural si no cabe.
-
-Evitar:
-
-* cortes arbitrarios;
-* solapamientos;
-* texto excesivamente grande;
-* alineación demasiado baja;
-* separación vertical desproporcionada.
-
----
-
-# B3. FOOTER T1 — UNA SOLA FILA
-
-ESTA CORRECCIÓN ES OBLIGATORIA.
-
-Actualmente el pie aparece partido en múltiples líneas y además existe una línea horizontal superior.
-
-Debe quedar en UNA SOLA FILA visual.
-
-Estructura:
-
-IZQUIERDA:
-`Documento de uso interno controlado por la Universidad Técnica de Ambato`
-
-CENTRO:
-`Formato Nº: UTA-SGC-A-2-1-P7-T1`
-
-DERECHA:
-`<número de página>`
-
-Todo debe pertenecer a la misma fila del footer.
-
-No quiero:
-
-`Documento de uso interno controlado por la Universidad`
-`Técnica de Ambato`
-
-en dos líneas.
-
-Debe intentar mantenerse completo en una sola línea mediante:
-
-* tamaño tipográfico institucional/discreto;
-* anchuras razonables;
-* flex/grid;
-* distribución adecuada del espacio.
-
-NO reducir el texto hasta hacerlo ilegible.
-
----
-
-# B4. ELIMINAR COMPLETAMENTE LA LÍNEA HORIZONTAL DEL FOOTER
-
-Actualmente existe una línea horizontal encima del pie de página.
-
-ELIMINARLA.
-
-No sustituir por:
-
-* border-top;
-* hr;
-* pseudo-elemento;
-* box-shadow que simule línea;
-* borde parcial.
-
-El footer debe flotar limpio sobre el fondo blanco, igual al modelo institucional.
-
-Revisar TODAS las páginas T1.
-
-No quiero que se elimine solo de la portada y permanezca en las páginas 2–N.
-
----
-
-# B5. FOOTER CONSISTENTE EN TODAS LAS PÁGINAS
-
-Página 1:
-
-* texto institucional;
-* Formato Nº;
-* número 1.
-
-Página 2:
-
-* mismo footer;
-* número 2.
-
-Página N:
-
-* mismo footer;
-* número N.
-
-Nunca:
-
-* variar el texto;
-* cambiar `Nº` por `N°`;
-* mover el formato a otra fila;
-* mostrar una línea superior;
-* partir el texto institucional innecesariamente.
+# 19. FOOTER T1
 
 Texto exacto:
 
 `Documento de uso interno controlado por la Universidad Técnica de Ambato`
 
-Formato exacto:
+Centro:
 
 `Formato Nº: UTA-SGC-A-2-1-P7-T1`
 
----
+Derecha:
 
-# B6. REVISAR LA PORTADA CONTRA EL DOCUMENTO GUÍA, NO CONTRA LA VERSIÓN ACTUAL
+número de página.
 
-No tomes la implementación actual como fuente de verdad.
+TODO EN UNA SOLA FILA.
 
-La fuente de verdad debe ser:
+Eliminar completamente la línea horizontal superior.
 
-1. `Documentos_guia`;
-2. `requirements.md`;
-3. aclaraciones confirmadas en `implementation-status.md`.
+No usar:
 
-Si la implementación contradice esos documentos, corregir implementación.
+- border-top;
+- hr;
+- pseudo-elemento;
+- sombra equivalente.
 
----
+Mantener legibilidad.
 
-# B7. ENCABEZADO
-
-Mantener encabezado institucional actual siempre que coincida con el documento guía.
-
-Debe incluir:
-
-* sello/logo institucional correspondiente;
-* `SISTEMA DE GESTIÓN DE LA CALIDAD`;
-* `UNIVERSIDAD TÉCNICA DE AMBATO`;
-* `PLAN DE TRABAJO: <GRUPO>`;
-* Unidad académica/administrativa;
-* Carrera;
-* Fecha de elaboración.
-
-No inventar:
-
-* hashes;
-* QR;
-* códigos de verificación;
-* certificaciones;
-* metadatos técnicos;
-* sellos digitales ficticios.
+Aplicar a TODAS las páginas.
 
 ---
 
-# B8. FECHA DE ELABORACIÓN
+# 20. ENCABEZADO T1
 
-La fecha mostrada debe provenir del documento.
+Debe contener según formato institucional:
 
-Una vez firmado el artefacto:
+- logo/sello;
+- SISTEMA DE GESTIÓN DE LA CALIDAD;
+- UNIVERSIDAD TÉCNICA DE AMBATO;
+- PLAN DE TRABAJO: grupo;
+- unidad académica/administrativa;
+- carrera;
+- fecha de elaboración.
 
-* no debe cambiar silenciosamente;
-* no debe utilizar `new Date()` en cada render;
-* no debe actualizarse al recargar.
-
-Debe permanecer vinculada al artefacto/documento generado.
-
----
-
-# B9. ÍNDICES Y PAGINACIÓN DINÁMICA
-
-NO volver a introducir `pageCount = 5` como fuente de verdad.
-
-La composición debe continuar derivándose de:
-
-`artifact.pages.length`
-
-o del mecanismo tipado actual equivalente.
-
-Los índices deben utilizar los números de página reales resultantes de la composición.
-
-Si cambia el número de páginas por:
-
-* número de actividades;
-* anexos;
-* firmas;
-* contenido textual;
-
-deben cambiar automáticamente:
-
-* navegación;
-* índice de contenido;
-* índice de tablas;
-* slots de firma;
-* número del footer.
+No agregar elementos ficticios.
 
 ---
 
-# B10. MATRIZ
+# 21. ÍNDICE T1
 
-NO modificar su estructura salvo que el documento guía muestre una diferencia concreta.
+Debe derivar de `artifact.pages`.
 
-Preservar:
+No números quemados.
 
-* Actividades;
-* Cronograma Desde/Hasta;
-* Responsable;
-* Recursos;
-* Medios de verificación.
+Los números deben corresponder con las páginas reales.
 
-Preservar orientación horizontal cuando corresponda.
+Debe incluir las secciones realmente presentes.
 
-La representación colectiva:
-
-`Responsable de la unidad`
-`Integrantes de la unidad`
-`Responsable del club`
-etc.
-
-puede imprimirse cuando se haya seleccionado la totalidad de integrantes, pero los IDs individuales deben mantenerse internamente para trazabilidad.
+Si no existen anexos, reflejar adecuadamente la estructura sin inventar contenido.
 
 ---
 
-# B11. FIRMAS
+# 22. MATRIZ IMPRESA T1
 
-La tabla de firmas debe continuar siendo generada desde el flujo configurado.
+Mantener estructura institucional:
 
-NO volver a hardcodear:
+- Actividades;
+- Cronograma:
+  - Desde;
+  - Hasta;
+- Responsable;
+- Recursos;
+- Medios de verificación.
 
-* cantidad de firmantes;
-* Página 4;
-* Página 5;
-* Carlos;
-* Patricia;
-* validador concreto.
+Cuando necesite orientación horizontal:
 
-Usar:
+la metadata de página debe indicarlo correctamente.
 
-`signatureSlots`
-
-y metadata del artefacto/páginas.
-
-Si el grupo tiene flujo incompleto, mostrar:
-
-> El flujo de aprobación de este grupo aún no está completamente configurado.
-
-y NO inventar responsables.
+No cambiar toda la aplicación por ello.
 
 ---
 
-# B12. HISTORIAL
+# 23. FIRMAS T1
 
-Mantener:
+Título:
+
+`FIRMAS DE RESPONSABILIDAD`
+
+Tabla institucional:
+
+`ACCIONES | NOMBRE | CARGO | FIRMA`
+
+Filas derivadas dinámicamente del flujo.
+
+No hardcodear nombres.
+
+No hardcodear cantidad.
+
+No hardcodear página.
+
+Usar `signatureSlots`.
+
+---
+
+# 24. HISTORIAL T1
+
+Título exacto:
 
 `CONTROL DE HISTORIAL DE CAMBIOS`
 
 Columnas:
 
-* Versión
-* Descripción del Cambio
-* Fecha de Actualización
+`Versión | Descripción del Cambio | Fecha de Actualización`
 
-La corrección/devolución durante una ronda NO crea automáticamente versión formal 2.0.
+Versión formal:
 
-Ronda de revisión y versión formal siguen siendo conceptos distintos.
+1.0 → 2.0 → 3.0
 
----
+NO usar automáticamente 1.1.
 
-# PARTE C — CORREGIR EL VISOR SIN CAMBIAR EL DOCUMENTO
-
-Distinguir estrictamente:
-
-1. layout del visor;
-2. layout del documento A4.
-
-No “arreglar” la portada desplazando externamente el canvas/página dentro del visor.
-
-El cambio debe realizarse EN LA COMPOSICIÓN DEL DOCUMENTO.
-
-Debe verse correctamente tanto:
-
-* al 100%;
-* usando Ajustar;
-* en visor amplio;
-* en modal;
-* en paso de Previsualización.
+Una devolución/corrección NO genera versión 2.0.
 
 ---
 
-# PARTE D — NO REGRESIONAR ESTAS FUNCIONALIDADES
+# 25. PAGINACIÓN DINÁMICA
 
-NO romper:
+Eliminar cualquier fuente de verdad fija del tipo:
 
-* identidad de sesión separada del contexto;
-* aislamiento multidocumento;
-* Informe T2 independiente del Plan;
-* firma DEMO;
-* firma y envío separados;
-* artefacto firmado inmutable;
-* revisores paralelos;
-* etapas secuenciales;
-* observaciones;
-* nueva ronda;
-* versión formal independiente;
-* evidencias;
-* un PDF por medio;
-* reemplazo y revalidación;
-* estados históricos;
-* paginación dinámica;
-* `signatureSlots`;
-* fecha congelada;
-* validación de `Otro`;
-* responsables múltiples;
-* “Seleccionar todos”.
+- `pageCount = 5`;
+- páginas 4 y 5;
+- número de página asumido.
+
+Fuente real:
+
+`artifact.pages`
+
+Debe cumplirse:
+
+`artifact.pageCount === artifact.pages.length`
+
+Los slots de firma deben derivarse de páginas reales.
 
 ---
 
-# PARTE E — ACCIONES DE TABLA
+# 26. FECHA DE ELABORACIÓN
 
-Aprovecha esta pasada únicamente donde corresponda a archivos que ya estés modificando.
+Mientras está en edición puede existir fecha inicial correspondiente.
 
-Preferir iconos para acciones repetitivas de tablas:
+Después de firma:
 
-* Ver → icono ojo
-* Editar → lápiz
-* Continuar → flecha/documento
-* Observaciones → comentario
-* Historial → reloj/historial
-* Eliminar → papelera
+queda congelada con el artefacto.
 
-Cada icono debe tener:
+No recalcular al reload.
 
-* `title`;
-* `aria-label`.
-
-NO convertir acciones críticas ambiguas en iconos sin ayuda.
-
-Acciones principales de formularios como:
-
-`Continuar`
-`Guardar borrador`
-`Firmar`
-`Enviar a revisión`
-
-pueden continuar con texto.
+No actualizar con `new Date()` en render.
 
 ---
 
-# PARTE F — PRUEBAS OBLIGATORIAS
+# 27. FIRMA DEL ELABORADOR
 
-Implementa pruebas automáticas donde el proyecto ya tenga infraestructura suficiente.
+Firma y envío son DOS acciones distintas.
 
-Como mínimo comprobar:
+Secuencia:
 
-## Test de unicidad
+BORRADOR
+→ LISTO PARA FIRMA
+→ FIRMADO POR ELABORADOR
+→ EN REVISIÓN
 
-Debe bloquear:
-
-Andrea + Unidad de Titulación + Jul–Dic 2026
-si ya existe exactamente esa combinación.
-
-Debe permitir:
-
-Andrea + Club Académico de Software + Jul–Dic 2026
-si no existe.
-
-Debe permitir:
-
-Andrea + Unidad de Titulación + Ene–Jun 2026
-si no existe.
-
-Debe ignorar para unicidad un Informe T2.
+La firma NO debe enviar automáticamente.
 
 ---
 
-## Test de reset DEMO
+# 28. FIRMA DEMO
 
-1. Crear un Plan en combinación inicialmente libre.
-2. Verificar que pasa a considerarse duplicado.
-3. Ejecutar Restablecer DEMO.
-4. Confirmar que vuelve al dataset canónico.
-5. Confirmar que vuelve a existir al menos una combinación disponible.
+Debe existir opción:
 
----
+`Usar certificado DEMO`
 
-## Test de footer
+Debe explicar claramente:
 
-Verificar estructuralmente que T1 genere:
+`Credencial DEMO — no corresponde a una firma electrónica real.`
 
-`Documento de uso interno controlado por la Universidad Técnica de Ambato`
+Puede simular:
 
-`Formato Nº: UTA-SGC-A-2-1-P7-T1`
+- certificado;
+- contraseña DEMO;
+- confirmación.
 
-y número de página.
+No guardar permanentemente:
 
-No debe existir componente/borde dedicado a la línea horizontal superior.
+- archivo;
+- contraseña.
 
----
+El comportamiento debe poder demostrarse sin disponer de `.p12/.pfx` real.
 
-## Test de paginación
-
-La cantidad total debe corresponder a las páginas generadas, NO a una constante.
+Mantener también interacción manual simulada.
 
 ---
 
-# PARTE G — VALIDACIÓN VISUAL MANUAL QUE DEBES PREPARAR
+# 29. FLUJOS INCOMPLETOS
 
-Después de implementar, deja el sistema DEMO en condiciones de que yo pueda hacer esta prueba:
+Si un grupo no tiene flujo configurado:
 
-### Escenario 1 — combinación existente
+NO inventar revisor.
 
-Gestión Documental Académica
+Mostrar:
+
+`El flujo de aprobación de este grupo aún no está completamente configurado.`
+
+Puede impedir firma/envío cuando corresponda.
+
+Pero el entorno DEMO también debe disponer de un grupo con flujo completamente configurado para demostrar el proceso completo.
+
+Unidad de Titulación puede utilizarse para ello.
+
+---
+
+# 30. ARTEFACTO FIRMADO INMUTABLE
+
+CRÍTICO.
+
+Cuando un documento se firma:
+
+el revisor debe recibir EXACTAMENTE el mismo artefacto.
+
+NO reconstruir desde datos actuales.
+
+NO regenerar silenciosamente.
+
+Corrección posterior:
+
+nuevo artefacto;
+nueva ronda.
+
+Artefacto anterior:
+
+histórico.
+
+---
+
+# 31. REVISIÓN
+
+Auditar:
+
+- bandeja;
+- visor;
+- observaciones;
+- devolver;
+- aprobar;
+- firma;
+- estado.
+
+No permitir que un usuario no asignado revise.
+
+---
+
+# 32. ETAPAS SECUENCIALES
+
+Una etapa futura NO debe acceder al documento hasta completarse la anterior.
+
+---
+
+# 33. REVISORES PARALELOS
+
+Si existen varios revisores obligatorios en la misma etapa:
+
+todos se activan en paralelo.
+
+La siguiente etapa se habilita únicamente cuando TODOS los obligatorios aprobaron.
+
+No asumir suborden entre ellos.
+
+---
+
+# 34. OBSERVACIONES
+
+Debe poder registrarse una observación:
+
+- general;
+- específica.
+
+Cuando sea específica:
+
+anclada al documento/sección/zona correspondiente.
+
+El revisor que la creó puede editar/eliminar mientras esté activa si así está previsto.
+
+Después de decisión:
+
+queda histórica.
+
+No desaparecer.
+
+---
+
+# 35. DEVOLUCIÓN Y CORRECCIÓN
+
+Si se devuelve:
+
+estado:
+
+EN CORRECCIÓN / DEVUELTO según modelo canónico.
+
+El docente puede corregir.
+
+Aprobaciones anteriores:
+
+históricas.
+
+NO válidas para el artefacto corregido.
+
+Al reenviar:
+
+nueva ronda.
+
+Ejemplo:
+
+Versión formal 1.0
+Ronda 1
+→ devolución
+→ corrección
+→ Ronda 2
+
+Sigue siendo versión formal 1.0.
+
+---
+
+# 36. INFORME T2
+
+Auditar el flujo completo del Informe.
+
+Puede derivarse de un Plan.
+
+Debe importar/sincronizar conceptualmente:
+
+- actividades;
+- medios de verificación;
+- contexto del grupo;
+- período.
+
+NO mutar el Plan original.
+
+---
+
+# 37. AISLAMIENTO MULTIDOCUMENTO
+
+Toda operación debe afectar el `targetDocId` exacto.
+
+Probar:
+
+Plan validado
+→ crear Informe
+→ firmar Informe
+→ enviar Informe
+
+Resultado:
+
+Plan conserva:
+
+- estado;
+- firmas;
+- versión;
+- ronda;
+- contenido.
+
+---
+
+# 38. T2 — FIDELIDAD DOCUMENTAL
+
+Comparar contra `Documentos_guia`.
+
+Eliminar instrucciones internas de plantilla que no deberían aparecer en el documento final.
+
+No hardcodear páginas.
+
+Las firmas deben aparecer donde realmente correspondan.
+
+Footer y encabezado según su formato institucional.
+
+---
+
+# 39. TÍTULOS T2
+
+Evitar:
+
+`INFORME DE: INFORME DE ...`
+
+La normalización debe funcionar en:
+
+- wizard;
+- artefacto;
+- visor;
+- histórico;
+- reportes.
+
+---
+
+# 40. EJECUCIÓN DE ACTIVIDADES
+
+Solo un Plan aprobado/validado según flujo debe habilitar ejecución.
+
+`Mis Actividades` debe derivarse de los Planes correspondientes, no de un dataset desconectado cuando sea posible dentro del mockup.
+
+Mostrar únicamente las actividades relevantes al usuario/responsabilidad.
+
+---
+
+# 41. EVIDENCIAS
+
+Regla:
+
+cada medio de verificación seleccionado requiere EXACTAMENTE:
+
+`1 archivo PDF`
+
+durante ejecución.
+
+Ejemplo:
+
+Actividad:
+- Acta
+- Informe
+
+Requiere:
+
+- 1 PDF para Acta;
+- 1 PDF para Informe.
+
+No un PDF genérico para toda la actividad.
+
+---
+
+# 42. ARCHIVOS DE EVIDENCIA
+
+Mockup:
+
+- solo PDF;
+- límite DEMO configurado actualmente en 10 MB si se mantiene como configuración;
+- mostrar nombre;
+- versión;
+- medio;
+- fecha.
+
+No fingir almacenamiento real.
+
+---
+
+# 43. REEMPLAZO DE EVIDENCIA
+
+Antes del vencimiento:
+
+puede reemplazarse hasta 23:59 del día límite.
+
+Nueva versión:
+
+v1.0 → v2.0, etc.
+
+ESTA versión es de EVIDENCIA.
+
+No tiene relación con la versión formal del Plan.
+
+---
+
+# 44. VALIDACIÓN DE EVIDENCIA
+
+Distinguir:
+
+`evidencia completa`
+
+de:
+
+`evidencia validada`.
+
+Completa:
+
+PDF requerido cargado.
+
+Validada:
+
+revisor aprobó.
+
+Estados:
+
+- PENDIENTE DE VALIDACIÓN;
+- VALIDADA;
+- OBSERVADA.
+
+---
+
+# 45. EVIDENCIA OBSERVADA
+
+Si revisor observa:
+
+docente debe ver:
+
+- medio;
+- observación;
+- revisor;
+- fecha.
+
+Si reemplaza:
+
+requiere nueva validación.
+
+---
+
+# 46. PERMISOS DE EVIDENCIA
+
+Solo responsables autorizados pueden cargar/reemplazar.
+
+Un usuario no responsable:
+
+solo lectura.
+
+No hardcodear “Andrea” o “Carlos” como condición.
+
+Usar identidad/IDs.
+
+---
+
+# 47. PLAZOS
+
+Actividad:
+
+Desde / Hasta.
+
+La carga ordinaria termina:
+
+23:59 del día Hasta.
+
+No inventar extensión extraordinaria.
+
+Mostrar texto neutral:
+
+procedimiento extraordinario sujeto a definición institucional.
+
+---
+
+# 48. ADMINISTRACIÓN
+
+Auditar:
+
+- usuarios;
+- importación;
+- grupos;
+- períodos;
+- catálogo de actividades;
+- recursos;
+- medios;
+- flujos;
+- feriados;
+- plantillas.
+
+Debe ser demostrable como mockup.
+
+No conectar servicios reales.
+
+---
+
+# 49. GRUPOS
+
+Entidad unificada:
+
+`Grupo institucional`
+
+Tipo:
+
+- Comisión;
+- Unidad;
+- Club;
+- Otro.
+
+No mantener entidades artificialmente separadas cuando contradigan el modelo confirmado.
+
+---
+
+# 50. MEMBRESÍA
+
+Rol dentro del grupo:
+
+- Miembro;
+- Coordinador;
+- Otro.
+
+NO usar `Responsable` como rol de membresía.
+
+`Responsable` se reserva para actividades.
+
+---
+
+# 51. FLUJOS CONFIGURABLES
+
+Configuración por grupo.
+
+No asumir mismo flujo para todos.
+
+Posibles etapas DEMO:
+
+- Elaboración;
+- Revisión;
+- Coordinación;
+- Validación final.
+
+Pero responsables concretos deben provenir de configuración.
+
+Si falta responsable:
+
+mostrar pendiente de configuración.
+
+---
+
+# 52. ADMINISTRADOR Y AUTORIDADES
+
+No inventar autoridad final.
+
+Utilizar:
+
+`Autoridad correspondiente`
+
+u otra denominación configurable cuando no esté confirmada.
+
+---
+
+# 53. FERIADOS
+
+Administrador puede configurarlos.
+
+Actividad puede atravesarlos.
+
+No puede empezar o terminar en ellos.
+
+---
+
+# 54. NOTIFICACIONES
+
+Auditar que:
+
+- pertenezcan al usuario correcto;
+- naveguen al contexto correcto;
+- no contradigan auditoría;
+- no aparezcan eventos inexistentes.
+
+Notificación y evento de auditoría deben ser coherentes.
+
+---
+
+# 55. AUDITORÍA
+
+Debe mostrar eventos significativos:
+
+- creación;
+- firma;
+- envío;
+- observación;
+- devolución;
+- corrección;
+- aprobación;
+- validación;
+- evidencia;
+- configuración relevante.
+
+No mostrar IDs internos al usuario.
+
+No inventar hashes.
+
+No inventar códigos institucionales.
+
+---
+
+# 56. REPORTES
+
+Los reportes NO son evaluación laboral.
+
+No mostrar:
+
+- ranking;
+- puntuación docente;
+- sanciones;
+- productividad comparativa;
+- predicción;
+- scoring.
+
+Sí mostrar:
+
+- cantidades;
+- estados documentales;
+- actividades;
+- evidencias;
+- trazabilidad;
+- avance documental.
+
+---
+
+# 57. REPORTES DEMO
+
+PDF/Excel pueden ser acciones DEMO.
+
+No es necesario generar archivos productivos reales.
+
+Si se simulan:
+
+indicar `VISTA PREVIA — DEMO` cuando corresponda.
+
+---
+
+# 58. HISTÓRICO
+
+Períodos cerrados:
+
+solo lectura.
+
+Mostrar:
+
+- Plan;
+- versión;
+- actividades;
+- evidencias;
+- historial;
+- cierre.
+
+No inventar normativa de reapertura.
+
+---
+
+# 59. CIERRE DE PERÍODO
+
+Como el período actual Julio–Diciembre 2026 todavía no finaliza en la fecha DEMO establecida, NO presentarlo como cierre ordinario real.
+
+Usar:
+
+`PROBAR CIERRE — DEMO`
+
+y posteriormente:
+
+`RESTABLECER DEMO`
+
+NO llamarlo “reabrir período” si ese procedimiento institucional no está confirmado.
+
+---
+
+# 60. VERSIONES FORMALES
+
+Plan:
+
+1.0
+2.0
+3.0
+
+Una versión 2.0 requiere una decisión institucional externa/formal simulada.
+
+NO se crea porque:
+
+- hubo observación;
+- hubo devolución;
+- se corrigió texto;
+- cambió ronda.
+
+---
+
+# 61. PROFILE / PERFIL
+
+Debe mostrar identidad actual.
+
+No el contexto como si fuese otra persona.
+
+No mezclar datos DEMO de diferentes usuarios.
+
+---
+
+# 62. NOMBRE DEL SISTEMA
+
+Usar consistentemente:
+
+`Gestión Documental Académica`
+
+Eliminar textos residuales del nombre anterior cuando ya no correspondan.
+
+Puede conservarse `Gestión de Planes de Trabajo` únicamente dentro del propio documento/contexto si semánticamente aplica, no como nombre general de toda la plataforma.
+
+---
+
+# 63. UX GENERAL
+
+Auditar:
+
+- alineación;
+- espaciado;
+- overflow;
+- modales;
+- drawers;
+- tablas;
+- botones;
+- estados vacíos;
+- errores;
+- textos truncados;
+- responsive desktop;
+- scroll.
+
+Evitar:
+
+- pantallas amontonadas;
+- demasiados textos de acción;
+- morado excesivo;
+- botones contradictorios;
+- duplicidad de acciones.
+
+Paleta:
+
+- azul institucional como primario;
+- verde éxito;
+- amarillo advertencia;
+- rojo error/destructivo;
+- grises neutrales.
+
+No reintroducir identidad morada dominante.
+
+---
+
+# 64. MODALES Y DRAWERS
+
+Deben manejar correctamente:
+
+- viewport pequeño;
+- contenido alto;
+- scroll interno;
+- cabecera visible;
+- acciones accesibles.
+
+No permitir que el footer del modal quede inaccesible.
+
+---
+
+# 65. ESTADOS VACÍOS
+
+Cada pantalla importante debe soportar vacío:
+
+- sin documentos;
+- sin actividades;
+- sin evidencias;
+- sin observaciones;
+- sin notificaciones;
+- sin resultados de filtro.
+
+No mostrar tablas rotas.
+
+---
+
+# 66. ESTADOS DE ERROR
+
+Simular errores razonables cuando aplique:
+
+- campos obligatorios;
+- formato archivo;
+- flujo incompleto;
+- identidad incorrecta;
+- acción no autorizada;
+- fecha inválida;
+- duplicado;
+- actividad incompleta.
+
+Mensajes claros.
+
+No errores silenciosos.
+
+---
+
+# 67. ESTADOS DE CARGA
+
+No hace falta simular loading en todas partes.
+
+Pero si existe:
+
+no debe quedarse permanentemente.
+
+---
+
+# 68. ACCESIBILIDAD BÁSICA
+
+Elementos interactivos:
+
+- labels;
+- title;
+- aria-label cuando corresponda;
+- botones reales;
+- foco visible;
+- teclado razonable.
+
+No dedicar la pasada a WCAG completa, pero evitar errores obvios.
+
+---
+
+# 69. NO USAR `any` PARA EVITAR TIPOS
+
+Revisar correcciones anteriores que hayan introducido:
+
+`as any`
+
+solo para evitar modelar algo.
+
+Si existe modelo claro:
+
+tiparlo correctamente.
+
+No hace falta refactorizar todo el proyecto.
+
+Priorizar estructuras críticas:
+
+- DocumentArtifact;
+- DocumentPage;
+- signatureSlots;
+- workflow;
+- identity;
+- evidence;
+- group;
+- period.
+
+---
+
+# 70. NO HARDCODEAR DEMO EN LÓGICA CENTRAL
+
+Los datos pueden ser DEMO.
+
+Pero las reglas no deben depender de:
+
+`Andrea`
+`Carlos`
+`Patricia`
+
+o valores concretos.
+
+Usar IDs/configuración.
+
+---
+
+# 71. CONSUMIDORES
+
+Cada vez que modifiques un comportamiento, buscar TODOS sus consumidores.
+
+Ejemplos:
+
+Si cambias `DocumentArtifact`:
+
+buscar:
+
+- viewer;
+- wizard;
+- revisor;
+- histórico;
+- auditoría;
+- reportes;
+- firmas.
+
+Si cambias `groupId`:
+
+buscar todos los filtros, creación y datos DEMO.
+
+No reparar solo una pantalla.
+
+---
+
+# 72. PRUEBAS AUTOMÁTICAS EXISTENTES
+
+No eliminar tests para hacer pasar build.
+
+Actualizar los tests legítimamente.
+
+Añadir casos cuando una corrección estructural lo justifique.
+
+---
+
+# 73. PRUEBA MAESTRA T1
+
+Debe poder realizarse:
+
+Andrea
+→ Gestión Documental
 → Nuevo documento
-→ Plan de Trabajo
-→ seleccionar una combinación existente.
-
-Debe aparecer:
-
-> Ya existe un Plan de Trabajo para este docente, grupo y período.
-
-y la acción contextual apropiada.
-
----
-
-### Escenario 2 — combinación nueva
-
-Cambiar a una combinación realmente libre.
-
-`Crear borrador` debe habilitarse.
-
-Crear el documento.
-
-Debe abrir:
-
-`Crear Plan de Trabajo`.
+→ Unidad de Titulación
+→ período activo
+→ completar Plan
+→ responsables múltiples/todos
+→ matriz
+→ anexos
+→ previsualización
+→ certificado DEMO
+→ firmar
+→ FIRMADO POR ELABORADOR
+→ enviar
+→ EN REVISIÓN.
 
 ---
 
-### Escenario 3 — portada
+# 74. PRUEBA MAESTRA DE REVISIÓN
 
-Completar lo mínimo y llegar a Previsualización.
+Cambiar persona DEMO al revisor asignado.
 
-Página 1 debe mostrar aproximadamente:
+→ Bandeja
+→ abrir
+→ observar
+→ devolver
 
-[Encabezado institucional]
+Cambiar sesión a Andrea.
 
-```
-      UNIVERSIDAD TÉCNICA
-          DE AMBATO
+→ documento EN CORRECCIÓN
+→ corregir
+→ firmar/reprocesar según flujo correcto
+→ reenviar
 
-  UNIDAD ACADÉMICA / ADMINISTRATIVA: ...
-  
-  PLAN DE TRABAJO DE: ...
-  
-  PERÍODO: ...
-```
+Resultado:
 
-[Footer]
-
-El bloque central NO debe quedar cerca del borde inferior.
-
----
-
-### Escenario 4 — footer
-
-Inspeccionar páginas 1, 2, 3, 4 y última.
-
-Debe existir una sola fila:
-
-`Documento de uso interno controlado por la Universidad Técnica de Ambato     Formato Nº: UTA-SGC-A-2-1-P7-T1     N`
-
-SIN línea horizontal encima.
+- Versión formal 1.0
+- Ronda 2
+- Ronda 1 histórica.
 
 ---
 
-# PARTE H — CRITERIOS DE ACEPTACIÓN
+# 75. PRUEBA DE REVISORES PARALELOS
 
-No consideres la tarea terminada hasta cumplir TODOS:
+Configurar/usar escenario con dos revisores obligatorios misma etapa.
 
-[ ] La unicidad usa docenteId + groupId + periodId.
-[ ] No se compara por nombre visible.
-[ ] Informes no bloquean creación de Planes.
-[ ] Después de Restablecer DEMO existe al menos una combinación libre.
-[ ] Los duplicados reales continúan bloqueados.
-[ ] Existe acción para continuar/ver el documento existente.
-[ ] La portada T1 mueve el bloque institucional principal hacia la zona vertical media.
-[ ] No queda exageradamente abajo.
-[ ] El footer completo está en una única fila.
-[ ] Se usa exactamente `Nº`.
-[ ] La línea horizontal sobre el footer desapareció.
-[ ] Todas las páginas T1 usan el mismo footer.
-[ ] El número de página es dinámico.
-[ ] pageCount continúa siendo dinámico.
-[ ] signatureSlots continúan siendo dinámicos.
-[ ] No se rompe firma DEMO.
-[ ] No se rompe aislamiento multidocumento.
-[ ] No se inventan requisitos institucionales.
-[ ] T1 sigue siendo un mockup interactivo, no un sistema productivo.
+Reviewer A aprueba.
+
+La etapa NO termina.
+
+Reviewer B aprueba.
+
+Solo entonces siguiente etapa activa.
 
 ---
 
-# PARTE I — EJECUCIÓN TÉCNICA FINAL
+# 76. PRUEBA T2
 
-Al finalizar ejecutar obligatoriamente:
+Plan validado.
+
+→ crear Informe
+→ derivar Plan
+→ actividades importadas
+→ completar ejecución
+→ preview
+→ firmar DEMO
+→ enviar.
+
+Después abrir el Plan.
+
+Debe permanecer intacto.
+
+---
+
+# 77. PRUEBA EVIDENCIA
+
+Actividad con dos medios.
+
+→ cargar PDF medio A
+→ falta B
+→ actividad aún incompleta documentalmente
+→ cargar B
+→ completa / pendiente validación
+→ revisor observa A
+→ docente reemplaza A
+→ A v2.0
+→ pendiente validación
+→ revisor valida.
+
+---
+
+# 78. PRUEBA DE FECHAS
+
+Intentar:
+
+inicio en feriado → rechazar.
+
+fin en feriado → rechazar.
+
+feriado dentro del rango → permitir.
+
+---
+
+# 79. PRUEBA DE DUPLICADOS
+
+Plan existente:
+
+teacherId + groupId + periodId.
+
+Debe bloquear.
+
+Cambiar solo grupo:
+
+permitir si libre.
+
+Cambiar solo período:
+
+permitir si libre.
+
+Informe mismo grupo/período:
+
+NO bloquear Plan.
+
+---
+
+# 80. PRUEBA DE RESET
+
+Crear nuevo documento.
+
+Modificar estados DEMO.
+
+Restablecer DEMO.
+
+Verificar dataset inicial exacto.
+
+---
+
+# 81. PRUEBA DOCUMENTAL T1
+
+Revisar visualmente:
+
+Página 1:
+- encabezado correcto;
+- Universidad;
+- bloque principal en zona media vertical;
+- footer una sola fila;
+- sin línea superior.
+
+Página 2:
+- índice;
+- footer correcto.
+
+Página 3:
+- contenido;
+- footer.
+
+Matriz:
+- orientación;
+- contenido;
+- responsable colectivo cuando aplique.
+
+Última:
+- firmas;
+- historial;
+- slots correctos.
+
+---
+
+# 82. PRUEBA DOCUMENTAL T2
+
+Revisar:
+
+- encabezado;
+- índices;
+- secciones;
+- actividades;
+- contactos si aplica;
+- anexos;
+- firmas;
+- historial;
+- footer;
+- paginación dinámica.
+
+---
+
+# 83. VERIFICACIÓN DE `pageCount`
+
+Buscar globalmente:
+
+`pageCount: 5`
+`pageCount = 5`
+`? 5`
+y cualquier lógica equivalente.
+
+Un número 5 puede existir como dato DEMO derivado de una composición específica, pero NO como regla de navegación.
+
+Fuente de verdad:
+
+`pages.length`.
+
+---
+
+# 84. VERIFICACIÓN DE FIRMAS
+
+Buscar globalmente strings:
+
+`Página 4`
+`Página 5`
+
+No deben usarse como ubicación fija para firma.
+
+La ubicación debe venir de:
+
+`signatureSlots`.
+
+---
+
+# 85. VERIFICACIÓN DE PERSONAS HARDCODEADAS
+
+Buscar condiciones de negocio que dependan literalmente de:
+
+Andrea
+Carlos
+Patricia
+Laura
+
+Los nombres pueden existir en datos DEMO.
+
+No en reglas.
+
+---
+
+# 86. VERIFICACIÓN DE IDs INTERNOS
+
+No mostrar al usuario:
+
+- aud-XX;
+- rep-plan-XX;
+- IDs UUID;
+- claves internas;
+- códigos inventados.
+
+---
+
+# 87. PENDIENTES INSTITUCIONALES
+
+Mantener explícitamente pendientes:
+
+- firma electrónica real / DTIC;
+- procedimiento externo/QIPOC;
+- reglas definitivas de cierre/reapertura;
+- criterios definitivos de Informe independiente;
+- procedimientos extraordinarios;
+- autoridad/actor cuando no esté confirmado;
+- flujos no configurados.
+
+No resolverlos inventando.
+
+---
+
+# 88. NO CAMBIAR LO QUE YA ESTÁ BIEN
+
+No rediseñar arbitrariamente.
+
+Si una pantalla ya cumple:
+
+déjala.
+
+No alterar:
+
+- paleta actual correcta;
+- navegación estable;
+- componentes no relacionados;
+- funcionalidad que supera todas las pruebas.
+
+---
+
+# 89. ORDEN DE IMPLEMENTACIÓN
+
+Trabaja por dependencias:
+
+FASE 1:
+- modelos;
+- IDs;
+- identidad;
+- flujo;
+- relaciones documentales.
+
+FASE 2:
+- motor documental;
+- paginación;
+- firmas;
+- inmutabilidad.
+
+FASE 3:
+- T1/T2 fidelidad documental.
+
+FASE 4:
+- actividades/evidencias.
+
+FASE 5:
+- admin/notificaciones/auditoría/reportes/histórico.
+
+FASE 6:
+- UX y acciones.
+
+FASE 7:
+- regresiones completas.
+
+NO arreglar primero decoraciones si todavía existe un problema estructural.
+
+---
+
+# 90. COMPILACIÓN
+
+Al terminar ejecutar:
 
 ```bash
 npx tsc --noEmit
 npm run build
 node tests/document-engine.test.mjs
-```
-
-Si existe otro test suite relevante del proyecto, ejecútalo también.
-
-No ocultes fallos.
-
----
-
-# PARTE J — REPORTE FINAL
-
-Crear o actualizar:
-
-`reporte-correccion-integral.md`
-
-con estas secciones:
-
-1. Causa del problema de duplicados.
-2. Lógica anterior.
-3. Lógica corregida.
-4. Dataset DEMO resultante.
-5. Cambios exactos realizados al T1.
-6. Posicionamiento anterior y nuevo de portada.
-7. Implementación nueva del footer.
-8. Archivos modificados.
-9. Tests ejecutados.
-10. Regresiones revisadas.
-11. Pendientes institucionales reales.
-12. Ruta manual exacta para validar la implementación.
-
-Incluye explícitamente:
-
-* qué combinación DEMO queda libre para crear un Plan nuevo;
-* qué combinación DEMO debe bloquear por duplicidad;
-* cómo se calcula actualmente `pageCount`;
-* cómo se calculan actualmente `signatureSlots`.
-
----
-
-# REGLA FINAL DE TRABAJO
-
-NO hagas cambios cosméticos aleatorios.
-NO reestructures módulos que no lo necesitan.
-NO reemplaces lógica dinámica con valores quemados.
-NO inventes datos institucionales.
-NO cambies requisitos confirmados.
-
-Inspecciona primero la implementación real, identifica la causa, corrige la fuente del problema y después corrige todos sus consumidores.
-
-Por el chat responde de forma mínima durante la ejecución.
-Al finalizar entrega únicamente un resumen corto y la ruta del `reporte-correccion-integral.md`.

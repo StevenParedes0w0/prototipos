@@ -5,12 +5,13 @@ import { useState, useCallback, useRef } from "react";
 import { DocumentMasterState, DocumentArtifact, DocumentObservation, DocumentObservationAnchor, DocumentSignature, DocumentType, ActividadMatrizDoc, AnexoDoc, InformeDataDoc, FlowStageNode } from "./types";
 import { FlujoGrupo, UsuarioAdmin, PeriodoAcademico } from "../modulo7/types";
 import { INITIAL_DOCUMENT_MASTER, INITIAL_DOCUMENTS_LIST, JUSTIFICACION_INICIAL, OBJETIVO_INICIAL, FLOW_STAGES_INICIAL } from "./mockDataDocument";
+import { findPlanByIdentity } from "./documentIdentity";
 
 export function normalizeInformeTitle(titulo: string): string {
   return titulo.replace(/^(?:INFORME\s+DE\s*:\s*)+/i, "").trim().toUpperCase();
 }
 
-const STORAGE_KEY = "fisei_documents_collection_v6";
+const STORAGE_KEY = "fisei_documents_collection_v7";
 const documentDate = () => new Date().toLocaleDateString("es-EC", { timeZone: "America/Guayaquil", day: "2-digit", month: "2-digit", year: "numeric" });
 const documentTime = () => new Date().toLocaleTimeString("es-EC", { timeZone: "America/Guayaquil", hour: "2-digit", minute: "2-digit" });
 const timestamp = () => `${documentDate()} ${documentTime()}`;
@@ -19,14 +20,14 @@ const editableStates = ["BORRADOR", "LISTO PARA FIRMA", "EN CORRECCIÓN"];
 
 type EngineConfiguration = { flujos: FlujoGrupo[]; usuarios: UsuarioAdmin[]; periodos?: PeriodoAcademico[] };
 type AuditLog = (tipo: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string) => void;
-type BasicDocumentData = { grupo?: string; carrera?: string; periodo?: string; titulo?: string; informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE"; documentoRelacionadoId?: string; documentoRelacionadoTitulo?: string; antecedentes?: string; actividadesInforme?: import("./types").ActividadInformeDoc[] };
+type BasicDocumentData = { teacherId?: string; groupId?: string; periodId?: string; grupo?: string; carrera?: string; periodo?: string; titulo?: string; informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE"; documentoRelacionadoId?: string; documentoRelacionadoTitulo?: string; antecedentes?: string; actividadesInforme?: import("./types").ActividadInformeDoc[] };
 type PlanDraft = { justificacion: string; objetivo: string; matriz: ActividadMatrizDoc[]; tieneAnexos: "si" | "no" | null; anexos: AnexoDoc[]; fuente?: string; collectsPersonalData?: boolean };
 type InformeDraft = { titulo: string; grupo: string; carrera?: string; periodo: string; tieneAnexos: "si" | "no" | null; anexos: AnexoDoc[] } & InformeDataDoc;
 
 function isStoredDocument(value: unknown): value is DocumentMasterState {
   if (!value || typeof value !== "object") return false;
   const doc = value as Partial<DocumentMasterState>;
-  return typeof doc.id === "string" && typeof doc.nombre === "string" && typeof doc.grupo === "string" && typeof doc.periodo === "string" && typeof doc.documentState === "string" && Boolean(doc.currentArtifact?.elaborador?.id) && Array.isArray(doc.currentArtifact?.signatures) && Array.isArray(doc.flowStages) && Array.isArray(doc.observations) && Array.isArray(doc.artifactHistory);
+  return typeof doc.id === "string" && typeof doc.teacherId === "string" && typeof doc.groupId === "string" && typeof doc.periodId === "string" && typeof doc.nombre === "string" && typeof doc.grupo === "string" && typeof doc.periodo === "string" && typeof doc.documentState === "string" && Boolean(doc.currentArtifact?.elaborador?.id) && Array.isArray(doc.currentArtifact?.signatures) && Array.isArray(doc.flowStages) && Array.isArray(doc.observations) && Array.isArray(doc.artifactHistory);
 }
 
 function composeArtifact(artifact: DocumentArtifact, stages: FlowStageNode[]): DocumentArtifact {
@@ -35,14 +36,19 @@ function composeArtifact(artifact: DocumentArtifact, stages: FlowStageNode[]): D
   return { ...snapshot, pages, pageCount: pages.length, signatureSlots: getSignatureSlots(pages) };
 }
 
+function hydrateDocument(document: DocumentMasterState): DocumentMasterState {
+  if (document.currentArtifact.pages?.length) return document;
+  return { ...document, currentArtifact: composeArtifact(document.currentArtifact, document.flowStages) };
+}
+
 export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineConfiguration) {
   const [documents, setDocuments] = useState<DocumentMasterState[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed: unknown = saved ? JSON.parse(saved) : null;
-      if (Array.isArray(parsed) && parsed.length && parsed.every(isStoredDocument)) return parsed;
+      if (Array.isArray(parsed) && parsed.length && parsed.every(isStoredDocument)) return parsed.map(hydrateDocument);
     } catch { /* A damaged DEMO snapshot can be reset without breaking navigation. */ }
-    return structuredClone(INITIAL_DOCUMENTS_LIST);
+    return structuredClone(INITIAL_DOCUMENTS_LIST).map(hydrateDocument);
   });
   const documentsRef = useRef(documents);
   const [sessionUser, setSessionUser] = useState({ id: "usr-andrea-01", nombre: "Ing. Andrea Pérez, Mg." });
@@ -55,7 +61,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
   const [selectedDocId, setSelectedDocId] = useState(documents[0]?.id || INITIAL_DOCUMENT_MASTER.id);
   const docMaster = documents.find(d => d.id === selectedDocId) || documents[0] || INITIAL_DOCUMENT_MASTER;
   const isAuthor = (doc: DocumentMasterState) => canonicalDemoActorId(doc.currentArtifact.elaborador.id) === sessionRef.current.id;
-  const isClosed = (doc: DocumentMasterState) => Boolean(configuration?.periodos?.some(p => p.nombre === doc.periodo && p.estado === "CERRADO"));
+  const isClosed = (doc: DocumentMasterState) => Boolean(configuration?.periodos?.some(p => p.id === doc.periodId && p.estado === "CERRADO"));
   const canEdit = (doc: DocumentMasterState) => isAuthor(doc) && editableStates.includes(doc.documentState) && !doc.currentArtifact.signatures.length;
 
   const commitDocuments = useCallback((next: DocumentMasterState[]) => {
@@ -78,14 +84,17 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const relatedPlan = datos.documentoRelacionadoId ? documentsRef.current.find(d => d.id === datos.documentoRelacionadoId && d.documentType === "PLAN_TRABAJO") : undefined;
     const grupo = relatedPlan?.grupo || datos.grupo || "Comisión de Eventos Académicos";
     const periodo = relatedPlan?.periodo || datos.periodo || "Julio – Diciembre 2026";
-    const existing = tipo === "PLAN_TRABAJO" ? documentsRef.current.find(d => d.documentType === tipo && d.grupo === grupo && d.periodo === periodo && isAuthor(d)) : undefined;
+    const configuredFlow = configuration?.flujos.find(f => f.grupoId === datos.groupId || f.grupoNombre === grupo);
+    const teacherId = relatedPlan?.teacherId || datos.teacherId || sessionRef.current.id;
+    const groupId = relatedPlan?.groupId || datos.groupId || configuredFlow?.grupoId || `demo-group:${grupo}`;
+    const periodId = relatedPlan?.periodId || datos.periodId || configuration?.periodos?.find(p => p.nombre === periodo)?.id || `demo-period:${periodo}`;
+    const existing = tipo === "PLAN_TRABAJO" ? findPlanByIdentity(documentsRef.current, { teacherId, groupId, periodId }) : undefined;
     if (existing) { setSelectedDocId(existing.id); return existing; }
     const carrera = relatedPlan?.carrera || datos.carrera || "Ingeniería de Software";
     const titulo = tipo === "INFORME" ? normalizeInformeTitle(datos.titulo || `Seguimiento de actividades — ${grupo}`) : datos.titulo || `Plan de Trabajo: ${grupo}`;
     const id = uniqueId(tipo === "INFORME" ? "doc-inf" : "doc-plan");
     const authorUser = configuration?.usuarios.find(u => canonicalDemoActorId(u.id) === sessionRef.current.id);
     const elaborador = { id: sessionRef.current.id, nombre: sessionRef.current.nombre, cargo: "Docente elaborador", email: authorUser?.correo || "" };
-    const configuredFlow = configuration?.flujos.find(f => f.grupoNombre === grupo);
     const flowSource = relatedPlan?.flowStages || (configuredFlow && configuration ? flowFromConfiguration(configuredFlow, configuration.usuarios, elaborador) : configuration ? [FLOW_STAGES_INICIAL[0], { ...FLOW_STAGES_INICIAL[1], actorId: undefined, actorName: "Responsable pendiente de configuración", stageName: "Etapa pendiente de configuración" }] : FLOW_STAGES_INICIAL);
     const flowStages: FlowStageNode[] = flowSource.map(stage => ({ ...stage, ...(stage.actorRole === "docente" ? { actorId: elaborador.id, actorName: elaborador.nombre } : {}), estado: "PENDIENTE", signature: undefined }));
     const codigoFormatoOficial = tipo === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1";
@@ -101,7 +110,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       historialCambios: [{ version: "1.0", descripcion: `Elaboración inicial del ${tipo === "INFORME" ? "Informe" : "Plan de Trabajo"}`, fecha: documentDate() }],
     };
     const newDoc: DocumentMasterState = {
-      id, codigo: `DEMO-${tipo === "INFORME" ? "INF" : "PT"}-${Date.now()}`, codigoFormatoOficial, nombre: titulo, documentType: tipo, grupo, carrera, periodo,
+      id, teacherId, groupId, periodId, codigo: `DEMO-${tipo === "INFORME" ? "INF" : "PT"}-${Date.now()}`, codigoFormatoOficial, nombre: titulo, documentType: tipo, grupo, carrera, periodo,
       formalVersion: "1.0", reviewRound: 1, documentState: "BORRADOR", currentArtifact: composeArtifact(artifact, flowStages), artifactHistory: [], observations: [], flowStages,
       draftCreatedAt: new Date().toISOString(), fechaUltimaActualizacion: timestamp(), documentoRelacionadoId: relatedPlan?.id, documentoRelacionadoTitulo: relatedPlan?.nombre,
     };
@@ -240,11 +249,11 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const flowStages = stages.map(stage => ({ ...stage, ...(stage.actorRole === "docente" ? { actorId: doc.currentArtifact.elaborador.id, actorName: doc.currentArtifact.elaborador.nombre } : {}), estado: "PENDIENTE" as const, signature: undefined }));
     return { ...doc, flowStages, currentArtifact: composeArtifact(doc.currentArtifact, flowStages) };
   }, "FLUJO CONFIGURADO");
-  const actualizarDatosBasicos = (targetDocId: string, datos: { grupo: string; periodo: string }) => mutateDocument(targetDocId, doc => {
-    if (!canEdit(doc) || documentsRef.current.some(d => d.id !== doc.id && d.documentType === "PLAN_TRABAJO" && doc.documentType === "PLAN_TRABAJO" && d.grupo === datos.grupo && d.periodo === datos.periodo && canonicalDemoActorId(d.currentArtifact.elaborador.id) === canonicalDemoActorId(doc.currentArtifact.elaborador.id))) return doc;
-    return { ...doc, ...datos, nombre: doc.documentType === "PLAN_TRABAJO" ? `Plan de Trabajo — ${datos.grupo}` : doc.nombre, currentArtifact: { ...doc.currentArtifact, ...datos }, fechaUltimaActualizacion: timestamp() };
+  const actualizarDatosBasicos = (targetDocId: string, datos: { groupId: string; periodId: string; grupo: string; periodo: string }) => mutateDocument(targetDocId, doc => {
+    if (!canEdit(doc) || documentsRef.current.some(d => d.id !== doc.id && findPlanByIdentity([d], { teacherId: doc.teacherId, groupId: datos.groupId, periodId: datos.periodId }))) return doc;
+    return { ...doc, ...datos, nombre: doc.documentType === "PLAN_TRABAJO" ? `Plan de Trabajo — ${datos.grupo}` : doc.nombre, currentArtifact: { ...doc.currentArtifact, grupo: datos.grupo, periodo: datos.periodo }, fechaUltimaActualizacion: timestamp() };
   });
-  const restablecerDemo = useCallback(() => { commitDocuments(structuredClone(INITIAL_DOCUMENTS_LIST)); setSelectedDocId(INITIAL_DOCUMENTS_LIST[0]?.id || INITIAL_DOCUMENT_MASTER.id); }, [commitDocuments]);
+  const restablecerDemo = useCallback(() => { commitDocuments(structuredClone(INITIAL_DOCUMENTS_LIST).map(hydrateDocument)); setSelectedDocId(INITIAL_DOCUMENTS_LIST[0]?.id || INITIAL_DOCUMENT_MASTER.id); }, [commitDocuments]);
 
   return { simularSesionDemo, currentUser: sessionRef.current, aprobarSinFirma, configurarFlujoDocumento, resolverObservacion, actualizarDatosBasicos, documents, selectedDocId, docMaster, currentArtifact: docMaster.currentArtifact, observations: docMaster.observations, flowStages: docMaster.flowStages, seleccionarDocumento, crearNuevoDocumento, generarArtefacto, generarArtefactoInforme, firmarComoElaborador, enviarARevision, agregarObservacion, editarObservacion, eliminarObservacion, devolverDocumento, iniciarCorreccion, prepararNuevaRonda, aprobarYFirmarRevisor, validarYFirmarFinal, restablecerDemo };
 }

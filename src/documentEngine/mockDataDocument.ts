@@ -224,6 +224,9 @@ export const INITIAL_ARTIFACT_EVENTOS_CORRECCION: DocumentArtifact = {
 
 export const INITIAL_DOCUMENT_MASTER: DocumentMasterState = {
   id: "doc-plan-eventos-2026",
+  teacherId: "usr-andrea-01",
+  groupId: "grp-2",
+  periodId: "per-1",
   codigo: "PT-FISEI-2026-004",
   codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
   nombre: "Plan de Trabajo: Comisión de Eventos Académicos",
@@ -288,16 +291,16 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
   reviewRound: 1,
   get pageCount() { return this.pages?.length ?? 0; },
   generatedAt: "07/09/2026 10:00",
-  generatedBy: "Ing. Andrea Pérez, Mg.",
+  generatedBy: "Ing. Carlos López, Mg.",
   grupo: "Unidad de Titulación",
   carrera: "Ingeniería de Software",
   periodo: "Julio – Diciembre 2026",
   unidadAcademica: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
   elaborador: {
-    id: "usr-andrea-01",
-    nombre: "Ing. Andrea Pérez, Mg.",
+    id: "usr-carlos-02",
+    nombre: "Ing. Carlos López, Mg.",
     cargo: "Docente elaborador",
-    email: "andrea.perez@uta.edu.ec",
+    email: "carlos.lopez@uta.edu.ec",
   },
   informeData: {
     informeOrigen: "DERIVADO_PLAN",
@@ -329,6 +332,9 @@ export const INITIAL_INFORME_ARTIFACT: DocumentArtifact = {
 
 export const INITIAL_INFORME_MASTER: DocumentMasterState = {
   id: "doc-inf-titulacion-2026",
+  teacherId: "usr-carlos-02",
+  groupId: "grp-1",
+  periodId: "per-1",
   codigo: "INF-FISEI-2026-012",
   codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
   nombre: "SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN",
@@ -348,9 +354,9 @@ export const INITIAL_INFORME_MASTER: DocumentMasterState = {
   flowStages: [
     {
       id: "stage-1",
-      actorId: "usr-andrea-01",
+      actorId: "usr-carlos-02",
       stageName: "ETAPA 1 — Elaboración",
-      actorName: "Ing. Andrea Pérez, Mg.",
+      actorName: "Ing. Carlos López, Mg.",
       actorCargo: "Docente elaborador",
       actorRole: "docente",
       estado: "PENDIENTE",
@@ -396,6 +402,9 @@ export const MATRIZ_TITULACION_DOC = [
 
 export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   id: "doc-plan-titulacion-2026",
+  teacherId: "usr-carlos-02",
+  groupId: "grp-1",
+  periodId: "per-1",
   codigo: "PT-FISEI-2026-001",
   codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T1",
   nombre: "Plan de Trabajo: Unidad de Titulación",
@@ -417,6 +426,13 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
     titulo: "Plan de Trabajo: Unidad de Titulación",
     grupo: "Unidad de Titulación",
     carrera: "Ingeniería de Software",
+    generatedBy: "Ing. Carlos López, Mg.",
+    elaborador: {
+      id: "usr-carlos-02",
+      nombre: "Ing. Carlos López, Mg.",
+      cargo: "Docente elaborador",
+      email: "carlos.lopez@uta.edu.ec",
+    },
     justificacion: JUSTIFICACION_TITULACION,
     objetivo: OBJETIVO_TITULACION,
     matriz: MATRIZ_TITULACION_DOC,
@@ -430,8 +446,8 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
     ],
     signatures: [
       {
-        actorId: "usr-andrea-01",
-        actor: "Ing. Andrea Pérez, Mg.",
+        actorId: "usr-carlos-02",
+        actor: "Ing. Carlos López, Mg.",
         cargo: "Docente elaborador",
         role: "docente",
         fecha: "05/09/2026",
@@ -470,9 +486,9 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   flowStages: [
     {
       id: "stage-1",
-      actorId: "usr-andrea-01",
+      actorId: "usr-carlos-02",
       stageName: "ETAPA 1 — Elaboración",
-      actorName: "Ing. Andrea Pérez, Mg.",
+      actorName: "Ing. Carlos López, Mg.",
       actorCargo: "Docente elaborador",
       actorRole: "docente",
       estado: "FIRMADO",
@@ -504,10 +520,71 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   fechaUltimaActualizacion: "06/09/2026 15:00",
 };
 
+export const INITIAL_PLAN_CLUB_DRAFT_MASTER: DocumentMasterState = {
+  ...INITIAL_DOCUMENT_MASTER,
+  id: "doc-plan-club-2026-1",
+  teacherId: "usr-andrea-01",
+  groupId: "grp-3",
+  periodId: "per-2",
+  codigo: "DEMO-PT-CLUB-BORRADOR",
+  nombre: "Plan de Trabajo: Club Académico de Software",
+  grupo: "Club Académico de Software",
+  periodo: "Enero – Junio 2026",
+  documentState: "BORRADOR",
+  currentArtifact: {
+    ...INITIAL_ARTIFACT,
+    id: "art-plan-club-borrador",
+    titulo: "Plan de Trabajo: Club Académico de Software",
+    grupo: "Club Académico de Software",
+    periodo: "Enero – Junio 2026",
+    matriz: [],
+    tieneAnexos: "no",
+    anexos: [],
+    signatures: [],
+  },
+  observations: [],
+  flowStages: [
+    { ...FLOW_STAGES_INICIAL[0], estado: "PENDIENTE" },
+    { ...FLOW_STAGES_INICIAL[1], id: "club-pending", actorId: undefined, actorName: "Responsable pendiente de configuración", stageName: "Etapa pendiente de configuración", estado: "PENDIENTE" },
+  ],
+  mensajeDevolucion: undefined,
+};
+
+export const INITIAL_PLAN_VINCULACION_REVISION_MASTER: DocumentMasterState = {
+  ...INITIAL_DOCUMENT_MASTER,
+  id: "doc-plan-vinculacion-2026",
+  teacherId: "usr-carlos-02",
+  groupId: "grp-4",
+  periodId: "per-1",
+  codigo: "DEMO-PT-VINCULACION-REVISION",
+  nombre: "Plan de Trabajo: Comisión de Vinculación con la Sociedad",
+  grupo: "Comisión de Vinculación con la Sociedad",
+  periodo: "Julio – Diciembre 2026",
+  documentState: "EN REVISIÓN",
+  currentArtifact: {
+    ...INITIAL_ARTIFACT,
+    id: "art-plan-vinculacion-revision",
+    titulo: "Plan de Trabajo: Comisión de Vinculación con la Sociedad",
+    grupo: "Comisión de Vinculación con la Sociedad",
+    elaborador: { id: "usr-carlos-02", nombre: "Ing. Carlos López, Mg.", cargo: "Docente elaborador", email: "carlos.lopez@uta.edu.ec" },
+    generatedBy: "Ing. Carlos López, Mg.",
+    signatures: [{ actorId: "usr-carlos-02", stageId: "vinc-stage-1", actor: "Ing. Carlos López, Mg.", cargo: "Docente elaborador", role: "docente", fecha: "05/09/2026", hora: "09:00", ubicacion: "Firmas de Responsabilidad: Elaborado por", credentialMode: "demo", isDemo: true }],
+  },
+  observations: [],
+  flowStages: [
+    { ...FLOW_STAGES_INICIAL[0], id: "vinc-stage-1", actorId: "usr-carlos-02", actorName: "Ing. Carlos López, Mg.", estado: "FIRMADO" },
+    { ...FLOW_STAGES_INICIAL[1], id: "vinc-stage-2", actorId: "usr-andrea-01", actorName: "Ing. Andrea Pérez, Mg.", estado: "EN_CURSO" },
+    { ...FLOW_STAGES_INICIAL[2], id: "vinc-stage-3", estado: "PENDIENTE" },
+  ],
+  mensajeDevolucion: undefined,
+};
+
 export const INITIAL_DOCUMENTS_LIST: DocumentMasterState[] = [
   INITIAL_PLAN_TITULACION_MASTER,
   INITIAL_DOCUMENT_MASTER,
   INITIAL_INFORME_MASTER,
+  INITIAL_PLAN_CLUB_DRAFT_MASTER,
+  INITIAL_PLAN_VINCULACION_REVISION_MASTER,
 ];
 
 

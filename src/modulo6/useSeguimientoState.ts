@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { ActividadEjecucion, ArchivoEvidenciaInput, MedioVerificacion, EventoAuditoria } from "../modulo5/types";
 import { DOCENTE_ACTUAL, FECHA_SISTEMA_STR, HORA_SISTEMA_STR, FECHA_HORA_SISTEMA, plazoEvidenciaVencido, estadoActividadDesdeMedios } from "../modulo5/useActividadesState";
-import { ACTIVIDADES_SEGUIMIENTO_INICIALES, REVISOR_ACTUAL, GRUPOS_ASIGNADOS_REVISOR } from "./mockDataSeguimiento";
+import { ACTIVIDADES_SEGUIMIENTO_INICIALES } from "./mockDataSeguimiento";
 import { ItemEvidenciaRevisor, ItemSeguimientoPlan } from "./types";
 import { DocumentMasterState } from "../documentEngine/types";
 import { AuditLogger, NotificacionItem } from "../modulo8/types";
@@ -17,12 +17,16 @@ export interface SeguimientoOptions {
   onAuditLog?: AuditLogger;
   onNotification?: (notificacion: NotificacionItem) => void;
 }
-export function puedeGestionarEvidencia(usuario: string, actividad: ActividadEjecucion): boolean {
-  return actividad.responsables.includes(usuario) && !plazoEvidenciaVencido(actividad);
+export function esResponsableDeActividad(usuario: string | { id: string; nombre: string }, actividad: ActividadEjecucion): boolean {
+  return typeof usuario === "string"
+    ? actividad.responsables.includes(usuario)
+    : actividad.responsableIds?.includes(usuario.id) ?? actividad.responsables.includes(usuario.nombre);
 }
-export function puedeRevisarEvidencia(revisor: string, actividad: ActividadEjecucion, grupos?: string[]): boolean {
-  const asignados = grupos ?? (revisor === REVISOR_ACTUAL ? GRUPOS_ASIGNADOS_REVISOR : []);
-  return !actividad.soloLectura && asignados.includes(actividad.grupo);
+export function puedeGestionarEvidencia(usuario: string | { id: string; nombre: string }, actividad: ActividadEjecucion): boolean {
+  return esResponsableDeActividad(usuario, actividad) && !plazoEvidenciaVencido(actividad);
+}
+export function puedeRevisarEvidencia(_revisor: string, actividad: ActividadEjecucion, grupos: string[] = []): boolean {
+  return !actividad.soloLectura && grupos.includes(actividad.grupo);
 }
 
 // La matriz firmada es la fuente de ejecución; la evidencia conserva su propia historia.
@@ -37,7 +41,7 @@ export function sincronizarActividades(documents: DocumentMasterState[], anterio
         id, planId: doc.id, planVersion: doc.formalVersion, docenteElaborador: doc.currentArtifact.elaborador.nombre,
         sourceActivityId: matriz.id, nombre: matriz.nombre, categoria: previa?.categoria ?? "Otra", tipo: previa?.tipo ?? "opcional",
         planNombre: doc.nombre, grupo: doc.grupo, periodo: doc.periodo, desde: matriz.desde, hasta: matriz.hasta,
-        fechaLimiteExacta: `${matriz.hasta} — 23:59`, responsables: [...matriz.responsables], recursos: [...matriz.recursos], medios,
+        fechaLimiteExacta: `${matriz.hasta} — 23:59`, responsables: [...matriz.responsables], responsableIds: [...(matriz.responsableIds || [])], recursos: [...matriz.recursos], medios,
         soloLectura: closed.includes(doc.periodo) || doc.operationalState === "FINALIZADO", estado: "PENDIENTE",
       };
       return { ...actividad, estado: estadoActividadDesdeMedios(actividad) };
@@ -46,6 +50,7 @@ export function sincronizarActividades(documents: DocumentMasterState[], anterio
 
 export function useSeguimientoState(options: SeguimientoOptions = {}) {
   const userName = options.currentUser?.nombre ?? DOCENTE_ACTUAL;
+  const userId = options.currentUser?.id ?? "";
   const userRole = options.currentRole ?? "docente";
   const [almacenadas, setActividades] = useState<ActividadEjecucion[]>(() => {
     try { const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
@@ -70,7 +75,7 @@ export function useSeguimientoState(options: SeguimientoOptions = {}) {
     const doc = options.documents?.find(d => d.id === act.planId);
     const destinatarios = revision
       ? act.responsables.map(nombre => ({ id: USUARIOS_ADMIN_INICIALES.find(u => u.nombreCompleto === nombre)?.id ?? nombre, nombre }))
-      : (doc?.flowStages.filter(s => s.actorRole !== "docente" && s.actorId).map(s => ({ id: s.actorId!, nombre: s.actorName })) ?? [{ id: "usr-carlos-02", nombre: REVISOR_ACTUAL }]);
+      : (doc?.flowStages.filter(s => s.actorRole !== "docente" && s.actorId).map(s => ({ id: s.actorId!, nombre: s.actorName })) ?? []);
     Array.from(new Map(destinatarios.map(d => [d.id, d])).values()).forEach(dest => options.onNotification?.({
       id: `notif-evi-${crypto.randomUUID()}`, destinatarioRol: revision ? "Docente" : "Revisor", destinatarioUsuarioId: dest.id,
       titulo: tipo === "OBSERVACION" ? "Evidencia observada" : tipo === "VALIDACION" ? "Evidencia validada" : "Evidencia pendiente de validación",
@@ -88,7 +93,7 @@ export function useSeguimientoState(options: SeguimientoOptions = {}) {
       if (userRole !== "revisor" || !puedeRevisarEvidencia(userName, act, options.reviewerGroupNames) || !medio.archivoVigente || medio.estado === "VALIDADA" || medio.estado === "OBSERVADA") return false;
       if (tipo === "OBSERVACION" && !texto.trim()) return false;
     } else {
-      if (!puedeGestionarEvidencia(userName, act) || userRole !== "docente" || !archivo || !/\.pdf$/i.test(archivo.nombre) || (archivo.sizeBytes !== undefined && (archivo.sizeBytes <= 0 || archivo.sizeBytes > 10 * 1024 * 1024))) return false;
+      if (!puedeGestionarEvidencia({id:userId,nombre:userName}, act) || userRole !== "docente" || !archivo || !/\.pdf$/i.test(archivo.nombre) || (archivo.sizeBytes !== undefined && (archivo.sizeBytes <= 0 || archivo.sizeBytes > 10 * 1024 * 1024))) return false;
       if (tipo === "CARGA" ? !!medio.archivoVigente : !medio.archivoVigente) return false;
     }
     const version = revision ? (medio.historialVersiones.find(v => v.vigente)?.version ?? 1) : Math.max(0, ...medio.historialVersiones.map(v => v.version)) + 1;
@@ -118,11 +123,11 @@ export function useSeguimientoState(options: SeguimientoOptions = {}) {
   const resumenBandeja = { pendientes: itemsBandejaRevisor.filter(i => i.estado === "PENDIENTE DE VALIDACIÓN").length, validadasHoy: itemsBandejaRevisor.filter(i => i.estado === "VALIDADA" && i.fechaRevision?.startsWith(FECHA_SISTEMA_STR)).length, observadas: itemsBandejaRevisor.filter(i => i.estado === "OBSERVADA").length, totalRevisadas: itemsBandejaRevisor.filter(i => i.estado === "VALIDADA" || i.estado === "OBSERVADA").length };
   const planesSeguimiento = useMemo<ItemSeguimientoPlan[]>(() => {
     const grupos = new Map<string, ActividadEjecucion[]>();
-    actividades.filter(a => userRole === "admin" || (options.reviewerGroupNames ?? (userName === REVISOR_ACTUAL ? GRUPOS_ASIGNADOS_REVISOR : [])).includes(a.grupo)).forEach(a => { const key = a.planId ?? `${a.planNombre}/${a.periodo}/${a.docenteElaborador}`; grupos.set(key, [...(grupos.get(key) ?? []), a]); });
+    actividades.filter(a => userRole === "admin" || (options.reviewerGroupNames ?? []).includes(a.grupo)).forEach(a => { const key = a.planId ?? `${a.planNombre}/${a.periodo}/${a.docenteElaborador}`; grupos.set(key, [...(grupos.get(key) ?? []), a]); });
     return [...grupos].map(([planId, acts]) => { const a = acts[0]; const medios = acts.flatMap(x => x.medios); return { planId, planNombre: a.planNombre, docente: a.docenteElaborador ?? a.responsables[0], grupo: a.grupo, periodo: a.periodo, version: a.planVersion ?? "1.0", actividadesTotales: acts.length, actividadesCompletas: acts.filter(x => x.estado === "EVIDENCIAS COMPLETAS").length, actividadesEnCurso: acts.filter(x => x.estado === "EN CURSO").length, actividadesPendientes: acts.filter(x => x.estado === "PENDIENTE").length, actividadesVencidas: acts.filter(x => x.estado === "VENCIDA").length, evidenciasRequeridas: medios.length, evidenciasCargadas: medios.filter(m => m.archivoVigente).length, evidenciasValidadas: medios.filter(m => m.estado === "VALIDADA").length, evidenciasObservadas: medios.filter(m => m.estado === "OBSERVADA").length, evidenciasPendientesCarga: medios.filter(m => !m.archivoVigente).length, actividades: acts }; });
   }, [actividades, userRole, userName, options.reviewerGroupNames]);
   const resumenSeguimientoGlobal = { planesEnEjecucion: planesSeguimiento.length, actividadesEnCurso: planesSeguimiento.reduce((n,p) => n+p.actividadesEnCurso,0), actividadesVencidas: planesSeguimiento.reduce((n,p) => n+p.actividadesVencidas,0), evidenciasPendientesValidacion: itemsBandejaRevisor.filter(i => i.estado === "PENDIENTE DE VALIDACIÓN").length, evidenciasObservadas: planesSeguimiento.reduce((n,p) => n+p.evidenciasObservadas,0), evidenciasValidadas: planesSeguimiento.reduce((n,p) => n+p.evidenciasValidadas,0) };
-  const mis = actividades.filter(a => a.responsables.includes(userName)); const completas = mis.filter(a => a.estado === "EVIDENCIAS COMPLETAS").length;
+  const mis = actividades.filter(a => esResponsableDeActividad({id:userId,nombre:userName}, a)); const completas = mis.filter(a => a.estado === "EVIDENCIAS COMPLETAS").length;
   const resumen = { total: mis.length, enCurso: mis.filter(a => a.estado === "EN CURSO").length, pendientes: mis.filter(a => a.estado === "PENDIENTE").length, completas, vencidas: mis.filter(a => a.estado === "VENCIDA").length, pct: mis.length ? Math.round(completas / mis.length * 100) : 0 };
   return { actividades, itemsBandejaRevisor, resumenBandeja, planesSeguimiento, resumenSeguimientoGlobal, evidenciaSeleccionada, setEvidenciaSeleccionada, itemEvidenciaActivo: itemsBandejaRevisor.find(i => i.actividadId === evidenciaSeleccionada?.actividadId && i.medioId === evidenciaSeleccionada?.medioId) ?? null, planSeguimientoSeleccionadoId, setPlanSeguimientoSeleccionadoId, planSeguimientoActivo: planesSeguimiento.find(p => p.planId === planSeguimientoSeleccionadoId) ?? null, validarEvidencia, observarEvidencia, reemplazarEvidencia, cargarEvidencia, actividadSeleccionadaId, setActividadSeleccionadaId, actividadSeleccionada: actividades.find(a => a.id === actividadSeleccionadaId) ?? null, resumen, restablecerDemo: () => setActividades(structuredClone(ACTIVIDADES_SEGUIMIENTO_INICIALES)) };
 }

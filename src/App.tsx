@@ -2,7 +2,6 @@ import { canonicalDemoActorId, flowFromConfiguration, hasConfiguredNextStage } f
 import { buildDocumentPages, getSignatureSlots } from "./documentEngine/pagination";
 import { useState, useRef, useEffect } from "react";
 import logoUta from "./img/Logo UTA-Azul.png";
-import { useActividadesState } from "./modulo5/useActividadesState";
 import MisActividadesView from "./modulo5/MisActividadesView";
 import DetalleActividadView from "./modulo5/DetalleActividadView";
 import MisEvidenciasView from "./modulo5/MisEvidenciasView";
@@ -3664,7 +3663,7 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, artifact, docEngine }: {
 }) {
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <Stepper current={6} maxReached={maxReached} />
-    <div style={{flex:1,minHeight:0}}><DocumentPdfPageViewer artifact={artifact} formalVersion={artifact.formalVersion} reviewRound={artifact.reviewRound} documentState="BORRADOR" observations={[]} flowStages={docEngine?.flowStages || []} currentUser={{nombre:artifact.elaborador.nombre,cargo:artifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} /></div>
+    <div style={{flex:1,minHeight:0}}><DocumentPdfPageViewer artifact={artifact} formalVersion={artifact.formalVersion} reviewRound={artifact.reviewRound} documentState="BORRADOR" observations={[]} flowStages={docEngine?.flowStages || []} currentUser={{id:artifact.elaborador.id,nombre:artifact.elaborador.nombre,cargo:artifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} /></div>
     <FormFooter onPrev={onPrev} onNext={onNext} onSave={() => {}} saving={false} canContinue={true} />
   </div>;
 }
@@ -3885,7 +3884,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
   const periodoActual = adminState?.periodos.find(p => p.nombre === draft.periodo);
   const responsablesGrupo = grupoActual?.miembros.filter(m => !adminState || adminState.usuarios.some(u => u.id === m.usuarioId && u.estado === "ACTIVO")).map(m => m.nombreCompleto) || [];
   const gruposDisponibles = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).filter(g => g.estado === "ACTIVO" && g.miembros.some(m => canonicalDemoActorId(m.usuarioId) === docEngine?.currentUser.id));
-  const matrizDocumental = draft.matriz.map(a => ({...a, responsablesEtiqueta: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? `Responsable ${grupoActual?.tipo === "Comisión" ? "de la comisión" : grupoActual?.tipo === "Unidad" ? "de la unidad" : grupoActual?.tipo === "Club" ? "del club" : "del grupo"}` : undefined}));
+  const matrizDocumental = draft.matriz.map(a => ({...a, responsableIds: grupoActual?.miembros.filter(member => a.responsables.includes(member.nombreCompleto)).map(member => canonicalDemoActorId(member.usuarioId)) || [], responsablesEtiqueta: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? `Integrantes ${grupoActual?.tipo === "Comisión" ? "de la Comisión" : grupoActual?.tipo === "Unidad" ? "de la Unidad" : grupoActual?.tipo === "Club" ? "del Club" : "del Grupo"}` : undefined}));
 
   function cargarPlan(docId: string) {
     const doc = docEngine?.documents.find(d => d.id === docId);
@@ -3945,7 +3944,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           <MisDocumentosView
             docEngine={docEngine}
             grupos={gruposDisponibles} periodos={adminState?.periodos || []}
-            onNewPlan={(grupo, periodo) => { const selectedGroup=gruposDisponibles.find(g => g.nombre === grupo); docEngine.crearNuevoDocumento("PLAN_TRABAJO", {grupo,periodo}); setDraftState({...structuredClone(DEFAULT_DRAFT),grupo,periodo,matriz:[],objetivo:"",justificacion:selectedGroup?.descripcion || "",fechaElaboracion:todayFormatted()}); setMaxReached(1); setFormError(""); setSub("step1"); }}
+            onNewPlan={(groupId, periodId) => { const selectedGroup=gruposDisponibles.find(g => g.id === groupId); const selectedPeriod=adminState?.periodos.find(p => p.id === periodId); if(!selectedGroup || !selectedPeriod)return; docEngine.crearNuevoDocumento("PLAN_TRABAJO", {groupId,periodId,grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre}); setDraftState({...structuredClone(DEFAULT_DRAFT),grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre,matriz:[],objetivo:"",justificacion:selectedGroup.descripcion || "",fechaElaboracion:todayFormatted()}); setMaxReached(1); setFormError(""); setSub("step1"); }}
             onNewInforme={() => {setInformeEditId(undefined); setSub("wizardInforme");}}
             onContinuarInforme={id => {setInformeEditId(id); setSub("wizardInforme");}}
             onContinuarPlan={(docId) => {
@@ -3984,11 +3983,12 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           onCancel={() => setSub("list")}
         />
       )}
-      {sub !== "list" && docEngine?.docMaster.documentState === "EN CORRECCIÓN" && <details style={{padding:"8px 28px"}}><summary>Ver observaciones y resaltados del documento devuelto</summary><div style={{height:650}}><DocumentPdfPageViewer artifact={docEngine.currentArtifact} formalVersion={docEngine.docMaster.formalVersion} reviewRound={docEngine.docMaster.reviewRound} documentState="EN CORRECCIÓN" observations={docEngine.observations} flowStages={docEngine.flowStages} currentUser={{nombre:docEngine.currentArtifact.elaborador.nombre,cargo:docEngine.currentArtifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} onResolveObservacion={id => docEngine.resolverObservacion(docEngine.docMaster.id,id)} /></div></details>}
+      {sub !== "list" && docEngine?.docMaster.documentState === "EN CORRECCIÓN" && <details style={{padding:"8px 28px"}}><summary>Ver observaciones y resaltados del documento devuelto</summary><div style={{height:650}}><DocumentPdfPageViewer artifact={docEngine.currentArtifact} formalVersion={docEngine.docMaster.formalVersion} reviewRound={docEngine.docMaster.reviewRound} documentState="EN CORRECCIÓN" observations={docEngine.observations} flowStages={docEngine.flowStages} currentUser={{id:docEngine.currentArtifact.elaborador.id,nombre:docEngine.currentArtifact.elaborador.nombre,cargo:docEngine.currentArtifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} onResolveObservacion={id => docEngine.resolverObservacion(docEngine.docMaster.id,id)} /></div></details>}
       {sub === "step1" && (
         <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} elaborador={docEngine?.currentUser.nombre || DOCENTE.nombre} error={formError} onSave={() => saveDraft({})} onChange={v => {setFormError("");saveDraft(v.grupo && v.grupo !== draft.grupo ? {...v,matriz:[],justificacion:gruposDisponibles.find(g => g.nombre === v.grupo)?.descripcion || "",objetivo:""} : v);}} grupos={gruposDisponibles} periodos={adminState?.periodos.filter(p => p.estado === "ACTIVO") || []} maxReached={maxReached} onNext={() => {
-          if (docEngine?.documents.some(d => d.id !== docEngine.docMaster.id && d.documentType === "PLAN_TRABAJO" && d.grupo === draft.grupo && d.periodo === draft.periodo && d.currentArtifact.elaborador.id === docEngine.currentUser.id)) {setFormError("Ya existe un Plan para este docente, grupo y período. Continúe el documento existente.");return;}
-          if (docEngine) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual?.id); if(flow && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
+          const selectedPeriod=adminState?.periodos.find(p=>p.nombre===draft.periodo);
+          if (docEngine?.documents.some(d => d.id !== docEngine.docMaster.id && d.documentType === "PLAN_TRABAJO" && d.teacherId === docEngine.currentUser.id && d.groupId === grupoActual?.id && d.periodId === selectedPeriod?.id)) {setFormError("Ya existe un Plan de Trabajo para este docente, grupo y período.");return;}
+          if (docEngine && grupoActual && selectedPeriod) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{groupId:grupoActual.id,periodId:selectedPeriod.id,grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual.id); if(flow && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
           setMaxReached(m => Math.max(m, 2)); setSub("step4"); }} onCancel={() => setSub("list")} />
       )}
       {sub === "step2" && (
@@ -4063,7 +4063,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
             if (docEngine) {
               const id = docEngine.docMaster.id;
               if (docEngine.docMaster.documentState === "EN CORRECCIÓN") docEngine.prepararNuevaRonda(id);
-              docEngine.actualizarDatosBasicos(id, {grupo:draft.grupo, periodo:draft.periodo});
+              docEngine.actualizarDatosBasicos(id, {groupId:grupoActual?.id || docEngine.docMaster.groupId, periodId:periodoActual?.id || docEngine.docMaster.periodId, grupo:draft.grupo, periodo:draft.periodo});
               const flow = adminState?.flujos.find(f => f.grupoId === grupoActual?.id);
               if (flow && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
               docEngine.generarArtefacto(id, {collectsPersonalData:draft.collectsPersonalData,fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: matrizDocumental, tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
@@ -4923,7 +4923,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [planesViewKey, setPlanesViewKey] = useState(0);
   const auditoriaState = useAuditoriaState();
   const adminState = useAdminState();
-  const docEngine = useDocumentEngine(auditoriaState.registrarEvento, {flujos:adminState.flujos,usuarios:adminState.usuarios});
+  const docEngine = useDocumentEngine(auditoriaState.registrarEvento, {flujos:adminState.flujos,usuarios:adminState.usuarios,periodos:adminState.periodos});
   const sessionAdmin=adminState.usuarios.find(u => canonicalDemoActorId(u.id) === docEngine.currentUser.id);
   const sessionDisplay={nombre:docEngine.currentUser.nombre,nombreCorto:docEngine.currentUser.nombre,correo:sessionAdmin?.correo || "",avatar:sessionAdmin ? sessionAdmin.nombres[0]+sessionAdmin.apellidos[0] : "DE",rol:userRole === "admin" ? "Administrador" : userRole === "revisor" ? "Revisor" : "Docente"};
   const reviewerGroupNames=adminState.flujos.filter(f => f.etapas.some(e => e.revisoresIds?.some(id => canonicalDemoActorId(id) === docEngine.currentUser.id))).map(f => f.grupoNombre);

@@ -6,6 +6,7 @@ export interface ActividadMatrizDoc {
   desde: string;
   hasta: string;
   responsables: string[];
+  responsableIds?: string[];
   responsablesEtiqueta?: string;
   recursos: string[];
   medios: string[];
@@ -212,6 +213,9 @@ export interface FlowStageNode {
 export interface DocumentMasterState {
   draftCreatedAt?: string;
   id: string;
+  teacherId: string;
+  groupId: string;
+  periodId: string;
   codigo: string;
   codigoFormatoOficial?: "UTA-SGC-A-2-1-P7-T1" | "UTA-SGC-A-2-1-P7-T2" | string;
   nombre: string;

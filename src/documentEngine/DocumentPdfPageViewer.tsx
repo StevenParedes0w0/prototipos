@@ -2,6 +2,7 @@ import { MATRIX_ROWS_PER_PAGE } from "./pagination";
 import React, { useState, useRef } from "react";
 import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
+import { T1_FOOTER_TEXT, T1_FORMAT_TEXT, t1CoverMainBlockStyle, t1CoverStyle, t1FooterStyle } from "./t1Layout";
 
 interface DocumentPdfPageViewerProps {
   artifact: DocumentArtifact;
@@ -11,6 +12,7 @@ interface DocumentPdfPageViewerProps {
   observations: DocumentObservation[];
   flowStages: FlowStageNode[];
   currentUser: {
+    id?: string;
     nombre: string;
     cargo: string;
     role: "docente" | "revisor" | "validador" | "admin";
@@ -42,6 +44,16 @@ export default function DocumentPdfPageViewer({
 }: DocumentPdfPageViewerProps) {
   const isPlan = artifact.documentType === "PLAN_TRABAJO";
   const totalPages = artifact.pages?.length || artifact.pageCount;
+  const pageForSection = (section: string, fallback: number) => {
+    const index = artifact.pages?.findIndex(page => page.contentSections?.includes(section) || page.blocks?.some(block => block.section === section)) ?? -1;
+    return index >= 0 ? index + 1 : Math.min(fallback, totalPages);
+  };
+  const justificationPage = pageForSection("justificacion", 3);
+  const objectivePage = pageForSection("objetivo", justificationPage);
+  const matrixPage = pageForSection("matriz", 4);
+  const annexPage = pageForSection("anexos", totalPages);
+  const signaturesPage = pageForSection("firmas", totalPages);
+  const historyPage = pageForSection("historial", totalPages);
   const [currentPage, setCurrentPage] = useState(1);
   const [highlightMode, setHighlightMode] = useState(false);
   const [anchor, setAnchor] = useState<DocumentObservationAnchor>();
@@ -106,7 +118,7 @@ export default function DocumentPdfPageViewer({
   const LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   // Dynamic orientation per page: Page 4 of Plan is Landscape
-  const isLandscape = isPlan && currentPage >= 4 && currentPage < totalPages;
+  const isLandscape = artifact.pages?.[currentPage - 1]?.orientation === "landscape";
 
   const handleCreateObs = () => {
     if (!obsTexto.trim()) return;
@@ -294,7 +306,8 @@ export default function DocumentPdfPageViewer({
 
   const renderFooter = () => (
     <div
-      style={{
+      data-document-footer={isPlan ? "t1" : "t2"}
+      style={isPlan ? t1FooterStyle : {
         borderTop: "1px solid #cbd5e1",
         paddingTop: 8,
         marginTop: 24,
@@ -306,13 +319,13 @@ export default function DocumentPdfPageViewer({
         fontFamily: "Helvetica, Arial, sans-serif",
       }}
     >
-      <div style={{ flex: 1, textAlign: "left" }}>
-        Documento de uso interno controlado por la Universidad Técnica de Ambato
+      <div style={{ minWidth: 0, textAlign: "left" }}>
+        {T1_FOOTER_TEXT}
       </div>
-      <div style={{ flex: 1, textAlign: "center", fontWeight: 600 }}>
-        Formato Nº: {artifact.codigoFormatoOficial || (artifact.documentType === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1")}
+      <div style={{ textAlign: "center", fontWeight: 600 }}>
+        {isPlan ? T1_FORMAT_TEXT : `Formato Nº: ${artifact.codigoFormatoOficial || "UTA-SGC-A-2-1-P7-T2"}`}
       </div>
-      <div style={{ flex: 1, textAlign: "right", fontWeight: 700 }}>
+      <div style={{ textAlign: "right", fontWeight: 700 }}>
         {currentPage}
       </div>
     </div>
@@ -634,14 +647,14 @@ export default function DocumentPdfPageViewer({
                 {renderHeader()}
 
                 {/* ─────────────────────────────────────────────────────────────
-                    PLAN DE TRABAJO (T1) — 5 PÁGINAS ALTA FIDELIDAD DOCX
+                    PLAN DE TRABAJO (T1) — COMPOSICIÓN DINÁMICA
                    ───────────────────────────────────────────────────────────── */}
                 {isPlan ? (
                   <>
                     {/* PÁGINA 1: PORTADA */}
                     {currentPage === 1 && (
-                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 640, justifyContent: "space-between" }}>
-                        <div style={{ textAlign: "center", marginTop: 44, marginBottom: 44 }}>
+                      <div style={t1CoverStyle}>
+                        <div style={{ textAlign: "center", marginTop: 48, marginBottom: 72 }}>
                           <div
                             style={{
                               fontFamily: "Helvetica, Arial, sans-serif",
@@ -658,15 +671,7 @@ export default function DocumentPdfPageViewer({
                         </div>
 
                         <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 34,
-                            width: "100%",
-                            maxWidth: 620,
-                            margin: "0 auto 40px",
-                            textAlign: "center",
-                          }}
+                          style={t1CoverMainBlockStyle}
                         >
                           <div style={{ marginTop: 8 }}>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
@@ -705,32 +710,32 @@ export default function DocumentPdfPageViewer({
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>1. JUSTIFICACIÓN</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 3</span>
+                            <span>Pág. {justificationPage}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>2. OBJETIVO</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 3</span>
+                            <span>Pág. {objectivePage}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>3. MATRIZ DE ACTIVIDADES</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 4</span>
+                            <span>Pág. {matrixPage}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>4. ANEXOS</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 5</span>
+                            <span>Pág. {annexPage}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>FIRMAS DE RESPONSABILIDAD</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 5</span>
+                            <span>Pág. {signaturesPage}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "baseline" }}>
                             <span style={{ fontWeight: 700 }}>CONTROL DE HISTORIAL DE CAMBIOS</span>
                             <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                            <span>Pág. 5</span>
+                            <span>Pág. {historyPage}</span>
                           </div>
                         </div>
 
@@ -751,7 +756,7 @@ export default function DocumentPdfPageViewer({
                             <div style={{ display: "flex", alignItems: "baseline" }}>
                               <span>Tabla 1.- Matriz de actividades</span>
                               <span style={{ flex: 1, borderBottom: "1px dotted #94a3b8", margin: "0 8px" }} />
-                              <span>Pág. 4</span>
+                              <span>Pág. {matrixPage}</span>
                             </div>
                           </div>
                         </div>
@@ -1042,7 +1047,7 @@ export default function DocumentPdfPageViewer({
                             <tbody>
                               {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY").map((stage, idx) => {
                                 const sig = artifact.signatures.find((s) => s.stageId ? s.stageId === stage.id : s.actorId ? s.actorId === stage.actorId : s.actor === stage.actorName);
-                                const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
+                                const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === currentUser.id)) && !sig;
 
                                 let accionTitulo = "Elaborado por:";
                                 let accionSub = "(Delegado técnico de la unidad académica o administrativa)";
@@ -1446,7 +1451,7 @@ export default function DocumentPdfPageViewer({
                             <tbody>
                               {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY" && s.actorRole !== "validador").map((stage, idx) => {
                                 const sig = artifact.signatures.find((s) => s.stageId ? s.stageId === stage.id : s.actorId ? s.actorId === stage.actorId : s.actor === stage.actorName);
-                                const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === (currentUser as any).id)) && !sig;
+                                const isCurrentActorCell = (currentUser.nombre === stage.actorName || (stage.actorId && stage.actorId === currentUser.id)) && !sig;
 
                                 let accionTitulo = "Elaborado por:";
                                 let accionSub = "(Delegado técnico de la unidad académica o administrativa)";

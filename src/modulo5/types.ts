@@ -67,6 +67,7 @@ export interface ActividadEjecucion {
   hasta: string; // "DD/MM/YYYY"
   fechaLimiteExacta: string; // e.g. "18/09/2026 — 23:59"
   responsables: string[];
+  responsableIds?: string[];
   recursos: string[];
   medios: MedioVerificacion[];
   estado: EstadoActividad;

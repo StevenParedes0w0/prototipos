@@ -40,6 +40,11 @@ export const USUARIOS_ADMIN_INICIALES: UsuarioAdmin[] = [
         grupoNombre: "Comisión de Eventos Académicos",
         rolEnGrupo: "Miembro",
       },
+      {
+        grupoId: "grp-3",
+        grupoNombre: "Club Académico de Software",
+        rolEnGrupo: "Miembro",
+      },
     ],
   },
   {
@@ -367,7 +372,8 @@ export const FLUJOS_INICIALES: FlujoGrupo[] = [
         nombre: "Validación final",
         descripcion: "Validación final por la autoridad configurada para este grupo.",
         tipoResponsable: "Autoridad",
-        revisoresNombres: ["Autoridad correspondiente"],
+        revisoresIds: ["usr-3"],
+        revisoresNombres: ["Ing. Patricia Salazar, Mg."],
       },
     ],
   },
@@ -399,8 +405,19 @@ export const FLUJOS_INICIALES: FlujoGrupo[] = [
         nombre: "Validación final",
         descripcion: "Validación final por la autoridad institucional correspondiente.",
         tipoResponsable: "Autoridad",
-        revisoresNombres: ["Autoridad correspondiente"],
+        revisoresIds: ["usr-3"],
+        revisoresNombres: ["Ing. Patricia Salazar, Mg."],
       },
+    ],
+  },
+  {
+    grupoId: "grp-4",
+    grupoNombre: "Comisión de Vinculación con la Sociedad",
+    estado: "CONFIGURADO",
+    etapas: [
+      { id: "etp-41", numero: 1, nombre: "Elaboración", descripcion: "Elaboración del Plan de Trabajo.", tipoResponsable: "Elaborador" },
+      { id: "etp-42", numero: 2, nombre: "Revisión", descripcion: "Revisión del documento por la persona configurada.", tipoResponsable: "Revisores", revisoresIds: ["usr-1"], revisoresNombres: ["Ing. Andrea Pérez, Mg."], reglaAprobacion: "TODOS DEBEN APROBAR" },
+      { id: "etp-43", numero: 3, nombre: "Validación final", descripcion: "Validación DEMO por la persona configurada.", tipoResponsable: "Autoridad", revisoresIds: ["usr-3"], revisoresNombres: ["Ing. Patricia Salazar, Mg."] },
     ],
   },
 ];

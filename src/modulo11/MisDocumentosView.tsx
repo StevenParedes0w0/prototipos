@@ -5,10 +5,11 @@ import { DocumentMasterState, DocumentType } from "../documentEngine/types";
 import DetalleDocumentoModal from "./DetalleDocumentoModal";
 import { Eye, ClipboardList, FilePenLine, MessageSquare, RotateCcw, Download, BadgeCheck, PenLine } from "../components/icons";
 import { TableActionButton } from "../components/TableActionButton";
+import { findPlanByIdentity } from "../documentEngine/documentIdentity";
 
 interface MisDocumentosViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
-  onNewPlan: (grupo:string,periodo:string) => void;
+  onNewPlan: (groupId:string,periodId:string) => void;
   grupos: GrupoInstitucional[];
   periodos: PeriodoAcademico[];
   onContinuarInforme: (docId:string) => void;
@@ -30,9 +31,9 @@ export default function MisDocumentosView({
   const { seleccionarDocumento } = docEngine;
   const documents = docEngine.documents.filter(d => d.currentArtifact.elaborador.id === docEngine.currentUser.id);
   const [showPlanModal,setShowPlanModal]=useState(false);
-  const [newGroup,setNewGroup]=useState("");
-  const [newPeriod,setNewPeriod]=useState(periodos.find(p => p.estado === "ACTIVO")?.nombre || "");
-  const duplicate=documents.find(d => d.documentType === "PLAN_TRABAJO" && d.grupo === newGroup && d.periodo === newPeriod);
+  const [newGroupId,setNewGroupId]=useState("");
+  const [newPeriodId,setNewPeriodId]=useState(periodos.find(p => p.estado === "ACTIVO")?.id || "");
+  const duplicate=findPlanByIdentity(docEngine.documents,{teacherId:docEngine.currentUser.id,groupId:newGroupId,periodId:newPeriodId});
   const continueDocument=(doc:DocumentMasterState) => {
     if(doc.documentType === "INFORME") {if(doc.documentState === "DEVUELTO")docEngine.iniciarCorreccion(doc.id);onContinuarInforme(doc.id);}
     else if(["DEVUELTO","EN CORRECCIÓN"].includes(doc.documentState))onCorregirPlan(doc.id);
@@ -386,11 +387,17 @@ export default function MisDocumentosView({
       </div>
 
       {showPlanModal && <div role="dialog" aria-modal="true" aria-label="Seleccionar grupo y período" style={{position:"fixed",inset:0,background:"#0f233ca6",zIndex:360,display:"grid",placeItems:"center",padding:20}}><div style={{background:"white",padding:24,borderRadius:12,width:520,maxWidth:"100%"}}>
-        <h2>Nuevo Plan de Trabajo</h2><label className="form-label">Grupo institucional<select className="form-select" value={newGroup} onChange={e=>setNewGroup(e.target.value)}><option value="">Seleccione un grupo</option>{grupos.map(g=><option key={g.id}>{g.nombre}</option>)}</select></label>
-        <label className="form-label">Período<select className="form-select" value={newPeriod} onChange={e=>setNewPeriod(e.target.value)}><option value="">Seleccione un período</option>{periodos.filter(p=>p.estado === "ACTIVO").map(p=><option key={p.id}>{p.nombre}</option>)}</select></label>
+        <h2>Nuevo Plan de Trabajo</h2><label className="form-label">Grupo institucional<select className="form-select" value={newGroupId} onChange={e=>setNewGroupId(e.target.value)}><option value="">Seleccione un grupo</option>{grupos.map(g=><option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label>
+        <label className="form-label">Período<select className="form-select" value={newPeriodId} onChange={e=>setNewPeriodId(e.target.value)}><option value="">Seleccione un período</option>{periodos.filter(p=>p.estado === "ACTIVO").map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></label>
         {!grupos.length && <p>No tiene grupos activos asignados. El administrador puede gestionar su pertenencia.</p>}
-        {duplicate && <p role="alert">Ya existe un Plan para este docente, grupo y período. Consulte o continúe el documento existente.</p>}
-        <div style={{display:"flex",gap:8,marginTop:16}}><button className="btn btn-ghost" onClick={()=>setShowPlanModal(false)}>Cancelar</button><button className="btn btn-primary" disabled={!newGroup || !newPeriod || !!duplicate} onClick={()=>{setShowPlanModal(false);onNewPlan(newGroup,newPeriod);}}>Crear borrador</button></div>
+        {duplicate && <div role="alert" style={{marginTop:12,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#78350f"}}>
+          <strong>Ya existe un Plan de Trabajo para este docente, grupo y período.</strong>
+          <div style={{marginTop:8,fontSize:13}}>Grupo: {duplicate.grupo}<br/>Período: {duplicate.periodo}<br/>Versión formal: {duplicate.formalVersion}<br/>Ronda: {duplicate.reviewRound}<br/>Estado: {duplicate.documentState}</div>
+          <button className="btn btn-ghost btn-sm" style={{marginTop:10}} title={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} aria-label={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} onClick={()=>{setShowPlanModal(false);seleccionarDocumento(duplicate.id);if(["BORRADOR","EN CORRECCIÓN","DEVUELTO"].includes(duplicate.documentState))continueDocument(duplicate);else setSelectedDocForDetail(duplicate);}}>
+            {duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"}
+          </button>
+        </div>}
+        <div style={{display:"flex",gap:8,marginTop:16}}><button className="btn btn-ghost" onClick={()=>setShowPlanModal(false)}>Cancelar</button><button className="btn btn-primary" disabled={!newGroupId || !newPeriodId || !!duplicate} onClick={()=>{setShowPlanModal(false);onNewPlan(newGroupId,newPeriodId);}}>Crear borrador</button></div>
       </div></div>}
       {/* MODAL 1: SELECCIONAR TIPO DE DOCUMENTO */}
       {showTipoModal && (
@@ -454,7 +461,7 @@ export default function MisDocumentosView({
                 }}
                 onClick={() => {
                   setShowTipoModal(false);
-                  setNewGroup(grupos[0]?.nombre || "");setShowPlanModal(true);
+                  setNewGroupId(grupos[0]?.id || "");setShowPlanModal(true);
                 }}
               >
                 <div>
