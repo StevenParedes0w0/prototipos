@@ -42,8 +42,10 @@ export default function MisDocumentosView({
 
   // Modals state
   const [showTipoModal, setShowTipoModal] = useState(false);
-  const [selectedDocForDetail, setSelectedDocForDetail] = useState<DocumentMasterState | null>(null);
-  const [showObsModalDoc, setShowObsModalDoc] = useState<DocumentMasterState | null>(null);
+  const [selectedDocForDetailId, setSelectedDocForDetailId] = useState<string | null>(null);
+  const [showObsModalDocId, setShowObsModalDocId] = useState<string | null>(null);
+  const selectedDocForDetail = selectedDocForDetailId ? docEngine.documents.find(doc => doc.id === selectedDocForDetailId) || null : null;
+  const showObsModalDoc = showObsModalDocId ? docEngine.documents.find(doc => doc.id === showObsModalDocId) || null : null;
 
   // Filters state
   const [filtroPeriodo, setFiltroPeriodo] = useState("Todos los períodos");
@@ -252,7 +254,7 @@ export default function MisDocumentosView({
                 const isPlan = doc.documentType === "PLAN_TRABAJO";
 
                 return (
-                  <tr key={doc.id}>
+                  <tr key={doc.id} data-document-id={doc.id}>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13.5, color: "#1e2a3a" }}>
                         {doc.nombre}
@@ -313,7 +315,7 @@ export default function MisDocumentosView({
                           icon={Eye}
                           onClick={() => {
                             seleccionarDocumento(doc.id);
-                            setSelectedDocForDetail(doc);
+                            setSelectedDocForDetailId(doc.id);
                           }}
                         />
 
@@ -331,7 +333,7 @@ export default function MisDocumentosView({
                               title="Ver observaciones"
                               icon={MessageSquare}
                               variant="destructive"
-                              onClick={() => setShowObsModalDoc(doc)}
+                              onClick={() => setShowObsModalDocId(doc.id)}
                             />
                             <TableActionButton
                               title="Corregir documento"
@@ -363,7 +365,7 @@ export default function MisDocumentosView({
                               title="Ver observaciones"
                               icon={MessageSquare}
                               variant="destructive"
-                              onClick={() => setShowObsModalDoc(doc)}
+                              onClick={() => setShowObsModalDocId(doc.id)}
                             />
                             <TableActionButton
                               title="Continuar corrección"
@@ -393,7 +395,7 @@ export default function MisDocumentosView({
         {duplicate && <div role="alert" style={{marginTop:12,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#78350f"}}>
           <strong>Ya existe un Plan de Trabajo para este docente, grupo y período.</strong>
           <div style={{marginTop:8,fontSize:13}}>Grupo: {duplicate.grupo}<br/>Período: {duplicate.periodo}<br/>Versión formal: {duplicate.formalVersion}<br/>Ronda: {duplicate.reviewRound}<br/>Estado: {duplicate.documentState}</div>
-          <button className="btn btn-ghost btn-sm" style={{marginTop:10}} title={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} aria-label={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} onClick={()=>{setShowPlanModal(false);seleccionarDocumento(duplicate.id);if(["BORRADOR","EN CORRECCIÓN","DEVUELTO"].includes(duplicate.documentState))continueDocument(duplicate);else setSelectedDocForDetail(duplicate);}}>
+          <button className="btn btn-ghost btn-sm" style={{marginTop:10}} title={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} aria-label={duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"} onClick={()=>{setShowPlanModal(false);seleccionarDocumento(duplicate.id);if(["BORRADOR","EN CORRECCIÓN","DEVUELTO"].includes(duplicate.documentState))continueDocument(duplicate);else setSelectedDocForDetailId(duplicate.id);}}>
             {duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"}
           </button>
         </div>}
@@ -541,9 +543,9 @@ export default function MisDocumentosView({
       {selectedDocForDetail && (
         <DetalleDocumentoModal
           documento={selectedDocForDetail}
-          onClose={() => setSelectedDocForDetail(null)}
+          onClose={() => setSelectedDocForDetailId(null)}
           onNavigateActividades={() => {
-            setSelectedDocForDetail(null);
+            setSelectedDocForDetailId(null);
             onNavigateActividades();
           }}
         />
@@ -585,7 +587,7 @@ export default function MisDocumentosView({
                   {showObsModalDoc.nombre} · Versión {showObsModalDoc.formalVersion} (Ronda {showObsModalDoc.reviewRound})
                 </div>
               </div>
-              <button onClick={() => setShowObsModalDoc(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 18 }}>
+              <button onClick={() => setShowObsModalDocId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 18 }}>
                 ✕
               </button>
             </div>
@@ -612,7 +614,7 @@ export default function MisDocumentosView({
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#9a3412", fontWeight: 700, marginBottom: 4 }}>
                           <span>{obs.seccion || `Página ${obs.pagina}`}</span>
-                          <span>{obs.revisor}</span>
+                          <span>{obs.revisor} · {obs.fecha}</span>
                         </div>
                         <div style={{ fontSize: 12.5, color: "#334155" }}>
                           {obs.texto}
@@ -628,7 +630,7 @@ export default function MisDocumentosView({
               </div>
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-secondary" onClick={() => setShowObsModalDoc(null)}>
+              <button className="btn btn-secondary" onClick={() => setShowObsModalDocId(null)}>
                 Cerrar
               </button>
               <button
@@ -636,7 +638,7 @@ export default function MisDocumentosView({
                 style={{ background: "#f59e0b", color: "#1e2a3a", border: "none", fontWeight: 700 }}
                 onClick={() => {
                   const docId = showObsModalDoc.id;
-                  setShowObsModalDoc(null);
+                  setShowObsModalDocId(null);
                   seleccionarDocumento(docId);
                   const doc=documents.find(d=>d.id===docId);if(doc)continueDocument(doc);
                 }}

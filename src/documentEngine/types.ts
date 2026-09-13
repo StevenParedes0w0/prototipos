@@ -60,14 +60,21 @@ export interface DocumentObservation {
   congelada?: boolean;
   id: number;
   documentoId: string;
+  artifactId: string;
   formalVersion: string;
   ronda: number;
   pagina: number;
+  pageIndex: number;
+  pageNumber: number;
   revisor: string;
   cargo?: string;
   fecha: string;
+  authorUserId: string;
+  authorName: string;
+  createdAt: string;
   texto: string;
   estado: "activa" | "resuelta" | "historica";
+  status: "ACTIVE" | "RESOLVED" | "HISTORICAL";
   tipo: "general" | "seccion";
   seccion?: string;
 }
@@ -231,12 +238,16 @@ export interface DocumentMasterState {
   finalValidatorId?: string;
   finalValidatorName?: string;
   currentArtifact: DocumentArtifact;
+  signedArtifact?: DocumentArtifact;
   artifactHistory: DocumentArtifact[];
   observations: DocumentObservation[];
   flowStages: FlowStageNode[];
   workflowHistory?: { reviewRound: number; stages: FlowStageNode[]; fecha: string }[];
   fechaUltimaActualizacion: string;
   mensajeDevolucion?: string;
+  returnedByUserId?: string;
+  returnedByName?: string;
+  returnedAt?: string;
   documentoRelacionadoId?: string;
   documentoRelacionadoTitulo?: string;
 }

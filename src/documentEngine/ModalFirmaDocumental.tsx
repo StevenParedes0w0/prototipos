@@ -71,6 +71,7 @@ export default function ModalFirmaDocumental({
 
   return (
     <div
+      role="dialog" aria-modal="true" aria-label="Firma documental"
       style={{
         position: "fixed",
         inset: 0,

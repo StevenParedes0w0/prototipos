@@ -11,7 +11,7 @@ export function normalizeInformeTitle(titulo: string): string {
   return titulo.replace(/^(?:INFORME\s+DE\s*:\s*)+/i, "").trim().toUpperCase();
 }
 
-const STORAGE_KEY = "fisei_documents_collection_v7";
+const STORAGE_KEY = "fisei_documents_collection_v8";
 const documentDate = () => new Date().toLocaleDateString("es-EC", { timeZone: "America/Guayaquil", day: "2-digit", month: "2-digit", year: "numeric" });
 const documentTime = () => new Date().toLocaleTimeString("es-EC", { timeZone: "America/Guayaquil", hour: "2-digit", minute: "2-digit" });
 const timestamp = () => `${documentDate()} ${documentTime()}`;
@@ -165,7 +165,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const finalizedDate = doc.currentArtifact.elaborationFinalizedAt || documentDate();
     const artifact = { ...doc.currentArtifact, elaborationFinalizedAt: finalizedDate, signatures: [signature], historialCambios: (doc.currentArtifact.historialCambios || []).map((row, i) => i === 0 ? { ...row, fecha: finalizedDate } : row) };
     signed = true;
-    return { ...doc, documentState: "FIRMADO POR ELABORADOR", currentArtifact: artifact, flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO", signature } : s), fechaUltimaActualizacion: timestamp() };
+    return { ...doc, documentState: "FIRMADO POR ELABORADOR", currentArtifact: artifact, signedArtifact: structuredClone(artifact), flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO", signature } : s), fechaUltimaActualizacion: timestamp() };
     }, "DOCUMENTO FIRMADO", credentialMode === "demo" ? "Firma DEMO del elaborador; no corresponde a una firma electrónica real." : "Firma simulada del elaborador.");
     return signed;
   };
@@ -183,7 +183,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     return sent;
   };
 
-  const ownActiveStage = (doc: DocumentMasterState, actor = sessionRef.current.nombre) => getActiveReviewStages(doc).find(s => canonicalDemoActorId(s.actorId) === sessionRef.current.id && s.actorName === actor);
+  const ownActiveStage = (doc: DocumentMasterState, _actor = sessionRef.current.nombre) => getActiveReviewStages(doc).find(s => canonicalDemoActorId(s.actorId) === sessionRef.current.id);
   const ownObservation = (doc: DocumentMasterState, obs: DocumentObservation) => obs.ronda === doc.reviewRound && obs.estado === "activa" && !obs.congelada && (obs.revisorId ? canonicalDemoActorId(obs.revisorId) === sessionRef.current.id : obs.revisor === sessionRef.current.nombre) && Boolean(ownActiveStage(doc)) && (!obs.stageId || canActOnStage(doc, obs.stageId, sessionRef.current.id));
   const agregarObservacion = (targetDocId: string, pagina: number, texto: string, seccion = "", tipo: "general" | "seccion" = "seccion", revisor = sessionRef.current.nombre, anchor?: DocumentObservationAnchor) => {
     let observation: DocumentObservation | undefined;
@@ -191,7 +191,8 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       const stage = ownActiveStage(doc, revisor);
       if (!stage || !texto.trim() || !Number.isInteger(pagina) || pagina < 1 || pagina > (doc.currentArtifact.pages?.length || doc.currentArtifact.pageCount)) return doc;
       if (anchor && (anchor.pageNumber !== pagina || ![anchor.x, anchor.y, anchor.width, anchor.height].every(Number.isFinite) || anchor.x < 0 || anchor.y < 0 || anchor.width <= 0 || anchor.height <= 0 || anchor.x + anchor.width > 1.000001 || anchor.y + anchor.height > 1.000001)) return doc;
-      observation = { id: Date.now() + doc.observations.length, documentoId: doc.id, formalVersion: doc.formalVersion, ronda: doc.reviewRound, pagina, revisor: stage.actorName, revisorId: stage.actorId, stageId: stage.id, cargo: stage.actorCargo, fecha: timestamp(), texto: texto.trim(), estado: "activa", tipo, seccion: tipo === "general" ? "General" : seccion || `Página ${pagina}`, anchor: anchor ? { ...anchor } : undefined };
+      const createdAt = timestamp();
+      observation = { id: Date.now() + doc.observations.length, documentoId: doc.id, artifactId: doc.currentArtifact.id, formalVersion: doc.formalVersion, ronda: doc.reviewRound, pagina, pageIndex: pagina - 1, pageNumber: pagina, revisor: stage.actorName, revisorId: stage.actorId, stageId: stage.id, cargo: stage.actorCargo, fecha: createdAt, authorUserId: sessionRef.current.id, authorName: stage.actorName, createdAt, texto: texto.trim(), estado: "activa", status: "ACTIVE", tipo, seccion: tipo === "general" ? "General" : seccion || `Página ${pagina}`, anchor: anchor ? { ...anchor } : undefined };
       return { ...doc, observations: [...doc.observations, observation], fechaUltimaActualizacion: timestamp() };
     }, "OBSERVACIÓN REGISTRADA");
     return observation;
@@ -207,23 +208,28 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
 
   const devolverDocumento = (targetDocId: string, revisor = sessionRef.current.nombre, motivo = "Revise las observaciones antes de reenviar el documento.") => Boolean(mutateDocument(targetDocId, doc => {
     const stage = ownActiveStage(doc, revisor);
-    if (!stage || (!motivo.trim() && !doc.observations.some(o => o.ronda === doc.reviewRound && o.estado === "activa"))) return doc;
-    return { ...doc, documentState: "DEVUELTO", mensajeDevolucion: motivo.trim(), flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "DEVUELTO" } : s), observations: doc.observations.map(o => o.ronda === doc.reviewRound ? { ...o, congelada: true } : o), fechaUltimaActualizacion: timestamp() };
+    const expectedState = stage?.actorRole === "validador" ? "EN VALIDACIÓN FINAL" : "EN REVISIÓN";
+    if (!stage || doc.documentState !== expectedState || (!motivo.trim() && !doc.observations.some(o => o.ronda === doc.reviewRound && o.estado === "activa"))) return doc;
+    const returnedAt = timestamp();
+    const historicalArtifact = structuredClone(doc.signedArtifact || doc.currentArtifact);
+    const artifactHistory = doc.artifactHistory.some(a => a.id === historicalArtifact.id) ? doc.artifactHistory : [...doc.artifactHistory, historicalArtifact];
+    return { ...doc, documentState: "EN CORRECCIÓN", artifactHistory, mensajeDevolucion: motivo.trim(), returnedByUserId: sessionRef.current.id, returnedByName: stage.actorName, returnedAt, flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "DEVUELTO" } : s.estado === "EN_CURSO" ? { ...s, estado: "PENDIENTE" } : s), observations: doc.observations.map(o => o.ronda === doc.reviewRound ? { ...o, congelada: true } : o), fechaUltimaActualizacion: returnedAt };
   }, "DOCUMENTO DEVUELTO", motivo));
-  const iniciarCorreccion = (targetDocId: string) => mutateDocument(targetDocId, doc => !isAuthor(doc) || doc.documentState !== "DEVUELTO" ? doc : { ...doc, documentState: "EN CORRECCIÓN", fechaUltimaActualizacion: timestamp() }, "CORRECCIÓN INICIADA");
+  const iniciarCorreccion = (targetDocId: string) => mutateDocument(targetDocId, doc => !isAuthor(doc) || !["DEVUELTO", "EN CORRECCIÓN"].includes(doc.documentState) ? doc : doc.documentState === "EN CORRECCIÓN" ? doc : { ...doc, documentState: "EN CORRECCIÓN", fechaUltimaActualizacion: timestamp() }, "CORRECCIÓN INICIADA");
   const resolverObservacion = (targetDocId: string, id: number) => mutateDocument(targetDocId, doc => {
     if (!isAuthor(doc) || doc.documentState !== "EN CORRECCIÓN" || !doc.observations.some(o => o.id === id && o.estado === "activa" && o.ronda === doc.reviewRound)) return doc;
-    return { ...doc, observations: doc.observations.map(o => o.id === id ? { ...o, estado: "resuelta" } : o), fechaUltimaActualizacion: timestamp() };
+    return { ...doc, observations: doc.observations.map(o => o.id === id ? { ...o, estado: "resuelta", status: "RESOLVED" as const } : o), fechaUltimaActualizacion: timestamp() };
   }, "OBSERVACIÓN CORREGIDA");
   const prepararNuevaRonda = (targetDocId: string) => mutateDocument(targetDocId, doc => {
     if (!isAuthor(doc) || doc.documentState !== "EN CORRECCIÓN") return doc;
     const nextRound = doc.reviewRound + 1;
     return {
       ...doc, reviewRound: nextRound, documentState: "BORRADOR", currentArtifact: structuredClone({ ...doc.currentArtifact, id: uniqueId(`art-${doc.id}-r${nextRound}`), reviewRound: nextRound, generatedAt: timestamp(), signatures: [] }),
-      artifactHistory: [...doc.artifactHistory, structuredClone(doc.currentArtifact)],
+      signedArtifact: undefined,
+      artifactHistory: doc.artifactHistory.some(a => a.id === doc.currentArtifact.id) ? doc.artifactHistory : [...doc.artifactHistory, structuredClone(doc.currentArtifact)],
       workflowHistory: [...(doc.workflowHistory || []), { reviewRound: doc.reviewRound, stages: structuredClone(doc.flowStages), fecha: timestamp() }],
-      observations: doc.observations.map(o => o.ronda === doc.reviewRound ? { ...o, estado: "historica", congelada: true } : o),
-      flowStages: doc.flowStages.map(s => ({ ...s, estado: "PENDIENTE", signature: undefined })), mensajeDevolucion: undefined, fechaUltimaActualizacion: timestamp(),
+      observations: doc.observations.map(o => o.ronda === doc.reviewRound ? { ...o, estado: "historica", status: "HISTORICAL" as const, congelada: true } : o),
+      flowStages: doc.flowStages.map(s => ({ ...s, estado: "PENDIENTE", signature: undefined })), mensajeDevolucion: undefined, returnedByUserId: undefined, returnedByName: undefined, returnedAt: undefined, fechaUltimaActualizacion: timestamp(),
     };
   }, "NUEVA RONDA INICIADA");
 

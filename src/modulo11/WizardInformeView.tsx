@@ -52,7 +52,9 @@ export default function WizardInformeView({
 
   // Obtener planes disponibles del usuario para derivación
   const planesDisponibles = documents.filter(
-    (d) => d.documentType === "PLAN_TRABAJO"
+    (d) => d.documentType === "PLAN_TRABAJO" &&
+      d.teacherId === docEngine.currentUser.id &&
+      (d.documentState === "VALIDADO" || d.documentState === "EN EJECUCIÓN" || d.operationalState === "EN EJECUCIÓN")
   );
   const defaultPlan = planesDisponibles[0];
 
@@ -600,6 +602,7 @@ export default function WizardInformeView({
                       <label className="form-label required">Plan de Trabajo Relacionado</label>
                       <select
                         className="form-select"
+                        aria-label="Plan de Trabajo Relacionado"
                         value={selectedPlanId}
                         onChange={(e) => handleSelectPlan(e.target.value)}
                       >

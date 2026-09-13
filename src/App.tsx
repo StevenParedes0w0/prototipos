@@ -2704,7 +2704,7 @@ function Step3Matriz({
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label className="form-label required">Desde</label>
-                  <input type="date" className="form-input" value={editAct.desde}
+                  <input aria-label="Desde" type="date" className="form-input" value={editAct.desde}
                     onChange={e => {
                       updateAct({ ...editAct, desde: e.target.value });
                       setDateError(validateDates(e.target.value, editAct.hasta));
@@ -2712,7 +2712,7 @@ function Step3Matriz({
                 </div>
                 <div>
                   <label className="form-label required">Hasta</label>
-                  <input type="date" className="form-input" value={editAct.hasta}
+                  <input aria-label="Hasta" type="date" className="form-input" value={editAct.hasta}
                     onChange={e => {
                       updateAct({ ...editAct, hasta: e.target.value });
                       setDateError(validateDates(editAct.desde, e.target.value));
@@ -2788,7 +2788,7 @@ function Step3Matriz({
                 <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={editAct.recursos.some(v => !recursosCatalogo.includes(v))}
+                    aria-label="Otro recurso" checked={editAct.recursos.some(v => !recursosCatalogo.includes(v))}
                     onChange={e => {
                       updateAct({
                         ...editAct,
@@ -2865,7 +2865,7 @@ function Step3Matriz({
                 <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={editAct.medios.some(v => !mediosCatalogo.includes(v))}
+                    aria-label="Otro medio de verificación" checked={editAct.medios.some(v => !mediosCatalogo.includes(v))}
                     onChange={e => {
                       updateAct({
                         ...editAct,
@@ -3084,7 +3084,7 @@ function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, s
         onSave={() => {}}
         saving={saving}
         canContinue={matrizCompleta}
-        nextLabel="Continuar a Contenido →"
+        nextLabel="Continuar a Anexos →"
       />
     </div>
   );
@@ -3823,12 +3823,7 @@ interface PlanDraft {
   objetivo: string;
   tieneAnexos: "si" | "no" | null;
   anexos: Anexo[];
-  estado: "borrador" | "en-revision" | "devuelto" | "en-correccion" | "validado";
-  fechaEnvio: string;
   fechaElaboracion: string;
-  fechaDevolucion: string;
-  mensajeDevolucion: string;
-  observacionesRevision: Observacion[];
 }
 
 function todayFormatted() {
@@ -3845,12 +3840,7 @@ const DEFAULT_DRAFT: PlanDraft = {
   objetivo: DEFAULT_OBJETIVO,
   tieneAnexos: null,
   anexos: [],
-  estado: "borrador",
-  fechaEnvio: "",
   fechaElaboracion: todayFormatted(),
-  fechaDevolucion: "",
-  mensajeDevolucion: "",
-  observacionesRevision: [],
 };
 
 function loadDraft(): PlanDraft {
@@ -3917,7 +3907,6 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
     if (docEngine) {
       if (!docEngine.enviarARevision(docEngine.docMaster.id)) return;
     }
-    saveDraft({ estado: "en-revision", fechaEnvio: todayFormatted() });
     setSub("step8");
   }
 
@@ -3928,14 +3917,6 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
 
     setSub("step1");
   }
-
-  // Derive status from docEngine if present
-  const currentPlanEstado = docEngine ? (
-    docEngine.docMaster.documentState === "BORRADOR" ? "borrador" :
-    docEngine.docMaster.documentState === "EN REVISIÓN" ? "en-revision" :
-    docEngine.docMaster.documentState === "DEVUELTO" ? "devuelto" :
-    docEngine.docMaster.documentState === "VALIDADO" ? "validado" : "en-correccion"
-  ) : draft.estado;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -3962,15 +3943,12 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           />
         ) : (
           <PlanesListado
-            planEstado={currentPlanEstado}
+            planEstado="borrador"
             formalVersion="1.0"
             reviewRound={1}
             onNew={() => setSub("step1")}
             onContinuar={() => { setInitialEditId(null); setSub("step3edit"); }}
             onCorregir={() => handleCorregir()}
-            observacionesRevision={draft.observacionesRevision}
-            mensajeDevolucion={draft.mensajeDevolucion}
-            fechaDevolucion={draft.fechaDevolucion}
             onNavigateActividades={onNavigateActividades}
             initialShowObsModal={initialShowObsModal}
           />
@@ -4094,828 +4072,6 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
 
 type RevisorSub = "bandeja" | "revision" | "aprobado" | "devuelto";
 
-interface Observacion {
-  id: number;
-  tipo: "general" | "seccion";
-  seccion: string;
-  texto: string;
-  autor: string;
-  fecha: string;
-}
-
-const SECCIONES_DOC = ["Información general", "Justificación", "Objetivo", "Matriz de actividades", "Anexos", "Firmas de responsabilidad", "Historial de cambios"];
-
-const BANDEJA_PLANES = [
-  { id: 1, nombre: "Plan de Trabajo", grupo: "Comisión de Eventos Académicos", elaborador: "Ing. Andrea Pérez, Mg.", version: "1.0", recibido: "06 sep. 2026", hora: "09:15", etapa: "Revisión", estado: "PENDIENTE" },
-  { id: 2, nombre: "Plan de Trabajo", grupo: "Unidad de Titulación",           elaborador: "Ing. María Torres, Mg.",  version: "1.0", recibido: "05 sep. 2026", hora: "16:40", etapa: "Revisión", estado: "PENDIENTE" },
-];
-
-function RevisorView({ onBackToDocente, onDevolver, initialSub = "bandeja" }: {
-  onBackToDocente: () => void;
-  onDevolver?: (data: { mensaje: string; obs: Observacion[] }) => void;
-  initialSub?: RevisorSub;
-}) {
-  const [sub, setSub] = useState<RevisorSub>(initialSub);
-
-  useEffect(() => {
-    if (initialSub) {
-      setSub(initialSub);
-    }
-  }, [initialSub]);
-
-  const [selectedPlanIdx, setSelectedPlanIdx] = useState(0);
-  const [decisionMade, setDecisionMade] = useState(false);
-  const [obs, setObs] = useState<Observacion[]>([
-    { id: 1, tipo: "seccion", seccion: "Justificación",      texto: "Reforzar la relación entre la necesidad identificada y las actividades propuestas.", autor: REVISOR.nombre, fecha: "06 sep. 2026 — 10:25" },
-    { id: 2, tipo: "seccion", seccion: "Matriz de actividades", texto: "La actividad 4 requiere revisar el recurso seleccionado.",                         autor: REVISOR.nombre, fecha: "06 sep. 2026 — 10:28" },
-    { id: 3, tipo: "general", seccion: "",                    texto: "Verificar coherencia del documento antes de reenviar.",                              autor: REVISOR.nombre, fecha: "06 sep. 2026 — 10:30" },
-  ]);
-  const [editObsId, setEditObsId] = useState<number | null>(null);
-  const [editObsText, setEditObsText] = useState("");
-  const [showObsDrawer, setShowObsDrawer] = useState(false);
-  const [obsForm, setObsForm] = useState<{ tipo: "general" | "seccion"; seccion: string; texto: string }>({ tipo: "general", seccion: "", texto: "" });
-  const [showDevolverModal, setShowDevolverModal] = useState(false);
-  const [devolverMsg, setDevolverMsg] = useState("Por favor, revise las observaciones registradas y realice las correcciones correspondientes antes de reenviar el documento.");
-  const [showFirmarModal, setShowFirmarModal] = useState(false);
-  const [certFile, setCertFile] = useState("certificado_firma.p12");
-  const [certPass, setCertPass] = useState("••••••••");
-  const [showPass, setShowPass] = useState(false);
-  const [firmaConfirmed, setFirmaConfirmed] = useState(false);
-  const [signed, setSigned] = useState(false);
-  const [caseB, setCaseB] = useState(false);
-  const [firmaDate] = useState(new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" }));
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
-  const [pdfZoom, setPdfZoom] = useState(100);
-
-  const plan = BANDEJA_PLANES[selectedPlanIdx];
-  const canSign = certFile.length > 0 && certPass.length > 0 && firmaConfirmed && obs.length === 0;
-
-  // Read the real signed draft from localStorage to show in PDF
-  const pdfDraft: PlanDraft = (() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<PlanDraft>;
-        if (parsed && Array.isArray(parsed.matriz)) return { ...DEFAULT_DRAFT, ...parsed };
-      }
-    } catch {}
-    return DEFAULT_DRAFT;
-  })();
-
-  function addObs() {
-    if (!obsForm.texto.trim()) return;
-    setObs(prev => [...prev, { id: Date.now(), tipo: obsForm.tipo, seccion: obsForm.seccion, texto: obsForm.texto, autor: REVISOR.nombre, fecha: new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" }) + " — " + new Date().toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) }]);
-    setObsForm({ tipo: "general", seccion: "", texto: "" });
-    setShowObsDrawer(false);
-  }
-
-  // ── Screen 01: Bandeja ────────────────────────────────────────────────────
-  if (sub === "bandeja") {
-    const statCards = [
-      { label: "Pendientes de revisión", val: 2, color: "#1a4f8a", bg: "#eff6ff" },
-      { label: "Revisados hoy",          val: 2, color: "#166534", bg: "#dcfce7" },
-      { label: "Devueltos",              val: 1, color: "#92400e", bg: "#fef3c7" },
-    ];
-    const estadoStyle: Record<string, { bg: string; color: string; dot: string }> = {
-      "PENDIENTE":   { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-      "EN REVISIÓN": { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
-      "APROBADO":    { bg: "#dcfce7", color: "#166534", dot: "#22c55e" },
-      "DEVUELTO":    { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-    };
-    return (
-      <div style={{ padding: "28px", maxWidth: 1200 }}>
-        {/* Header */}
-        <div style={{ marginBottom: 6 }}>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Inicio &rsaquo; Bandeja de revisión</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 4 }}>Bandeja de revisión</h1>
-              <p style={{ fontSize: 13.5, color: "#6b7a8d" }}>Consulte los documentos que requieren su revisión en la etapa actual.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stat cards */}
-        <div style={{ display: "flex", gap: 14, marginBottom: 20 }}>
-          {statCards.map((c, i) => (
-            <div key={i} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "14px 20px", display: "flex", flexDirection: "column", gap: 4, minWidth: 160 }}>
-              <div style={{ fontSize: 12, color: "#6b7a8d" }}>{c.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: c.color, fontFamily: "'DM Sans',sans-serif" }}>{c.val}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "12px 16px", marginBottom: 14, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          {[
-            { label: "Período", opts: ["Julio – Diciembre 2026"] },
-            { label: "Grupo",   opts: ["Todos"] },
-            { label: "Estado",  opts: ["Pendientes"] },
-          ].map(f => (
-            <div key={f.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>{f.label}:</span>
-              <select className="form-select" style={{ width: "auto", fontSize: 12.5, padding: "5px 28px 5px 10px" }}>
-                {f.opts.map(o => <option key={o}>{o}</option>)}
-              </select>
-            </div>
-          ))}
-          <div style={{ position: "relative", marginLeft: "auto" }}>
-            <svg style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input className="form-input" placeholder="Buscar documento o elaborador..." style={{ paddingLeft: 28, width: 240, fontSize: 12.5 }} />
-          </div>
-        </div>
-
-        {/* Table */}
-        <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Documento</th><th>Grupo institucional</th><th>Elaborador</th>
-                <th>Versión</th><th>Recibido</th><th>Etapa</th><th>Estado</th><th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {BANDEJA_PLANES.map((p, i) => {
-                const es = estadoStyle[p.estado] ?? estadoStyle["PENDIENTE"];
-                return (
-                  <tr key={p.id}>
-                    <td>
-                      <div style={{ fontWeight: 600, fontSize: 13.5, color: "#1e2a3a" }}>{p.nombre}</div>
-                      <div style={{ fontSize: 11.5, color: "#94a3b8" }}>Para revisión institucional</div>
-                    </td>
-                    <td style={{ fontSize: 13, color: "#334155" }}>{p.grupo}</td>
-                    <td style={{ fontSize: 13, color: "#475569" }}>{p.elaborador}</td>
-                    <td style={{ fontSize: 12.5, color: "#475569" }}>Versión {p.version}</td>
-                    <td>
-                      <div style={{ fontSize: 12.5, color: "#475569" }}>{p.recibido}</div>
-                      <div style={{ fontSize: 11.5, color: "#94a3b8" }}>{p.hora}</div>
-                    </td>
-                    <td><span style={{ fontSize: 12.5, color: "#1a4f8a", fontWeight: 600 }}>{p.etapa}</span></td>
-                    <td>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: es.bg, color: es.color }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: es.dot, display: "inline-block" }} />
-                        {p.estado}
-                      </span>
-                    </td>
-                    <td>
-                      <button className="btn btn-primary btn-sm" onClick={() => { setSelectedPlanIdx(i); setSub("revision"); }}>
-                        REVISAR
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div style={{ padding: "11px 18px", borderTop: "1px solid #f1f5f9", fontSize: 12, color: "#94a3b8" }}>
-            {BANDEJA_PLANES.length} documentos pendientes de revisión
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Screen 06: Confirmación ───────────────────────────────────────────────
-  if (sub === "aprobado") {
-    const approvedCount = caseB ? 2 : 1;
-    const totalRevisores = 2;
-    const allDone = approvedCount === totalRevisores;
-    const timelineItems = [
-      { label: "Elaborado y firmado", done: true,  active: false },
-      { label: `Revisión — ${approvedCount}/${totalRevisores}`, done: allDone, active: !allDone },
-      { label: "Coordinación",        done: false, active: allDone },
-      { label: "Validación final",    done: false, active: false },
-    ];
-
-    return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 28px" }}>
-        <div style={{ maxWidth: 660, width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#dcfce7", border: "3px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 8 }}>
-              {allDone ? "Etapa de revisión completada" : "Documento aprobado correctamente"}
-            </h1>
-            <p style={{ fontSize: 13.5, color: "#6b7a8d", lineHeight: 1.6 }}>
-              {allDone
-                ? "Todos los revisores requeridos aprobaron el documento. El Plan ha avanzado a la siguiente etapa."
-                : "Su aprobación fue registrada. El documento continuará en esta etapa hasta que todos los revisores obligatorios hayan completado su revisión."}
-            </p>
-          </div>
-
-          {/* Reviewer status */}
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "18px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a" }}>Revisión — {approvedCount} de {totalRevisores} revisores aprobados</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: allDone ? "#dcfce7" : "#dbeafe", color: allDone ? "#166534" : "#1e40af" }}>
-                {allDone ? "COMPLETADA" : "EN CURSO"}
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { nombre: REVISOR.nombre, aprobado: true },
-                { nombre: "Ing. Patricia Salazar, Mg.", aprobado: caseB },
-              ].map((r, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: "50%", background: r.aprobado ? "#dcfce7" : "#fef3c7", border: `2px solid ${r.aprobado ? "#22c55e" : "#f59e0b"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {r.aprobado
-                      ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      : <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", display: "block" }} />}
-                  </div>
-                  <span style={{ fontSize: 13, color: "#1e2a3a" }}>{r.nombre}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 11.5, color: r.aprobado ? "#16a34a" : "#92400e", fontWeight: 600 }}>{r.aprobado ? "Aprobado y firmado" : "Pendiente"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "18px 20px" }}>
-            <h3 style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a", marginBottom: 14 }}>Estado del flujo</h3>
-            <div style={{ display: "flex", gap: 0 }}>
-              {timelineItems.map((t, i) => (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-                    {i > 0 && <div style={{ flex: 1, height: 2, background: t.done || t.active ? "#1a4f8a" : "#e2e8f0" }} />}
-                    <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: t.done ? "#1a4f8a" : t.active ? "#fff" : "#f1f5f9", border: t.done ? "none" : t.active ? "2.5px solid #1a4f8a" : "2px solid #d1d9e0" }}>
-                      {t.done ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        : t.active ? <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a4f8a" }} />
-                        : <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#d1d9e0" }} />}
-                    </div>
-                    {i < timelineItems.length - 1 && <div style={{ flex: 1, height: 2, background: "#e2e8f0" }} />}
-                  </div>
-                  <div style={{ fontSize: 11, color: t.done || t.active ? "#1e2a3a" : "#94a3b8", fontWeight: t.active ? 600 : 400, textAlign: "center" }}>{t.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {!caseB && (
-            <div className="alert alert-info" style={{ fontSize: 13 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Ing. Patricia Salazar, Mg. aún tiene pendiente su revisión en esta etapa.
-            </div>
-          )}
-
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="btn btn-ghost" onClick={() => setSub("bandeja")}>VOLVER A BANDEJA</button>
-            <button className="btn btn-ghost" onClick={() => setSub("revision")}>VER DOCUMENTO</button>
-            {!caseB && (
-              <button className="btn btn-ghost btn-sm" onClick={() => setCaseB(true)} style={{ fontSize: 10.5, color: "#94a3b8", border: "1px dashed #d1d9e0" }} title="Solo visible en modo demostración">
-                [DEMO] Simular 2ª aprobación →
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Screen devuelto confirmation ─────────────────────────────────────────
-  if (sub === "devuelto") {
-    return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 28px" }}>
-        <div style={{ maxWidth: 580, width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fef3c7", border: "3px solid #fde68a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2.5" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 8 }}>Plan devuelto al elaborador</h1>
-            <p style={{ fontSize: 13.5, color: "#6b7a8d", lineHeight: 1.6 }}>
-              El documento fue devuelto con las observaciones registradas. El elaborador recibirá una notificación para realizar las correcciones correspondientes.
-            </p>
-          </div>
-          <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "18px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a" }}>Plan de Trabajo — {plan.grupo}</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#fef3c7", color: "#92400e" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
-                DEVUELTO
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { label: "Observaciones registradas", val: `${obs.length}` },
-                { label: "Devuelto por", val: REVISOR.nombre },
-                { label: "Etapa", val: "Elaborador — Corrección requerida" },
-              ].map(r => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: "#6b7a8d" }}>{r.label}</span>
-                  <span style={{ color: "#1e2a3a", fontWeight: 600 }}>{r.val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="alert alert-info" style={{ fontSize: 13 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Cuando el elaborador corrija el documento y lo reenvíe, todos los revisores del paso deberán revisar nuevamente desde cero.
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button className="btn btn-ghost" onClick={() => setSub("bandeja")}>VOLVER A BANDEJA</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Screens 02–05: Revisión del documento ─────────────────────────────────
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
-      {/* Drawer: Agregar observación */}
-      {showObsDrawer && (
-        <>
-          <div style={{ position: "fixed", inset: 0, background: "rgba(15,47,86,0.35)", zIndex: 100 }} onClick={() => setShowObsDrawer(false)} />
-          <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 460, background: "#fff", zIndex: 101, boxShadow: "-8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #e2e8f0" }}>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Nueva observación</h2>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label className="form-label required">Tipo de observación</label>
-                <div style={{ display: "flex", gap: 10 }}>
-                  {[{ val: "general" as const, label: "General" }, { val: "seccion" as const, label: "Sección específica" }].map(opt => (
-                    <label key={opt.val} style={{ flex: 1, cursor: "pointer", borderRadius: 8, padding: "10px 14px", border: `1.5px solid ${obsForm.tipo === opt.val ? "#1a4f8a" : "#e2e8f0"}`, background: obsForm.tipo === opt.val ? "#eff6ff" : "#fff", display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="radio" name="obsTipo" value={opt.val} checked={obsForm.tipo === opt.val} onChange={() => setObsForm(f => ({ ...f, tipo: opt.val, seccion: "" }))} style={{ accentColor: "#1a4f8a" }} />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "#1e2a3a" }}>{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {obsForm.tipo === "seccion" && (
-                <div>
-                  <label className="form-label required">Sección</label>
-                  <select className="form-select" value={obsForm.seccion} onChange={e => setObsForm(f => ({ ...f, seccion: e.target.value }))}>
-                    <option value="">Seleccionar sección…</option>
-                    {SECCIONES_DOC.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="form-label required">Observación</label>
-                <textarea className="form-textarea" style={{ minHeight: 120, fontSize: 13.5 }}
-                  placeholder={obsForm.tipo === "general" ? "Describa la observación general sobre el documento..." : "Describa el problema encontrado en esta sección..."}
-                  value={obsForm.texto} onChange={e => setObsForm(f => ({ ...f, texto: e.target.value }))} />
-              </div>
-            </div>
-            <div style={{ padding: "14px 24px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-ghost" onClick={() => setShowObsDrawer(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={addObs} disabled={!obsForm.texto.trim() || (obsForm.tipo === "seccion" && !obsForm.seccion)}>AGREGAR OBSERVACIÓN</button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Modal: Devolver con observaciones */}
-      {showDevolverModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,47,86,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#fff", borderRadius: 12, width: 500, padding: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>Devolver Plan de Trabajo</h2>
-            <p style={{ fontSize: 13, color: "#6b7a8d", marginBottom: 18 }}>
-              El documento será devuelto al elaborador para realizar correcciones. La versión permanecerá registrada como parte del historial de revisión.
-            </p>
-            <div style={{ background: "#f8fafc", borderRadius: 8, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-              {[
-                { label: "Documento", val: "Plan de Trabajo" },
-                { label: "Grupo",     val: plan.grupo },
-                { label: "Versión",   val: `1.0` },
-                { label: "Observaciones", val: `${obs.length}` },
-              ].map(r => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: "#6b7a8d" }}>{r.label}</span>
-                  <span style={{ color: "#1e2a3a", fontWeight: 600 }}>{r.val}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label className="form-label required">Mensaje para el elaborador</label>
-              <textarea className="form-textarea" style={{ minHeight: 80, fontSize: 13.5 }}
-                value={devolverMsg} onChange={e => setDevolverMsg(e.target.value)} />
-            </div>
-            <div className="alert alert-warning" style={{ fontSize: 12.5, marginBottom: 18 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Al devolver el documento, el flujo de aprobación se detendrá y el Plan volverá al elaborador.
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-ghost" onClick={() => setShowDevolverModal(false)}>Cancelar</button>
-              <button className="btn btn-secondary" style={{ background: "#f59e0b", border: "none", color: "#1e2a3a" }}
-                onClick={() => {
-                  setShowDevolverModal(false);
-                  setDecisionMade(true);
-                  setSub("devuelto");
-                  const today = new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
-                  try {
-                    const raw = localStorage.getItem(DRAFT_KEY);
-                    const parsed = raw ? JSON.parse(raw) : {};
-                    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...parsed, estado: "devuelto", fechaDevolucion: today, mensajeDevolucion: devolverMsg, observacionesRevision: obs }));
-                  } catch {}
-                  onDevolver?.({ mensaje: devolverMsg, obs });
-                }}>
-                CONFIRMAR DEVOLUCIÓN
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Aprobar y firmar */}
-      {showFirmarModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,47,86,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#fff", borderRadius: 12, width: 520, padding: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 4, fontFamily: "'DM Sans',sans-serif" }}>Aprobar y firmar documento</h2>
-              <p style={{ fontSize: 13, color: "#6b7a8d" }}>Al firmar confirma que ha revisado y aprobado esta versión del Plan de Trabajo.</p>
-            </div>
-            <div style={{ background: "#f8fafc", borderRadius: 8, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { label: "Documento", val: "Plan de Trabajo" },
-                { label: "Grupo",     val: plan.grupo },
-                { label: "Versión",   val: "1.0" },
-                { label: "Elaborador", val: plan.elaborador },
-              ].map(r => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: "#6b7a8d" }}>{r.label}</span>
-                  <span style={{ color: "#1e2a3a", fontWeight: 600 }}>{r.val}</span>
-                </div>
-              ))}
-            </div>
-            {obs.length > 0 && (
-              <div className="alert alert-warning" style={{ fontSize: 12.5 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-                Existen observaciones pendientes asociadas a esta revisión. Elimínelas o devuelva el documento antes de aprobar.
-                <button className="btn btn-ghost btn-xs" style={{ marginLeft: "auto" }} onClick={() => setShowFirmarModal(false)}>REVISAR OBSERVACIONES</button>
-              </div>
-            )}
-            {!signed ? (
-              <>
-                <div>
-                  <label className="form-label required">Certificado de firma</label>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input className="form-input" value={certFile} onChange={e => setCertFile(e.target.value)} style={{ flex: 1 }} />
-                    <button className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap" }}>Examinar</button>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label required">Contraseña del certificado</label>
-                  <div style={{ position: "relative" }}>
-                    <input className="form-input" type={showPass ? "text" : "password"} value={certPass} onChange={e => setCertPass(e.target.value)} style={{ paddingRight: 40 }} />
-                    <button onClick={() => setShowPass(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#64748b" }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="alert alert-info" style={{ fontSize: 12 }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  El certificado y su contraseña se utilizarán únicamente durante el proceso de firma y no serán almacenados permanentemente.
-                </div>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                  <input type="checkbox" checked={firmaConfirmed} onChange={e => setFirmaConfirmed(e.target.checked)} style={{ accentColor: "#1a4f8a", marginTop: 2, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.55 }}>Confirmo que he revisado el documento y apruebo esta versión.</span>
-                </label>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                  <button className="btn btn-ghost" onClick={() => setShowFirmarModal(false)}>Cancelar</button>
-                  <button className="btn btn-primary" disabled={!canSign} onClick={() => setSigned(true)}>APROBAR Y FIRMAR</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "#dcfce7", borderRadius: 8, border: "1px solid #bbf7d0" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#166534" }}>Documento aprobado y firmado</div>
-                    <div style={{ fontSize: 12, color: "#15803d", marginTop: 2 }}>Firmado por: {REVISOR.nombre} · {firmaDate} · 11:05</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                  <button className="btn btn-primary" onClick={() => { setShowFirmarModal(false); setDecisionMade(true); setSub("aprobado"); }}>
-                    VER ESTADO DEL PLAN →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "12px 24px", flexShrink: 0 }}>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>
-          <span style={{ cursor: "pointer", color: "#1a4f8a" }} onClick={() => setSub("bandeja")}>Bandeja de revisión</span>
-          {" "}›{" "}Plan de Trabajo › Revisión
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Revisar Plan de Trabajo</h1>
-            <div style={{ display: "flex", gap: 16, fontSize: 12.5, color: "#6b7a8d" }}>
-              <span><b style={{ color: "#1e2a3a" }}>Grupo:</b> {plan.grupo}</span>
-              <span><b style={{ color: "#1e2a3a" }}>Elaborador:</b> {plan.elaborador}</span>
-              <span><b style={{ color: "#1e2a3a" }}>Versión:</b> 1.0</span>
-              <span><b style={{ color: "#1e2a3a" }}>Recibido:</b> {plan.recibido} — {plan.hora}</span>
-            </div>
-          </div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#dbeafe", color: "#1e40af" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3b82f6", display: "inline-block" }} />
-            EN REVISIÓN
-          </span>
-        </div>
-      </div>
-
-      {/* Main layout: PDF + right panel */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, maxWidth: 1300 }}>
-
-          {/* PDF viewer */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0", padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 12.5, color: "#475569" }}>Página 1 de 4</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-                <button onClick={() => setPdfZoom(z => Math.max(60, z - 10))} className="btn btn-ghost btn-xs" style={{ padding: "2px 8px", fontSize: 14 }}>−</button>
-                <span style={{ fontSize: 12.5, color: "#475569", minWidth: 44, textAlign: "center" }}>{pdfZoom}%</span>
-                <button onClick={() => setPdfZoom(z => Math.min(150, z + 10))} className="btn btn-ghost btn-xs" style={{ padding: "2px 8px", fontSize: 14 }}>+</button>
-                <button className="btn btn-ghost btn-xs" onClick={() => setPdfZoom(100)}>Ajustar</button>
-              </div>
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8, flexShrink: 0 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                DESCARGAR DOCUMENTO
-              </button>
-            </div>
-
-            {/* A4 document */}
-            <div style={{ background: "#6b7a8d", borderRadius: 8, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: `${Math.min(100, pdfZoom)}%`, maxWidth: 720, background: "#fff", borderRadius: 4, boxShadow: "0 4px 24px rgba(0,0,0,0.25)", padding: "40px 48px", fontFamily: "'Times New Roman', serif", position: "relative", overflow: "hidden" }}>
-                {/* Institutional header */}
-                <div style={{ borderBottom: "2.5px solid #1a4f8a", paddingBottom: 12, marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 6, background: "#ffffff", border: "1.5px solid #d1d9e0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 3 }}>
-                      <img src={logoUta} alt="UTA" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5 }}>Universidad Técnica de Ambato</div>
-                      <div style={{ fontSize: 9.5, color: "#475569", marginTop: 1 }}>Facultad de Ingeniería en Sistemas, Electrónica e Industrial</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "#1e2a3a", marginTop: 8, textTransform: "uppercase" }}>Plan de Trabajo: {plan.grupo}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", marginTop: 10, borderTop: "1px solid #e2e8f0", paddingTop: 8 }}>
-                    {[{ label: "Unidad académica", val: "FISEI – UTA" }, { label: "Período", val: "Julio – Diciembre 2026" }, { label: "Versión", val: "1.0" }].map((item, i) => (
-                      <div key={i} style={{ flex: 1, paddingRight: 10, borderRight: i < 2 ? "1px solid #e2e8f0" : "none", paddingLeft: i > 0 ? 10 : 0 }}>
-                        <div style={{ fontSize: 7.5, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.3 }}>{item.label}</div>
-                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "#1e2a3a", marginTop: 1 }}>{item.val}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Content sections */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>1. Justificación</div>
-                  <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>{pdfDraft.justificacion}</p>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>2. Objetivo</div>
-                  <p style={{ fontSize: 10.5, color: "#334155", lineHeight: 1.7, textAlign: "justify" }}>{pdfDraft.objetivo}</p>
-                </div>
-
-                {/* Matriz - compact */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>3. Matriz de Actividades</div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Actividad", "Desde", "Hasta", "Responsable", "Recursos", "Medios"].map(h => (
-                          <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pdfDraft.matriz.map((a, i) => (
-                        <tr key={a.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                          <td style={{ padding: "4px 6px", color: "#334155", borderBottom: "1px solid #f1f5f9", lineHeight: 1.3, fontSize: 8.5 }}>{a.nombre}</td>
-                          <td style={{ padding: "4px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap", fontSize: 8.5 }}>{a.desde || "—"}</td>
-                          <td style={{ padding: "4px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap", fontSize: 8.5 }}>{a.hasta || "—"}</td>
-                          <td style={{ padding: "4px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", fontSize: 8.5 }}>{a.responsables.join(", ") || "—"}</td>
-                          <td style={{ padding: "4px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", fontSize: 8.5 }}>{a.recursos.join(", ") || "—"}</td>
-                          <td style={{ padding: "4px 6px", color: "#475569", borderBottom: "1px solid #f1f5f9", fontSize: 8.5 }}>{a.medios.join(", ") || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Firmas — elaborador firmado, revisor pendiente */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>5. Firmas de Responsabilidad</div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Acciones", "Nombre", "Cargo", "Firma"].map(h => (
-                          <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { accion: "Elaborado por:", nombre: plan.elaborador, cargo: "Docente elaborador", firma: "Firmado electrónicamente\n" + plan.elaborador + "\n05/09/2026  23:41", firmado: true },
-                        { accion: "Revisado por:", nombre: REVISOR.nombre, cargo: "Docente revisor", firma: signed ? `Firmado electrónicamente\n${REVISOR.nombre}\n${firmaDate}  11:05` : "Pendiente", firmado: signed },
-                        { accion: "Revisado por:", nombre: "Ing. Patricia Salazar, Mg.", cargo: "Docente revisor", firma: "Pendiente", firmado: false },
-                        { accion: "Validado por:", nombre: "Autoridad correspondiente", cargo: "Autoridad académica", firma: "Pendiente", firmado: false },
-                      ].map((row, i) => (
-                        <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                          <td style={{ padding: "5px 6px", color: "#1a4f8a", fontWeight: 700, borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap", fontSize: 8.5 }}>{row.accion}</td>
-                          <td style={{ padding: "5px 6px", color: "#1e2a3a", borderBottom: "1px solid #e2e8f0", fontSize: 8.5 }}>{row.nombre}</td>
-                          <td style={{ padding: "5px 6px", color: "#475569", borderBottom: "1px solid #e2e8f0", fontSize: 8.5 }}>{row.cargo}</td>
-                          <td style={{ padding: "5px 6px", borderBottom: "1px solid #e2e8f0", fontSize: 8.5 }}>
-                            {row.firmado
-                              ? <span style={{ color: "#166534", fontWeight: 600, whiteSpace: "pre-line" }}>{row.firma}</span>
-                              : <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Pendiente</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Historial */}
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5, borderBottom: "1px solid #e2e8f0", paddingBottom: 3 }}>6. Control de Historial de Cambios</div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
-                    <thead>
-                      <tr style={{ background: "#1a4f8a" }}>
-                        {["Versión", "Descripción del Cambio", "Fecha de Actualización"].map(h => (
-                          <th key={h} style={{ padding: "4px 6px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 8 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "4px 6px", color: "#334155", fontSize: 8.5 }}>1.0</td>
-                        <td style={{ padding: "4px 6px", color: "#334155", fontSize: 8.5 }}>Elaboración inicial del Plan de Trabajo</td>
-                        <td style={{ padding: "4px 6px", color: "#475569", fontSize: 8.5 }}>05/09/2026</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right panel */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-            {/* Review info */}
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "16px 18px" }}>
-              <h3 style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a", marginBottom: 12 }}>Revisión del documento</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[
-                  { label: "Etapa actual", val: "Revisión" },
-                  { label: "Revisor",      val: REVISOR.nombre },
-                  { label: "Grupo",        val: plan.grupo },
-                  { label: "Versión",      val: "1.0" },
-                ].map(r => (
-                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
-                    <span style={{ color: "#6b7a8d" }}>{r.label}</span>
-                    <span style={{ color: "#1e2a3a", fontWeight: 600, textAlign: "right", maxWidth: 160 }}>{r.val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Approval flow */}
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "16px 18px" }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a", marginBottom: 12 }}>Flujo de aprobación</h3>
-              {[
-                { label: "Elaborado y firmado", done: true,  active: false, count: null },
-                { label: "Revisión",            done: false, active: true,  count: `${signed ? 1 : 0} de 2 revisores aprobados` },
-                { label: "Coordinación",        done: false, active: false, count: null },
-                { label: "Validación final",    done: false, active: false, count: null },
-              ].map((s, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 3 ? 0 : 0 }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: s.done ? "#1a4f8a" : s.active ? "#eff6ff" : "#f1f5f9", border: s.active && !s.done ? "2px solid #1a4f8a" : s.done ? "none" : "2px solid #d1d9e0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {s.done ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.active ? "#1a4f8a" : "#d1d9e0" }} />}
-                    </div>
-                    {i < 3 && <div style={{ width: 1.5, height: 20, background: "#e2e8f0", margin: "2px 0" }} />}
-                  </div>
-                  <div style={{ paddingBottom: i < 3 ? 14 : 0, paddingTop: 2 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#1e2a3a" }}>{s.label}</div>
-                    {s.count && <div style={{ fontSize: 11, color: "#1a4f8a", marginTop: 1 }}>{s.count}</div>}
-                  </div>
-                </div>
-              ))}
-
-              {/* Reviewers in this stage */}
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7a8d", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>Revisores de esta etapa</div>
-                {[
-                  { nombre: REVISOR.nombre, estado: signed ? "Aprobado y firmado" : "Pendiente", aprobado: signed },
-                  { nombre: "Ing. Patricia Salazar, Mg.", estado: "Pendiente", aprobado: false },
-                ].map((r, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: r.aprobado ? "#22c55e" : "#f59e0b", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 12, color: "#1e2a3a", fontWeight: 500 }}>{r.nombre}</div>
-                      <div style={{ fontSize: 11, color: r.aprobado ? "#16a34a" : "#92400e" }}>{r.aprobado ? "✓ " : "● "}{r.estado}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Checklist */}
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "16px 18px" }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a", marginBottom: 10 }}>Aspectos a verificar</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Información general", "Justificación", "Objetivo", "Matriz de actividades", "Anexos", "Firmas y formato documental"].map(item => (
-                  <label key={item} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" checked={!!checklist[item]} onChange={e => setChecklist(c => ({ ...c, [item]: e.target.checked }))} style={{ accentColor: "#1a4f8a", width: 14, height: 14 }} />
-                    <span style={{ fontSize: 12.5, color: checklist[item] ? "#16a34a" : "#475569", textDecoration: checklist[item] ? "line-through" : "none" }}>{item}</span>
-                  </label>
-                ))}
-              </div>
-              <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 10, lineHeight: 1.5 }}>Este checklist es de apoyo para el revisor y no modifica el documento.</p>
-            </div>
-
-            {/* Observations list */}
-            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e2a3a" }}>
-                  Observaciones
-                  <span style={{ marginLeft: 6, background: obs.length > 0 ? "#fee2e2" : "#f1f5f9", color: obs.length > 0 ? "#dc2626" : "#94a3b8", borderRadius: 99, fontSize: 10.5, fontWeight: 700, padding: "1px 7px" }}>{obs.length}</span>
-                </h3>
-                <button className="btn btn-ghost btn-xs" onClick={() => setShowObsDrawer(true)}>+ Agregar</button>
-              </div>
-              {obs.length === 0 ? (
-                <div style={{ padding: "20px 16px", textAlign: "center", fontSize: 12.5, color: "#94a3b8" }}>Sin observaciones registradas.</div>
-              ) : (
-                <div style={{ maxHeight: 280, overflowY: "auto" }}>
-                  {obs.map((o, idx) => (
-                    <div key={o.id} style={{ padding: "12px 16px", borderBottom: idx < obs.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: o.tipo === "general" ? "#475569" : "#1a4f8a", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                          {o.tipo === "general" ? "General" : o.seccion}
-                        </span>
-                        {!decisionMade && (
-                          <div style={{ display: "flex", gap: 4 }}>
-                            <button
-                              title="Editar observación"
-                              onClick={() => { setEditObsId(o.id); setEditObsText(o.texto); }}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "2px 4px", borderRadius: 4, display: "flex", alignItems: "center" }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </button>
-                            <button
-                              title="Eliminar observación"
-                              onClick={() => setObs(prev => prev.filter(x => x.id !== o.id))}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: "2px 4px", borderRadius: 4, display: "flex", alignItems: "center" }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                            </button>
-                          </div>
-                        )}
-                        {decisionMade && (
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>Historial</span>
-                        )}
-                      </div>
-                      {editObsId === o.id && !decisionMade ? (
-                        <div style={{ marginBottom: 6 }}>
-                          <textarea className="form-textarea" style={{ minHeight: 70, fontSize: 12.5 }} value={editObsText} onChange={e => setEditObsText(e.target.value)} />
-                          <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
-                            <button className="btn btn-primary btn-xs" onClick={() => { setObs(prev => prev.map(x => x.id === o.id ? { ...x, texto: editObsText } : x)); setEditObsId(null); }}>Guardar</button>
-                            <button className="btn btn-ghost btn-xs" onClick={() => setEditObsId(null)}>Cancelar</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p style={{ fontSize: 12.5, color: "#334155", lineHeight: 1.55, marginBottom: 4 }}>"{o.texto}"</p>
-                      )}
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{o.autor} — {o.fecha}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button className="btn btn-primary" onClick={() => setShowFirmarModal(true)} style={{ justifyContent: "center" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                APROBAR Y FIRMAR
-              </button>
-              <button onClick={() => setShowDevolverModal(true)} style={{ justifyContent: "center", padding: "9px 16px", borderRadius: 8, border: "1.5px solid #f59e0b", background: "#fffbeb", color: "#92400e", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                DEVOLVER CON OBSERVACIONES
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowObsDrawer(true)} style={{ justifyContent: "center" }}>
-                Agregar observación
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [view, setView] = useState<AppView>("inicio");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -4933,14 +4089,14 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const prevDocumentEvents=useRef(new Set<string>());
   useEffect(() => {
     for (const doc of docEngine.documents) {
-      const targets = doc.documentState === "DEVUELTO" || doc.documentState === "VALIDADO"
+      const targets = doc.documentState === "DEVUELTO" || doc.documentState === "EN CORRECCIÓN" || doc.documentState === "VALIDADO"
         ? [{id: doc.currentArtifact.elaborador.id || "", role: "Docente" as const}]
         : doc.flowStages.filter(stage => stage.estado === "EN_CURSO" && stage.actorRole !== "docente" && stage.actorId).map(stage => ({id: stage.actorId!, role: "Revisor" as const}));
       for (const target of targets) {
         const id = `notification-${doc.id}-${doc.reviewRound}-${doc.documentState}-${target.id}`;
         if (!target.id || prevDocumentEvents.current.has(id)) continue;
         prevDocumentEvents.current.add(id);
-        const returned = doc.documentState === "DEVUELTO";
+        const returned = doc.documentState === "DEVUELTO" || doc.documentState === "EN CORRECCIÓN";
         const approved = doc.documentState === "VALIDADO";
         notifState.agregarNotificacion({id, destinatarioRol: target.role, destinatarioUsuarioId: target.id, titulo: returned ? "Documento devuelto" : approved ? "Documento validado" : "Documento asignado a revisión", mensaje: doc.nombre, fechaHora: doc.fechaUltimaActualizacion, tiempoRelativo: "Escenario DEMO", tipo: returned ? "PLAN_DEVUELTO" : approved ? "PLAN_APROBADO" : "PLAN_PENDIENTE_REVISION", leida: false, objetoRelacionado: {documentId: doc.id, tipo: "Plan de Trabajo", nombre: doc.nombre, grupo: doc.grupo, accionLabel: "Abrir documento", accionDestino: target.role === "Docente" ? "planes" : "bandeja", modalDirecto: returned ? "obsPlan" : target.role === "Revisor" ? "revisionPlan" : undefined}});
       }
@@ -4954,6 +4110,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   function handleRoleSwitch() {
     if (userRole === "docente") {
+      setRevisorInitialSub("bandeja");
       setUserRole("revisor");
       setView("bandeja");
     } else if (userRole === "revisor") {
@@ -4964,21 +4121,6 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       setView("planes");
       setPlanesViewKey(k => k + 1);
     }
-  }
-
-  function handleDevolver(data: { mensaje: string; obs: Observacion[] }) {
-    const today = "07/09/2026";
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        ...parsed,
-        estado: "devuelto",
-        fechaDevolucion: today,
-        mensajeDevolucion: data.mensaje,
-        observacionesRevision: data.obs,
-      }));
-    } catch {}
   }
 
   function handleNotificationAction(notif: NotificacionItem) {
@@ -5067,7 +4209,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           onSelectAction={handleNotificationAction}
         />
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 20px",background:"#eff6ff",borderBottom:"1px solid #bfdbfe",fontSize:12}}>
-          <label>Sesión DEMO: <select aria-label="Cambiar persona de la sesión DEMO" value={sessionAdmin?.id || ""} onChange={e => {const u=adminState.usuarios.find(u => u.id === e.target.value);if(u){docEngine.simularSesionDemo(u.id,u.nombreCompleto);setPlanesViewKey(k=>k+1);setView(u.rol === "Administrador" ? "adminInicio" : u.rol.includes("Revisor") ? "bandeja" : "planes");setUserRole(u.rol === "Administrador" ? "admin" : u.rol.includes("Revisor") ? "revisor" : "docente");}}}>{adminState.usuarios.filter(u => u.estado === "ACTIVO").map(u => <option key={u.id} value={u.id}>{u.nombreCompleto}</option>)}</select></label>
+          <label>Sesión DEMO: <select aria-label="Cambiar persona de la sesión DEMO" value={sessionAdmin?.id || ""} onChange={e => {const u=adminState.usuarios.find(u => u.id === e.target.value);if(u){docEngine.simularSesionDemo(u.id,u.nombreCompleto);setPlanesViewKey(k=>k+1);setRevisorInitialSub("bandeja");setView(u.rol === "Administrador" ? "adminInicio" : u.rol.includes("Revisor") ? "bandeja" : "planes");setUserRole(u.rol === "Administrador" ? "admin" : u.rol.includes("Revisor") ? "revisor" : "docente");}}}>{adminState.usuarios.filter(u => u.estado === "ACTIVO").map(u => <option key={u.id} value={u.id}>{u.nombreCompleto}</option>)}</select></label>
           <span>Cambiar contexto conserva esta identidad.</span>
           <button className="btn btn-ghost btn-xs" onClick={() => {docEngine.restablecerDemo();setPlanesViewKey(k=>k+1);setView("planes");}}>Restablecer documentos DEMO</button>
         </div>
@@ -5183,10 +4325,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
             <RevisorDocumentEngineView
               docEngine={docEngine}
               userRole={userRole}
-              onBackToDocente={() => {
-                setUserRole("docente");
-                setView("planes");
-              }}
+              initialSub={revisorInitialSub}
             />
           )}
 

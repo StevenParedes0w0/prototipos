@@ -1,13 +1,14 @@
 import { TableActionButton } from "../components/TableActionButton";
 import { Eye, FilePenLine } from "../components/icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDocumentEngine } from "./useDocumentEngine";
 import DocumentPdfPageViewer from "./DocumentPdfPageViewer";
 import ModalFirmaDocumental from "./ModalFirmaDocumental";
 import ModalDevolverDocumental from "./ModalDevolverDocumental";
+import { canonicalDemoActorId } from "./workflow";
+import { documentInconsistencies } from "./invariants";
 
 interface RevisorDocumentEngineViewProps {
-  onBackToDocente?: () => void;
   initialSub?: "bandeja" | "revision" | "aprobado" | "devuelto";
   onAuditLog?: (tipoEvento: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string) => void;
   docEngine?: ReturnType<typeof useDocumentEngine>;
@@ -15,7 +16,6 @@ interface RevisorDocumentEngineViewProps {
 }
 
 export default function RevisorDocumentEngineView({
-  onBackToDocente,
   initialSub = "bandeja",
   onAuditLog,
   docEngine: propDocEngine,
@@ -25,33 +25,30 @@ export default function RevisorDocumentEngineView({
   const internalDocEngine = useDocumentEngine(onAuditLog);
   const docEngine = propDocEngine || internalDocEngine;
   const { docMaster, currentArtifact, observations, flowStages } = docEngine;
+  useEffect(() => setSub(initialSub), [docEngine.currentUser.id, initialSub]);
 
-  // Derive reviewer and validator stages dynamically from approval flow
   const reviewAndValidationStages = flowStages.filter((s) => s.actorRole !== "docente");
-  const defaultActorStage = reviewAndValidationStages[0] || flowStages[1] || {
-    id: "stage-2",
-    actorId: "usr-carlos-02",
-    actorName: "Ing. Carlos López, Mg.",
-    actorCargo: "Responsable de revisión técnica",
-    actorRole: "revisor" as const,
-  };
-
-  const [selectedStageId, setSelectedStageId] = useState<string>(defaultActorStage.id);
-
-  const activeStage = flowStages.find((s) => s.id === selectedStageId) || defaultActorStage;
+  const stagesForCurrentUser = reviewAndValidationStages.filter(
+    stage => canonicalDemoActorId(stage.actorId) === docEngine.currentUser.id,
+  );
+  // Un mismo usuario DEMO puede intervenir en más de una etapa. Al avanzar el
+  // flujo debe abrirse su etapa activa, no la primera coincidencia histórica.
+  const sessionStage = stagesForCurrentUser.find(stage => stage.estado === "EN_CURSO") || stagesForCurrentUser[0];
+  const activeStage = sessionStage;
   const actorInfo = {
-    id: activeStage.actorId || (activeStage.actorRole === "validador" ? "usr-patricia-03" : "usr-carlos-02"),
-    nombre: activeStage.actorName,
-    cargo: activeStage.actorCargo,
-    role: activeStage.actorRole,
+    id: docEngine.currentUser.id,
+    nombre: docEngine.currentUser.nombre,
+    cargo: activeStage?.actorCargo || (userRole === "admin" ? "Administrador" : "Revisor sin etapa asignada"),
+    role: activeStage?.actorRole || (userRole === "admin" ? "validador" : "revisor" as const),
   };
 
   // Modals state
   const [showFirmarModal, setShowFirmarModal] = useState(false);
   const [showDevolverModal, setShowDevolverModal] = useState(false);
 
-  const activeObservations = observations.filter((o) => o.estado === "activa");
+  const activeObservations = observations.filter((o) => o.estado === "activa" && o.ronda === docMaster.reviewRound && (!activeStage || o.stageId === activeStage.id || canonicalDemoActorId(o.revisorId) === docEngine.currentUser.id));
   const isDocumentValidated = docMaster.documentState === "VALIDADO" || docMaster.documentState === "EN EJECUCIÓN";
+  const inconsistencies = documentInconsistencies(docMaster);
 
   const handleEjecutarFirma = (certFile: string, ubicacion: string) => {
     if (actorInfo.role === "validador") {
@@ -62,15 +59,18 @@ export default function RevisorDocumentEngineView({
   };
 
   const handleEjecutarDevolucion = (motivo: string) => {
-    docEngine.devolverDocumento(docMaster.id, actorInfo.nombre, motivo);
-    setSub("devuelto");
+    if (docEngine.devolverDocumento(docMaster.id, actorInfo.nombre, motivo)) setSub("devuelto");
   };
 
   // ── SCREEN 01: BANDEJA DE REVISIÓN ──────────────────────────────────────────
   if (sub === "bandeja") {
-    const pendingDocs = docEngine.documents.filter((d) => d.documentState === "EN REVISIÓN" || d.documentState === "EN VALIDACIÓN FINAL");
-    const reviewedDocs = docEngine.documents.filter((d) => d.documentState === "VALIDADO" || d.documentState === "EN EJECUCIÓN");
-    const returnedDocs = docEngine.documents.filter((d) => d.documentState === "DEVUELTO" || d.documentState === "EN CORRECCIÓN");
+    const reviewerDocuments = docEngine.documents.filter(doc =>
+      doc.flowStages.some(stage => stage.actorRole !== "docente" && canonicalDemoActorId(stage.actorId) === docEngine.currentUser.id) &&
+      !["BORRADOR", "LISTO PARA FIRMA", "FIRMADO POR ELABORADOR"].includes(doc.documentState)
+    );
+    const pendingDocs = reviewerDocuments.filter((d) => d.documentState === "EN REVISIÓN" || d.documentState === "EN VALIDACIÓN FINAL");
+    const reviewedDocs = reviewerDocuments.filter((d) => d.documentState === "VALIDADO" || d.documentState === "EN EJECUCIÓN");
+    const returnedDocs = reviewerDocuments.filter((d) => d.documentState === "DEVUELTO" || d.documentState === "EN CORRECCIÓN");
 
     const statCards = [
       {
@@ -138,7 +138,7 @@ export default function RevisorDocumentEngineView({
               {reviewAndValidationStages.map((stage) => (
                 <button
                   key={stage.id}
-                  onClick={() => {setSelectedStageId(stage.id); docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName);}}
+                  onClick={() => docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName)}
                   style={{
                     padding: "4px 10px",
                     borderRadius: 6,
@@ -146,8 +146,8 @@ export default function RevisorDocumentEngineView({
                     fontSize: 11.5,
                     fontWeight: 700,
                     cursor: "pointer",
-                    background: selectedStageId === stage.id ? "#1a4f8a" : "#f1f5f9",
-                    color: selectedStageId === stage.id ? "#fff" : "#475569",
+                    background: sessionStage?.id === stage.id ? "#1a4f8a" : "#f1f5f9",
+                    color: sessionStage?.id === stage.id ? "#fff" : "#475569",
                   }}
                 >
                   {stage.actorName} ({stage.subLevelName || stage.stageName})
@@ -198,13 +198,13 @@ export default function RevisorDocumentEngineView({
               </tr>
             </thead>
             <tbody>
-              {docEngine.documents.map((doc) => {
+              {reviewerDocuments.map((doc) => {
                 const es = estadoStyle[doc.documentState] || estadoStyle["BORRADOR"];
                 const isDocValidated = doc.documentState === "VALIDADO" || doc.documentState === "EN EJECUCIÓN";
                 const isPlan = doc.documentType === "PLAN_TRABAJO";
 
                 return (
-                  <tr key={doc.id}>
+                  <tr key={doc.id} data-document-id={doc.id}>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13.5, color: "#1e2a3a" }}>
                         {doc.nombre}
@@ -284,7 +284,7 @@ export default function RevisorDocumentEngineView({
             </tbody>
           </table>
           <div style={{ padding: "12px 18px", borderTop: "1px solid #f1f5f9", fontSize: 12, color: "#94a3b8", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>{docEngine.documents.length} documentos institucionales registrados</span>
+            <span>{reviewerDocuments.length} documentos asignados a esta sesión</span>
             <button
               className="btn btn-ghost btn-xs"
               onClick={docEngine.restablecerDemo}
@@ -326,7 +326,7 @@ export default function RevisorDocumentEngineView({
               Documento devuelto al elaborador
             </h1>
             <p style={{ fontSize: 13.5, color: "#6b7a8d", lineHeight: 1.6 }}>
-              El Plan de Trabajo fue devuelto formalmente. El docente elaborador (Ing. Andrea Pérez, Mg.) recibirá la notificación con las observaciones para iniciar la corrección de la Ronda {docMaster.reviewRound}.
+              El documento fue devuelto formalmente. El elaborador ({currentArtifact.elaborador.nombre}) recibirá la notificación con las observaciones para continuar la corrección de la Ronda {docMaster.reviewRound}.
             </p>
           </div>
 
@@ -336,7 +336,7 @@ export default function RevisorDocumentEngineView({
                 Plan de Trabajo — Versión {docMaster.formalVersion}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#fee2e2", color: "#991b1b" }}>
-                DEVUELTO
+                EN CORRECCIÓN
               </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5 }}>
@@ -367,12 +367,6 @@ export default function RevisorDocumentEngineView({
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <button className="btn btn-ghost" onClick={() => setSub("bandeja")}>
               VOLVER A BANDEJA
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => onBackToDocente?.()}
-            >
-              CAMBIAR A ROL DOCENTE PARA CORREGIR →
             </button>
           </div>
         </div>
@@ -415,8 +409,8 @@ export default function RevisorDocumentEngineView({
           </span>
           <select
             className="form-select"
-            value={selectedStageId}
-            onChange={(e) => {setSelectedStageId(e.target.value); const stage=flowStages.find(s => s.id === e.target.value); if(stage) docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName);}}
+            value={sessionStage?.id || ""}
+            onChange={(e) => {const stage=flowStages.find(s => s.id === e.target.value); if(stage) docEngine.simularSesionDemo(stage.actorId || "org-demo",stage.actorName);}}
             style={{ width: "auto", fontSize: 12, padding: "4px 24px 4px 8px" }}
           >
             {reviewAndValidationStages.map((st) => (
@@ -434,6 +428,7 @@ export default function RevisorDocumentEngineView({
 
       {/* Embedded 70/30 PDF Viewer */}
       <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {inconsistencies.length > 0 && <div role="alert" style={{padding:"10px 16px",background:"#fef2f2",borderBottom:"1px solid #fecaca",color:"#991b1b",fontSize:12.5}}><strong>Estado documental inconsistente.</strong> {inconsistencies.join(" ")} Restablezca el escenario DEMO antes de continuar.</div>}
         <DocumentPdfPageViewer
           artifact={currentArtifact}
           formalVersion={docMaster.formalVersion}
@@ -442,7 +437,8 @@ export default function RevisorDocumentEngineView({
           observations={observations}
           flowStages={flowStages}
           currentUser={actorInfo}
-          onOpenFirmar={() => {if(activeStage.actionMode === "APPROVE_ONLY") docEngine.aprobarSinFirma(docMaster.id, activeStage.id); else setShowFirmarModal(true);}}
+          readOnly={inconsistencies.length > 0}
+          onOpenFirmar={() => {if(!activeStage)return;if(activeStage.actionMode === "APPROVE_ONLY") docEngine.aprobarSinFirma(docMaster.id, activeStage.id); else setShowFirmarModal(true);}}
           onOpenDevolver={() => setShowDevolverModal(true)}
           onAddObservacion={(pag, txt, sec, tip, anchor) => docEngine.agregarObservacion(docMaster.id, pag, txt, sec, tip, actorInfo.nombre, anchor)}
           onEditObservacion={(id, texto) => docEngine.editarObservacion(docMaster.id, id, texto)}
@@ -461,7 +457,7 @@ export default function RevisorDocumentEngineView({
         reviewRound={docMaster.reviewRound}
         actorNombre={actorInfo.nombre}
         actorCargo={actorInfo.cargo}
-        ubicacionSugerida={(() => {const slot=currentArtifact.signatureSlots?.find(s => s.stageId === activeStage.id) || currentArtifact.signatureSlots?.find(s => s.role === actorInfo.role); return slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible";})()}
+        ubicacionSugerida={(() => {const slot=currentArtifact.signatureSlots?.find(s => s.stageId === activeStage?.id) || currentArtifact.signatureSlots?.find(s => s.role === actorInfo.role); return slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible";})()}
         accionTexto={actorInfo.role === "validador" ? "VALIDAR Y FIRMAR" : "APROBAR Y FIRMAR"}
       />
 

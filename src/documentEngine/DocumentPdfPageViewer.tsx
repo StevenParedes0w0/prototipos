@@ -1,8 +1,9 @@
 import { MATRIX_ROWS_PER_PAGE } from "./pagination";
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
 import { T1_FOOTER_TEXT, T1_FORMAT_TEXT, t1CoverMainBlockStyle, t1CoverStyle, t1FooterStyle } from "./t1Layout";
+import { canonicalDemoActorId } from "./workflow";
 
 interface DocumentPdfPageViewerProps {
   artifact: DocumentArtifact;
@@ -59,7 +60,6 @@ export default function DocumentPdfPageViewer({
   const [anchor, setAnchor] = useState<DocumentObservationAnchor>();
   const [focusedObservation, setFocusedObservation] = useState<number>();
   const dragStart = useRef<{x: number; y: number} | null>(null);
-  const canHighlight = !readOnly && currentUser.role !== "docente" && (documentState === "EN REVISIÓN" || documentState === "EN VALIDACIÓN FINAL");
   const [zoom, setZoom] = useState(100);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -72,8 +72,7 @@ export default function DocumentPdfPageViewer({
   const [editingObsText, setEditingObsText] = useState("");
 
   // Checklist state
-  const [checklist, setChecklist] = useState<Record<string, boolean>>(
-    isPlan
+  const initialChecklist: Record<string, boolean> = isPlan
       ? {
           "Información general": true,
           "Justificación y objetivo": true,
@@ -89,10 +88,13 @@ export default function DocumentPdfPageViewer({
           "Registro de contactos, si aplica": false,
           "Anexos": false,
           "Firmas de responsabilidad": false,
-        }
-  );
+        };
+  const [checklist, setChecklist] = useState<Record<string, boolean>>(initialChecklist);
+  useEffect(() => setChecklist(initialChecklist), [artifact.id, reviewRound]);
 
-  const activeObservations = observations.filter((o) => o.estado === "activa");
+  const currentUserId = canonicalDemoActorId(currentUser.id);
+  const activeActorStage = flowStages.find(s => s.estado === "EN_CURSO" && (canonicalDemoActorId(s.actorId) === currentUserId || (!s.actorId && s.actorName === currentUser.nombre)));
+  const activeObservations = observations.filter((o) => o.estado === "activa" && o.ronda === reviewRound && (!activeActorStage || o.stageId === activeActorStage.id || canonicalDemoActorId(o.authorUserId || o.revisorId) === currentUserId));
   const hasActiveObservations = activeObservations.length > 0;
 
   const isDocente = currentUser.role === "docente";
@@ -102,11 +104,35 @@ export default function DocumentPdfPageViewer({
     currentUser.cargo.includes("Autoridad");
   const isRevisor = currentUser.role === "revisor" && !isValidador;
 
-  const activeActorStage = flowStages.find(s => s.estado === "EN_CURSO" && s.actorName === currentUser.nombre);
   const approveOnly = activeActorStage?.actionMode === "APPROVE_ONLY";
   const isAlreadySignedByMe = !activeActorStage && artifact.signatures.some(
-    (s) => s.actor === currentUser.nombre || ((currentUser as any).id && s.actorId === (currentUser as any).id)
+    (s) => s.actor === currentUser.nombre || (currentUserId && canonicalDemoActorId(s.actorId) === currentUserId)
   );
+  const checklistComplete = Object.values(checklist).every(Boolean);
+  const expectedReviewState = activeActorStage?.actorRole === "validador" ? "EN VALIDACIÓN FINAL" : "EN REVISIÓN";
+  const signatureSlot = activeActorStage && (artifact.signatureSlots?.find(slot => slot.stageId === activeActorStage.id) || artifact.signatureSlots?.find(slot => slot.role === activeActorStage.actorRole));
+  const approvalDisabledReason = readOnly
+    ? "El estado documental es inconsistente."
+    : documentState !== expectedReviewState
+      ? "Este documento todavía no ha sido enviado a su etapa de revisión."
+      : isAlreadySignedByMe
+        ? "Ya registró su firma en esta ronda."
+        : !activeActorStage
+          ? "Su etapa de revisión aún no está activa."
+          : !checklistComplete
+            ? "Complete todos los aspectos a verificar."
+            : hasActiveObservations
+              ? "Existen observaciones activas."
+              : !approveOnly && !signatureSlot
+                ? "No existe una ubicación de firma válida para su etapa."
+                : "";
+  const returnDisabledReason = readOnly
+    ? "El estado documental es inconsistente."
+    : !activeActorStage || documentState !== expectedReviewState
+      ? "Su etapa de revisión aún no está activa."
+      : "";
+  const canReview = !readOnly && currentUser.role !== "docente" && Boolean(activeActorStage) && documentState === expectedReviewState;
+  const canHighlight = canReview;
   const isDocumentValidated = documentState === "VALIDADO" || documentState === "EN EJECUCIÓN";
   const finalSignature = artifact.signatures.find((s) => s.role === "validador");
   const isFinalValidatorUser = Boolean(
@@ -592,6 +618,7 @@ export default function DocumentPdfPageViewer({
             }}
           >
             <div
+              data-testid="document-page" data-artifact-id={artifact.id} data-page-number={currentPage} data-page-count={totalPages}
               style={{
                 width: `${zoom}%`,
                 maxWidth: isLandscape ? Math.round(1040 * (zoom / 100)) : Math.round(780 * (zoom / 100)),
@@ -1652,22 +1679,22 @@ export default function DocumentPdfPageViewer({
                     : "#92400e",
                 }}
               >
-                {documentState}
+                <span data-testid="document-status">{documentState}</span>
               </span>
             </div>
 
             <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1e2a3a", margin: 0, fontFamily: "'DM Sans', sans-serif" }}>
-              {artifact.documentType === "INFORME" ? "Informe" : "Plan de Trabajo"} v{formalVersion}
+              {artifact.documentType === "INFORME" ? "Informe" : "Plan de Trabajo"} v<span data-testid="formal-version">{formalVersion}</span>
             </h3>
             
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10, fontSize: 11.5 }}>
               <div>
                 <span style={{ color: "#64748b" }}>Ronda: </span>
-                <span style={{ fontWeight: 700, color: "#1e2a3a" }}>Ronda {reviewRound}</span>
+                <span data-testid="review-round" style={{ fontWeight: 700, color: "#1e2a3a" }}>Ronda {reviewRound}</span>
               </div>
               <div>
                 <span style={{ color: "#64748b" }}>Firmas: </span>
-                <span style={{ fontWeight: 700, color: "#166534" }}>{artifact.signatures.length} de {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY").length}</span>
+                <span data-testid="signature-count" style={{ fontWeight: 700, color: "#166534" }}>{artifact.signatures.length} de {flowStages.filter(s => s.actionMode !== "APPROVE_ONLY").length}</span>
               </div>
               <div style={{ gridColumn: "span 2" }}>
                 <span style={{ color: "#64748b" }}>Actor en sesión: </span>
@@ -1745,9 +1772,9 @@ export default function DocumentPdfPageViewer({
           <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", flex: 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: "#1e2a3a", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                Observaciones ({activeObservations.length})
+                <span data-testid="review-observation-count">Observaciones ({activeObservations.length})</span>
               </div>
-              {!readOnly && (
+              {canReview && (
                 <button
                   className="btn btn-ghost btn-xs"
                   onClick={() => setShowAddObsDrawer(true)}
@@ -1822,7 +1849,7 @@ export default function DocumentPdfPageViewer({
                         <div style={{ color: "#334155", lineHeight: 1.4, margin: "4px 0" }}>"{obs.texto}"</div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10.5, color: "#64748b" }}>
                           <span>{obs.revisor}</span>
-                          {obs.estado === "activa" && !readOnly && (
+                          {obs.estado === "activa" && canReview && (
                             <div style={{ display: "flex", gap: 4 }}>
                               <button
                                 onClick={() => {
@@ -1879,6 +1906,11 @@ export default function DocumentPdfPageViewer({
                 No es posible aprobar mientras existan observaciones activas.
               </div>
             )}
+            {!hasActiveObservations && approvalDisabledReason && !isDocumentValidated && !isDocente && (
+              <div role="status" style={{padding:"8px 10px",borderRadius:6,background:"#fffbeb",border:"1px solid #fde68a",color:"#92400e",fontSize:11.5,marginBottom:10}}>
+                {approvalDisabledReason}
+              </div>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {/* If Validated: Download final button ONLY when currentUser is the identity that executed final validation */}
@@ -1909,7 +1941,9 @@ export default function DocumentPdfPageViewer({
                 <>
                   <button
                     className="btn btn-primary"
-                    disabled={hasActiveObservations || isAlreadySignedByMe || !activeActorStage || (!approveOnly && !activeActorStage.actorId)}
+                    disabled={Boolean(approvalDisabledReason)}
+                    title={approvalDisabledReason || (approveOnly ? "Registrar aprobación" : "Validar y firmar")}
+                    aria-label={approvalDisabledReason || (approveOnly ? "Registrar aprobación" : "Validar y firmar")}
                     onClick={onOpenFirmar}
                     style={{ justifyContent: "center" }}
                   >
@@ -1920,6 +1954,9 @@ export default function DocumentPdfPageViewer({
                   </button>
                   <button
                     onClick={onOpenDevolver}
+                    disabled={Boolean(returnDisabledReason)}
+                    title={returnDisabledReason || "Devolver documento"}
+                    aria-label={returnDisabledReason || "Devolver documento"}
                     style={{
                       justifyContent: "center",
                       padding: "8px 14px",
@@ -1947,7 +1984,9 @@ export default function DocumentPdfPageViewer({
                 <>
                   <button
                     className="btn btn-primary"
-                    disabled={hasActiveObservations || isAlreadySignedByMe || !activeActorStage || (!approveOnly && !activeActorStage.actorId)}
+                    disabled={Boolean(approvalDisabledReason)}
+                    title={approvalDisabledReason || (approveOnly ? "Registrar aprobación" : "Aprobar y firmar")}
+                    aria-label={approvalDisabledReason || (approveOnly ? "Registrar aprobación" : "Aprobar y firmar")}
                     onClick={onOpenFirmar}
                     style={{ justifyContent: "center" }}
                   >
@@ -1958,6 +1997,9 @@ export default function DocumentPdfPageViewer({
                   </button>
                   <button
                     onClick={onOpenDevolver}
+                    disabled={Boolean(returnDisabledReason)}
+                    title={returnDisabledReason || "Devolver documento"}
+                    aria-label={returnDisabledReason || "Devolver documento"}
                     style={{
                       justifyContent: "center",
                       padding: "8px 14px",

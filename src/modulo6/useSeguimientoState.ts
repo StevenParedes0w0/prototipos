@@ -20,7 +20,9 @@ export interface SeguimientoOptions {
 export function esResponsableDeActividad(usuario: string | { id: string; nombre: string }, actividad: ActividadEjecucion): boolean {
   return typeof usuario === "string"
     ? actividad.responsables.includes(usuario)
-    : actividad.responsableIds?.includes(usuario.id) ?? actividad.responsables.includes(usuario.nombre);
+    : actividad.responsableIds?.length
+      ? actividad.responsableIds.includes(usuario.id)
+      : actividad.responsables.includes(usuario.nombre);
 }
 export function puedeGestionarEvidencia(usuario: string | { id: string; nombre: string }, actividad: ActividadEjecucion): boolean {
   return esResponsableDeActividad(usuario, actividad) && !plazoEvidenciaVencido(actividad);
