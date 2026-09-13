@@ -252,6 +252,7 @@ export default function MisDocumentosView({
               filteredDocuments.map((doc) => {
                 const es = estadoStyle[doc.documentState] || estadoStyle["BORRADOR"];
                 const isPlan = doc.documentType === "PLAN_TRABAJO";
+                const readOnly = docEngine.isDocumentReadOnly(doc.id);
 
                 return (
                   <tr key={doc.id} data-document-id={doc.id}>
@@ -306,6 +307,7 @@ export default function MisDocumentosView({
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: es.dot, display: "inline-block" }} />
                         {doc.documentState}
                       </span>
+                      {readOnly && <div style={{fontSize:10.5,fontWeight:800,color:"#475569",marginTop:4}}>SOLO LECTURA</div>}
                     </td>
                     <td style={{ fontSize: 12, color: "#64748b" }}>{doc.fechaUltimaActualizacion}</td>
                     <td>
@@ -327,7 +329,7 @@ export default function MisDocumentosView({
                           />
                         )}
 
-                        {doc.documentState === "DEVUELTO" && (
+                        {!readOnly && doc.documentState === "DEVUELTO" && (
                           <>
                             <TableActionButton
                               title="Ver observaciones"
@@ -347,7 +349,7 @@ export default function MisDocumentosView({
                           </>
                         )}
 
-                        {["BORRADOR","LISTO PARA FIRMA"].includes(doc.documentState) && (
+                        {!readOnly && ["BORRADOR","LISTO PARA FIRMA"].includes(doc.documentState) && (
                           <TableActionButton
                             title="Continuar elaboración"
                             icon={FilePenLine}
@@ -359,7 +361,7 @@ export default function MisDocumentosView({
                           />
                         )}
 
-                        {doc.documentState === "EN CORRECCIÓN" && (
+                        {!readOnly && doc.documentState === "EN CORRECCIÓN" && (
                           <>
                             <TableActionButton
                               title="Ver observaciones"

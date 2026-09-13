@@ -336,6 +336,12 @@ export const MEDIOS_CATALOGO_INICIALES: MedioVerificacionCatalogo[] = [
 
 export const FLUJOS_INICIALES: FlujoGrupo[] = [
   {
+    grupoId: "grp-3",
+    grupoNombre: "Club Académico de Software",
+    estado: "PENDIENTE",
+    etapas: [],
+  },
+  {
     grupoId: "grp-1",
     grupoNombre: "Unidad de Titulación",
     estado: "CONFIGURADO",

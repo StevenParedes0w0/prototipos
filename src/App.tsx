@@ -3966,7 +3966,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} elaborador={docEngine?.currentUser.nombre || DOCENTE.nombre} error={formError} onSave={() => saveDraft({})} onChange={v => {setFormError("");saveDraft(v.grupo && v.grupo !== draft.grupo ? {...v,matriz:[],justificacion:gruposDisponibles.find(g => g.nombre === v.grupo)?.descripcion || "",objetivo:""} : v);}} grupos={gruposDisponibles} periodos={adminState?.periodos.filter(p => p.estado === "ACTIVO") || []} maxReached={maxReached} onNext={() => {
           const selectedPeriod=adminState?.periodos.find(p=>p.nombre===draft.periodo);
           if (docEngine?.documents.some(d => d.id !== docEngine.docMaster.id && d.documentType === "PLAN_TRABAJO" && d.teacherId === docEngine.currentUser.id && d.groupId === grupoActual?.id && d.periodId === selectedPeriod?.id)) {setFormError("Ya existe un Plan de Trabajo para este docente, grupo y período.");return;}
-          if (docEngine && grupoActual && selectedPeriod) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{groupId:grupoActual.id,periodId:selectedPeriod.id,grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual.id); if(flow && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
+          if (docEngine && grupoActual && selectedPeriod) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{groupId:grupoActual.id,periodId:selectedPeriod.id,grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual.id); if(flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
           setMaxReached(m => Math.max(m, 2)); setSub("step4"); }} onCancel={() => setSub("list")} />
       )}
       {sub === "step2" && (
@@ -4043,7 +4043,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
               if (docEngine.docMaster.documentState === "EN CORRECCIÓN") docEngine.prepararNuevaRonda(id);
               docEngine.actualizarDatosBasicos(id, {groupId:grupoActual?.id || docEngine.docMaster.groupId, periodId:periodoActual?.id || docEngine.docMaster.periodId, grupo:draft.grupo, periodo:draft.periodo});
               const flow = adminState?.flujos.find(f => f.grupoId === grupoActual?.id);
-              if (flow && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
+              if (flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
               docEngine.generarArtefacto(id, {collectsPersonalData:draft.collectsPersonalData,fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: matrizDocumental, tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
             }
             saveDraft({}); setMaxReached(m => Math.max(m, 7)); setSub("step7");
@@ -4570,7 +4570,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
                   setView("reportes");
                   reportesState.setSubView("historico");
                 }}
-                onRestablecerDemo={reportesState.handleRestablecerDemo}
+                onRestablecerDemo={() => {reportesState.handleRestablecerDemo();adminState.restablecerPeriodosDemo();}}
               />
             </div>
           )}
@@ -4614,7 +4614,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           reportesState.setPeriodoParaCierre(null);
         }}
         periodo={reportesState.periodoParaCierre}
-        onConfirmar={(periodoId) => reportesState.handleCerrarPeriodo(periodoId)}
+        onConfirmar={(periodoId) => {reportesState.handleCerrarPeriodo(periodoId);adminState.establecerEstadoPeriodoDemo(periodoId,"CERRADO");}}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import type { DocumentMasterState } from '../../src/documentEngine/types';
 
-export const names = { andrea: 'Ing. Andrea Pérez, Mg.', carlos: 'Ing. Carlos López, Mg.', patricia: 'Ing. Patricia Salazar, Mg.' };
+export const names = { andrea: 'Ing. Andrea Pérez, Mg.', carlos: 'Ing. Carlos López, Mg.', patricia: 'Ing. Patricia Salazar, Mg.', laura: 'Ing. Laura Medina, Mg.' };
 export async function login(page: Page) {
  await page.goto('/');
  await page.getByPlaceholder('usuario@uta.edu.ec').fill('andrea.perez@uta.edu.ec');
@@ -54,7 +54,7 @@ export async function completeMatrix(page: Page, validateOther=false) {
   await page.getByLabel('Desde',{exact:true}).fill('2026-09-14');
   await page.getByLabel('Hasta',{exact:true}).fill('2026-12-18');
   await page.getByRole('checkbox',{name:'Seleccionar todos',exact:true}).check();
-  for (const name of Object.values(names)) await expect(page.getByRole('checkbox',{name,exact:true})).toBeChecked();
+  for (const name of [names.andrea,names.carlos,names.patricia]) await expect(page.getByRole('checkbox',{name,exact:true})).toBeChecked();
   await page.getByRole('checkbox',{name:'Matriz de seguimiento',exact:true}).check();
   await page.getByRole('checkbox',{name:'Informe',exact:true}).check();
   if (validateOther) {
@@ -94,4 +94,11 @@ export async function planToReview(page: Page) {
  const id=await createPlan(page); await completeMatrix(page); await next(page); await sign(page);
  await page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true}).click();
  return id;
+}
+export async function validatePlan(page: Page,id:string) {
+ for (const actor of [names.carlos,names.patricia,names.carlos,names.patricia]) {
+  await session(page,actor);await openReview(page,id);await checklist(page);
+  const final=(await document(page,id)).documentState==='EN VALIDACIÓN FINAL';
+  await sign(page,final?'VALIDAR Y FIRMAR':'APROBAR Y FIRMAR',final?'Validar y firmar':'Aprobar y firmar');
+ }
 }

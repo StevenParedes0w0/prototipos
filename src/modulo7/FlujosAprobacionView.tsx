@@ -70,7 +70,7 @@ export default function FlujosAprobacionView({
                   </td>
                   <td>
                     <span style={{ fontSize: 13, color: "#475569" }}>
-                      {etapaRevision?.revisoresNombres?.join(", ") || "No asignados"}
+                      {etapaRevision?.revisoresNombres?.join(", ") || (f.estado === "PENDIENTE" ? "Pendiente de configuración" : "No asignados")}
                     </span>
                   </td>
                   <td>
@@ -90,6 +90,7 @@ export default function FlujosAprobacionView({
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => onConfigurarFlujo(f.grupoId)}
+                      aria-label={`Configurar flujo de ${f.grupoNombre}`}
                     >
                       CONFIGURAR
                     </button>

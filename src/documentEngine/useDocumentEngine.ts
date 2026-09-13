@@ -261,5 +261,9 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
   });
   const restablecerDemo = useCallback(() => { commitDocuments(structuredClone(INITIAL_DOCUMENTS_LIST).map(hydrateDocument)); setSelectedDocId(INITIAL_DOCUMENTS_LIST[0]?.id || INITIAL_DOCUMENT_MASTER.id); }, [commitDocuments]);
 
-  return { simularSesionDemo, currentUser: sessionRef.current, aprobarSinFirma, configurarFlujoDocumento, resolverObservacion, actualizarDatosBasicos, documents, selectedDocId, docMaster, currentArtifact: docMaster.currentArtifact, observations: docMaster.observations, flowStages: docMaster.flowStages, seleccionarDocumento, crearNuevoDocumento, generarArtefacto, generarArtefactoInforme, firmarComoElaborador, enviarARevision, agregarObservacion, editarObservacion, eliminarObservacion, devolverDocumento, iniciarCorreccion, prepararNuevaRonda, aprobarYFirmarRevisor, validarYFirmarFinal, restablecerDemo };
+  const isDocumentReadOnly = (targetDocId: string) => {
+    const target = documentsRef.current.find(doc => doc.id === targetDocId);
+    return target ? isClosed(target) : false;
+  };
+  return { simularSesionDemo, currentUser: sessionRef.current, aprobarSinFirma, configurarFlujoDocumento, resolverObservacion, actualizarDatosBasicos, isDocumentReadOnly, documents, selectedDocId, docMaster, currentArtifact: docMaster.currentArtifact, observations: docMaster.observations, flowStages: docMaster.flowStages, seleccionarDocumento, crearNuevoDocumento, generarArtefacto, generarArtefactoInforme, firmarComoElaborador, enviarARevision, agregarObservacion, editarObservacion, eliminarObservacion, devolverDocumento, iniciarCorreccion, prepararNuevaRonda, aprobarYFirmarRevisor, validarYFirmarFinal, restablecerDemo };
 }

@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+import {reset,documents,openDocuments,session,names} from './helpers';
+
+test('unicidad de Plan por docente, grupo y período y reset canónico',async({page})=>{
+ await reset(page);await openDocuments(page);
+ const canonical=await documents(page);const canonicalIds=canonical.map(d=>d.id).sort();
+ await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();
+ await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});
+ await dialog.getByLabel('Grupo institucional').selectOption('grp-2');
+ await dialog.getByLabel('Período').selectOption('per-1');
+ await expect(dialog).toContainText('Comisión de Eventos Académicos');
+ await expect(dialog).toContainText('Julio – Diciembre 2026');
+ await expect(dialog).toContainText('1.0');await expect(dialog).toContainText('Ronda: 1');
+ await expect(dialog).toContainText('EN CORRECCIÓN');
+ await expect(dialog.getByRole('button',{name:'Continuar corrección',exact:true})).toBeVisible();
+ await dialog.getByLabel('Grupo institucional').selectOption('grp-1');
+ await expect(dialog.getByRole('button',{name:'Crear borrador',exact:true})).toBeEnabled();
+ await dialog.getByRole('button',{name:'Crear borrador',exact:true}).click();
+ expect((await documents(page))).toHaveLength(canonical.length+1);
+ await page.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await page.getByRole('button',{name:'Guardar y salir',exact:true}).click();
+ await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();
+ await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
+ const second=page.getByRole('dialog',{name:'Seleccionar grupo y período'});
+ await second.getByLabel('Grupo institucional').selectOption('grp-1');
+ await expect(second.getByRole('button',{name:'Crear borrador',exact:true})).toBeDisabled();
+ await second.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await page.getByRole('button',{name:'Restablecer documentos DEMO',exact:true}).click();
+ expect((await documents(page)).map(d=>d.id).sort()).toEqual(canonicalIds);
+ expect(canonical.some(d=>d.teacherId==='usr-carlos-02'&&d.groupId==='grp-1'&&d.periodId==='per-1')).toBe(true);
+});

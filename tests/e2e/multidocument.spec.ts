@@ -1,13 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {reset,planToReview,session,names,openReview,checklist,sign,document,documents} from './helpers';
-
-async function validatePlan(page:Page,id:string) {
- for (const actor of [names.carlos,names.patricia,names.carlos,names.patricia]) {
-  await session(page,actor);await openReview(page,id);await checklist(page);
-  const final=(await document(page,id)).documentState==='EN VALIDACIÓN FINAL';
-  await sign(page,final?'VALIDAR Y FIRMAR':'APROBAR Y FIRMAR',final?'Validar y firmar':'Aprobar y firmar');
- }
-}
+import {reset,planToReview,session,names,sign,document,documents,validatePlan} from './helpers';
 
 test('crear y firmar un Informe derivado no modifica su Plan base',async({page})=>{
  await reset(page);const planId=await planToReview(page);await validatePlan(page,planId);

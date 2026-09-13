@@ -313,6 +313,12 @@ export function useAdminState() {
     setFeriados(prev => prev.map(f => f.id === id ? { ...f, estado: f.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO" } : f));
   }, []);
 
+  const establecerEstadoPeriodoDemo = useCallback((id: string, estado: PeriodoAcademico["estado"]) => {
+    setPeriodos(prev => prev.map(periodo => periodo.id === id ? { ...periodo, estado } : periodo));
+  }, []);
+
+  const restablecerPeriodosDemo = useCallback(() => setPeriodos(structuredClone(PERIODOS_ADMIN_INICIALES)), []);
+
   return {
     usuarios,
     grupos,
@@ -339,5 +345,7 @@ export function useAdminState() {
     actualizarEtapasFlujo,
     agregarFeriado,
     toggleEstadoFeriado,
+    establecerEstadoPeriodoDemo,
+    restablecerPeriodosDemo,
   };
 }
