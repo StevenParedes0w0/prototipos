@@ -833,3 +833,20 @@ La corrección general se considera terminada cuando:
 - todas las reglas confirmadas de reunión están implementadas;
 - no se han inventado reglas pendientes.
 ````
+
+---
+
+# 41. PASADA FOCALIZADA UI Y DOCUMENTOS — 14/09/2026
+
+Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
+
+- Asistente de redacción T1/T2: aplicar y descartar actúan sobre el campo de origen; T1 guarda mediante el autosave del borrador por documento y T2 conserva el borrador DEMO en `localStorage`.
+- T1: encabezado de cuatro filas alineado con el PDF firmado; Facultad y Carrera comparten la celda institucional; portada mantiene Carrera separada cuando la unidad es académica; fecha se presenta en formato institucional largo.
+- Unidades: catálogo DEMO compartido con tipo `ACADEMIC`/`ADMINISTRATIVE`, carreras opcionales según tipo, altas, edición, activación/desactivación y persistencia de configuración.
+- T2: título semántico normalizado, encabezado propio sin fila Carrera, validación obligatoria del Plan relacionado, importación por copia de actividades y medios, y aislamiento del Plan origen.
+- Dashboard: conteos documentales, evidencias, flujos, período y actividad reciente; navegación a módulos operativos y ausencia de métricas de evaluación personal.
+- Plantillas: builder HTML5 drag-and-drop, secciones institucionales bloqueadas, visibilidad de secciones permitidas, vista previa, persistencia, restauración y configuraciones T1/T2 separadas. Los nuevos documentos capturan la configuración vigente; documentos existentes y firmados conservan su snapshot.
+- Cobertura agregada: `ai-writing-assistant.spec.ts`, `institutional-units.spec.ts`, `t2-derived-validation.spec.ts`, `admin-dashboard.spec.ts` y `template-builder.spec.ts`.
+- Regresión visual: seis snapshots revisados y actualizados de forma selectiva después de contrastar T1 con el PDF firmado y T2 con el DOCX oficial.
+
+Pendiente institucional: confirmar el catálogo definitivo de unidades/carreras, autoridades, libertad permitida para ordenar secciones y la integración técnica real de firma/IA. Estas decisiones permanecen configurables o identificadas como DEMO.

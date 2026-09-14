@@ -125,4 +125,30 @@ export interface PlantillaDocumental {
   estado: "ACTIVA" | "DEMO" | "INACTIVA";
   ultimaActualizacion: string;
   secciones: string[];
+  configuracion: PlantillaSeccionConfig[];
+}
+
+export type TipoUnidadInstitucional = "ACADEMIC" | "ADMINISTRATIVE";
+
+export interface CarreraInstitucional {
+  id: string;
+  nombre: string;
+  estado: "ACTIVO" | "INACTIVO";
+}
+
+export interface UnidadInstitucional {
+  id: string;
+  nombre: string;
+  tipo: TipoUnidadInstitucional;
+  estado: "ACTIVO" | "INACTIVO";
+  carreras: CarreraInstitucional[];
+}
+
+export interface PlantillaSeccionConfig {
+  id: string;
+  titulo: string;
+  estado: "REQUERIDA" | "OPCIONAL" | "CONDICIONAL";
+  activa: boolean;
+  bloqueada: boolean;
+  detalle: string;
 }

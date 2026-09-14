@@ -7,6 +7,7 @@ test('T2 mantiene estructura, paginación y firmas dinámicas',async({page})=>{
  await page.getByText('Documentación Académica',{exact:true}).click();await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();await page.getByRole('button',{name:'CREAR INFORME',exact:true}).click();
  await page.getByLabel('Plan de Trabajo Relacionado').selectOption(planId);for(let i=0;i<6;i++)await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
  const sheet=page.getByTestId('document-page');const count=Number(await sheet.getAttribute('data-page-count'));expect(count).toBeGreaterThanOrEqual(3);
+ const header=sheet.getByTestId('document-institutional-header');await expect(header.locator('tr')).toHaveCount(4);await expect(header).not.toContainText('Carrera:');
  await expect(sheet).toContainText('UTA-SGC-A-2-1-P7-T2');await expect(sheet).not.toContainText('INFORME DE: INFORME DE:');
  await expect(sheet).toHaveScreenshot('t2-portada.png');
  const content=Math.min(3,count);await page.getByRole('button',{name:String(content),exact:true}).click();await expect(sheet).toHaveScreenshot('t2-contenido.png');

@@ -9,7 +9,30 @@ import {
   FlujoGrupo,
   FeriadoItem,
   PlantillaDocumental,
+  UnidadInstitucional,
 } from "./types";
+
+export const UNIDADES_INSTITUCIONALES_INICIALES: UnidadInstitucional[] = [
+  {
+    id: "unit-fisei",
+    nombre: "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
+    tipo: "ACADEMIC",
+    estado: "ACTIVO",
+    carreras: [
+      { id: "career-software", nombre: "Ingeniería de Software", estado: "ACTIVO" },
+      { id: "career-ti", nombre: "Tecnologías de la Información", estado: "ACTIVO" },
+      { id: "career-industrial", nombre: "Ingeniería Industrial", estado: "ACTIVO" },
+      { id: "career-telecom", nombre: "Telecomunicaciones", estado: "ACTIVO" },
+    ],
+  },
+  {
+    id: "unit-planning",
+    nombre: "Dirección de Planificación y Evaluación",
+    tipo: "ADMINISTRATIVE",
+    estado: "ACTIVO",
+    carreras: [],
+  },
+];
 
 export const USUARIO_ADMIN_DEMO = {
   nombre: "Ing. Laura Medina, Mg.",
@@ -482,6 +505,17 @@ export const PLANTILLAS_INICIALES: PlantillaDocumental[] = [
       "FIRMAS DE RESPONSABILIDAD (Requerida: ACCIONES, NOMBRE, CARGO, FIRMA)",
       "CONTROL DE HISTORIAL DE CAMBIOS (Requerido: Versión, Descripción del Cambio, Fecha de Actualización)",
     ],
+    configuracion: [
+      { id: "header", titulo: "Encabezado institucional", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Estructura oficial SGC." },
+      { id: "general", titulo: "Información general", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Unidad, carrera cuando aplica, grupo y período." },
+      { id: "justification", titulo: "Justificación", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Fundamentación del Plan." },
+      { id: "objective", titulo: "Objetivo", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Objetivo general." },
+      { id: "matrix", titulo: "Matriz de actividades", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Tabla 1 institucional." },
+      { id: "annexes", titulo: "Anexos", estado: "OPCIONAL", activa: true, bloqueada: false, detalle: "Documentación complementaria." },
+      { id: "signatures", titulo: "Firmas de responsabilidad", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Bloque institucional protegido." },
+      { id: "history", titulo: "Control de historial de cambios", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Bloque institucional protegido." },
+      { id: "footer", titulo: "Pie institucional", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Formato y página dinámica." },
+    ],
   },
   {
     id: "plt-2",
@@ -499,6 +533,19 @@ export const PLANTILLAS_INICIALES: PlantillaDocumental[] = [
       "6. ANEXOS (Condicional / No aplica)",
       "FIRMAS DE RESPONSABILIDAD (Requerida: ACCIONES, NOMBRE, CARGO, FIRMA)",
       "CONTROL DE HISTORIAL DE CAMBIOS (Requerido: Versión, Descripción del Cambio, Fecha de Actualización)",
+    ],
+    configuracion: [
+      { id: "header", titulo: "Encabezado institucional", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Estructura oficial T2." },
+      { id: "general", titulo: "Información general", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Unidad, título y período." },
+      { id: "background", titulo: "Antecedentes", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Contexto institucional." },
+      { id: "development", titulo: "Desarrollo de actividades", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Tabla derivada o desarrollo independiente." },
+      { id: "conclusions", titulo: "Conclusiones", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Resultados alcanzados." },
+      { id: "opportunities", titulo: "Oportunidades de mejora", estado: "REQUERIDA", activa: true, bloqueada: false, detalle: "Oportunidades identificadas." },
+      { id: "contacts", titulo: "Registro de contactos", estado: "CONDICIONAL", activa: true, bloqueada: false, detalle: "Solo cuando corresponde." },
+      { id: "annexes", titulo: "Anexos", estado: "CONDICIONAL", activa: true, bloqueada: false, detalle: "Documentación complementaria." },
+      { id: "signatures", titulo: "Firmas de responsabilidad", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Bloque institucional protegido." },
+      { id: "history", titulo: "Control de historial de cambios", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Bloque institucional protegido." },
+      { id: "footer", titulo: "Pie institucional", estado: "REQUERIDA", activa: true, bloqueada: true, detalle: "Formato y página dinámica." },
     ],
   },
 ];

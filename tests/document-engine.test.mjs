@@ -27,7 +27,7 @@ function load(file) {
   vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{console,localStorage,Date:TestDate,structuredClone})(require,module,module.exports);
   return module.exports;
 }
-const {useDocumentEngine}=load('src/documentEngine/useDocumentEngine.ts');
+const {useDocumentEngine,normalizeInformeTitle}=load('src/documentEngine/useDocumentEngine.ts');
 const {buildDocumentPages}=load('src/documentEngine/pagination.ts');
 const {emptySignatureCredential,demoSignatureCredential,canSubmitSignatureCredential}=load('src/documentEngine/signatureCredential.ts');
 const {findPlanByIdentity}=load('src/documentEngine/documentIdentity.ts');
@@ -133,6 +133,7 @@ assert.equal(doc(report.id).documentState,'EN REVISIÓN');
 assert.equal(doc(report.id).currentArtifact.informeData.actividadesInforme.length,25);
 assert.equal(JSON.stringify(doc(plan.id)),planSnapshot);
 assert.equal(doc(report.id).currentArtifact.titulo,'SEGUIMIENTO');
+assert.equal(normalizeInformeTitle('INFORME DE: INFORME DE seguimiento'),'SEGUIMIENTO','normaliza títulos legacy sin duplicar el rótulo T2');
 assert.ok(doc(report.id).currentArtifact.pages.length >= 5);
 for(const n of [0,1,6,7,25,60]) {
  const pages=buildDocumentPages('PLAN_TRABAJO',n,doc(plan.id).flowStages);

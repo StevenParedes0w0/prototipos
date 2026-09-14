@@ -179,6 +179,14 @@ export interface DocumentArtifact {
   generatedBy: string;   // "Ing. Andrea Pérez, Mg."
   grupo: string;         // "Comisión de Eventos Académicos" o "Unidad de Titulación"
   carrera: string;       // "Ingeniería de Software"
+  institutionalUnitType?: "ACADEMIC" | "ADMINISTRATIVE";
+  institutionalUnitId?: string;
+  careerId?: string;
+  templateConfiguration?: {
+    sectionOrder: string[];
+    activeSectionIds: string[];
+    capturedAt: string;
+  };
   periodo: string;       // "Julio – Diciembre 2026"
   unidadAcademica: string; // "Facultad de Ingeniería en Sistemas, Electrónica e Industrial"
   elaborador: {

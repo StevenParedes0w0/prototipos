@@ -3,6 +3,13 @@ import React, { useEffect, useState, useRef } from "react";
 import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
 import { T1_FOOTER_TEXT, T1_FORMAT_TEXT, t1CoverMainBlockStyle, t1CoverStyle, t1FooterStyle } from "./t1Layout";
+
+const formatInstitutionalDate = (value: string) => {
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return value;
+  const months = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  return `${Number(match[1]).toString().padStart(2,"0")} de ${months[Number(match[2])-1]} de ${match[3]}`;
+};
 import { canonicalDemoActorId } from "./workflow";
 import { getActivityResponsibleDisplayLabel } from "./responsibleDisplay";
 
@@ -203,22 +210,23 @@ export default function DocumentPdfPageViewer({
 
   const renderHeader = () => (
     <table
+      data-testid="document-institutional-header"
       style={{
         width: "100%",
         borderCollapse: "collapse",
         border: "1px solid #475569",
         marginBottom: isLandscape ? 14 : 20,
-        fontFamily: "Helvetica, Arial, sans-serif",
+        fontFamily: "'Times New Roman', serif",
       }}
     >
       <tbody>
         <tr>
           <td
-            rowSpan={5}
+            rowSpan={4}
             style={{
               width: isLandscape ? "18%" : "22%",
               border: "1px solid #475569",
-              textAlign: "center",
+              textAlign: "left",
               verticalAlign: "middle",
               padding: "6px 8px",
               background: "#fff",
@@ -265,17 +273,18 @@ export default function DocumentPdfPageViewer({
             colSpan={2}
             style={{
               border: "1px solid #475569",
-              textAlign: "center",
+              textAlign: "left",
               padding: "5px 8px",
-              background: "#f1f5f9",
+              background: "#d9d9d9",
               fontWeight: 800,
               fontSize: 9.5,
-              color: "#1e293b",
+              color: "#1a4f8a",
+              letterSpacing: 0.8,
               textTransform: "uppercase",
             }}
           >
             {artifact.documentType === "INFORME"
-              ? `INFORME DE: ${artifact.titulo || artifact.grupo}`
+              ? `INFORME DE: ${(artifact.titulo || artifact.grupo).replace(/^(?:INFORME\s+DE\s*:?\s*)+/i, "")}`
               : `PLAN DE TRABAJO: ${artifact.grupo}`}
           </td>
         </tr>
@@ -287,7 +296,8 @@ export default function DocumentPdfPageViewer({
               padding: "4px 8px",
               fontSize: 7.5,
               fontWeight: 700,
-              color: "#1e293b",
+              color: "#1a4f8a",
+              letterSpacing: 0.6,
             }}
           >
             Unidad académica / administrativa:
@@ -300,7 +310,8 @@ export default function DocumentPdfPageViewer({
               color: "#0f172a",
             }}
           >
-            {artifact.unidadAcademica}
+            <div>{artifact.unidadAcademica}</div>
+            {isPlan && artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{marginTop:2}}>Carrera de {artifact.carrera}</div>}
           </td>
         </tr>
         <tr>
@@ -311,32 +322,9 @@ export default function DocumentPdfPageViewer({
               padding: "4px 8px",
               fontSize: 7.5,
               fontWeight: 700,
-              color: "#1e293b",
-            }}
-          >
-            Carrera:
-          </td>
-          <td
-            style={{
-              border: "1px solid #475569",
-              padding: "4px 8px",
-              fontSize: 8,
-              color: "#0f172a",
-            }}
-          >
-            {artifact.carrera || "Ingeniería de Software"}
-          </td>
-        </tr>
-        <tr>
-          <td
-            style={{
-              width: "36%",
-              border: "1px solid #475569",
-              padding: "4px 8px",
-              fontSize: 7.5,
-              fontWeight: 700,
-              color: "#1e293b",
-              background: "#f1f5f9",
+              color: "#1a4f8a",
+              background: "#d9d9d9",
+              letterSpacing: 0.6,
             }}
           >
             Fecha de elaboración:
@@ -347,9 +335,10 @@ export default function DocumentPdfPageViewer({
               padding: "4px 8px",
               fontSize: 8,
               color: "#0f172a",
+              background: "#d9d9d9",
             }}
           >
-            {(artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0])}
+            {formatInstitutionalDate(artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0])}
           </td>
         </tr>
       </tbody>
@@ -360,8 +349,7 @@ export default function DocumentPdfPageViewer({
     <div
       data-document-footer={isPlan ? "t1" : "t2"}
       style={isPlan ? t1FooterStyle : {
-        borderTop: "1px solid #cbd5e1",
-        paddingTop: 8,
+        paddingTop: 0,
         marginTop: 24,
         display: "flex",
         justifyContent: "space-between",
@@ -730,6 +718,11 @@ export default function DocumentPdfPageViewer({
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.unidadAcademica}</span>
                           </div>
+
+                          {artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>CARRERA: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155", textTransform: "uppercase" }}>{artifact.carrera}</span>
+                          </div>}
 
                           <div style={{ marginTop: 8 }}>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>PLAN DE TRABAJO DE: </span>
@@ -1225,8 +1218,8 @@ export default function DocumentPdfPageViewer({
                      ───────────────────────────────────────────────────────────── */
                   <>
                     {currentPage === 1 && (
-                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 640, justifyContent: "space-between" }}>
-                        <div style={{ textAlign: "center", marginTop: 44, marginBottom: 44 }}>
+                      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                        <div style={{ textAlign: "center", marginTop: 44, marginBottom: 72 }}>
                           <div
                             style={{
                               fontFamily: "Helvetica, Arial, sans-serif",
@@ -1249,7 +1242,7 @@ export default function DocumentPdfPageViewer({
                             gap: 34,
                             width: "100%",
                             maxWidth: 620,
-                            margin: "0 auto 40px",
+                            margin: "0 auto",
                             textAlign: "center",
                           }}
                         >
@@ -1260,7 +1253,7 @@ export default function DocumentPdfPageViewer({
 
                           <div style={{ marginTop: 8 }}>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>INFORME DE: </span>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>{(artifact.titulo || "").replace(/^INFORME DE:\s*/i, "")}</span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>{(artifact.titulo || "").replace(/^(?:INFORME\s+DE\s*:?\s*)+/i, "")}</span>
                           </div>
 
                           <div style={{ marginTop: 8 }}>

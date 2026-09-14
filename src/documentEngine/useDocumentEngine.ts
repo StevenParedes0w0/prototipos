@@ -3,12 +3,12 @@ import { SignatureCredentialMode } from "./signatureCredential";
 import { buildDocumentPages, composeArtifactPages, getSignatureSlots } from "./pagination";
 import { useState, useCallback, useRef } from "react";
 import { DocumentMasterState, DocumentArtifact, DocumentObservation, DocumentObservationAnchor, DocumentSignature, DocumentType, ActividadMatrizDoc, AnexoDoc, InformeDataDoc, FlowStageNode } from "./types";
-import { FlujoGrupo, UsuarioAdmin, PeriodoAcademico } from "../modulo7/types";
+import { FlujoGrupo, UsuarioAdmin, PeriodoAcademico, PlantillaDocumental } from "../modulo7/types";
 import { INITIAL_DOCUMENT_MASTER, INITIAL_DOCUMENTS_LIST, JUSTIFICACION_INICIAL, OBJETIVO_INICIAL, FLOW_STAGES_INICIAL } from "./mockDataDocument";
 import { findPlanByIdentity } from "./documentIdentity";
 
 export function normalizeInformeTitle(titulo: string): string {
-  return titulo.replace(/^(?:INFORME\s+DE\s*:\s*)+/i, "").trim().toUpperCase();
+  return titulo.replace(/^(?:INFORME\s+DE\s*:?\s*)+/i, "").trim().toUpperCase();
 }
 
 const STORAGE_KEY = "fisei_documents_collection_v8";
@@ -18,11 +18,12 @@ const timestamp = () => `${documentDate()} ${documentTime()}`;
 const uniqueId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const editableStates = ["BORRADOR", "LISTO PARA FIRMA", "EN CORRECCIÓN"];
 
-type EngineConfiguration = { flujos: FlujoGrupo[]; usuarios: UsuarioAdmin[]; periodos?: PeriodoAcademico[] };
+type EngineConfiguration = { flujos: FlujoGrupo[]; usuarios: UsuarioAdmin[]; periodos?: PeriodoAcademico[]; plantillas?: PlantillaDocumental[] };
 type AuditLog = (tipo: string, objeto: string, accion: string, descripcion: string, usuario: string, rol: string) => void;
-type BasicDocumentData = { teacherId?: string; groupId?: string; periodId?: string; grupo?: string; carrera?: string; periodo?: string; titulo?: string; informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE"; documentoRelacionadoId?: string; documentoRelacionadoTitulo?: string; antecedentes?: string; actividadesInforme?: import("./types").ActividadInformeDoc[] };
+type UnitData = { institutionalUnitType?: "ACADEMIC" | "ADMINISTRATIVE"; institutionalUnitId?: string; unidadAcademica?: string; careerId?: string; carrera?: string };
+type BasicDocumentData = UnitData & { teacherId?: string; groupId?: string; periodId?: string; grupo?: string; periodo?: string; titulo?: string; informeOrigen?: "DERIVADO_PLAN" | "INDEPENDIENTE"; documentoRelacionadoId?: string; documentoRelacionadoTitulo?: string; antecedentes?: string; actividadesInforme?: import("./types").ActividadInformeDoc[] };
 type PlanDraft = { justificacion: string; objetivo: string; matriz: ActividadMatrizDoc[]; tieneAnexos: "si" | "no" | null; anexos: AnexoDoc[]; fuente?: string; collectsPersonalData?: boolean };
-type InformeDraft = { titulo: string; grupo: string; carrera?: string; periodo: string; tieneAnexos: "si" | "no" | null; anexos: AnexoDoc[] } & InformeDataDoc;
+type InformeDraft = UnitData & { titulo: string; grupo: string; periodo: string; tieneAnexos: "si" | "no" | null; anexos: AnexoDoc[] } & InformeDataDoc;
 
 function isStoredDocument(value: unknown): value is DocumentMasterState {
   if (!value || typeof value !== "object") return false;
@@ -98,12 +99,18 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const flowSource = relatedPlan?.flowStages || (configuredFlow && configuration ? flowFromConfiguration(configuredFlow, configuration.usuarios, elaborador) : configuration ? [FLOW_STAGES_INICIAL[0], { ...FLOW_STAGES_INICIAL[1], actorId: undefined, actorName: "Responsable pendiente de configuración", stageName: "Etapa pendiente de configuración" }] : FLOW_STAGES_INICIAL);
     const flowStages: FlowStageNode[] = flowSource.map(stage => ({ ...stage, ...(stage.actorRole === "docente" ? { actorId: elaborador.id, actorName: elaborador.nombre } : {}), estado: "PENDIENTE", signature: undefined }));
     const codigoFormatoOficial = tipo === "INFORME" ? "UTA-SGC-A-2-1-P7-T2" : "UTA-SGC-A-2-1-P7-T1";
+    const template = configuration?.plantillas?.find(p => p.version === codigoFormatoOficial);
     const pages = buildDocumentPages(tipo, 0, flowStages);
     const activities = (relatedPlan?.currentArtifact.matriz || []).map(a => ({ id: a.id, actividad: a.nombre, mediosVerificacion: a.medios.join("; "), porcentajeEjecucion: 0, observaciones: "" }));
     const artifact: DocumentArtifact = {
       id: uniqueId(`art-${id}`), documentType: tipo, codigoFormatoOficial, titulo, formalVersion: "1.0", reviewRound: 1, pageCount: pages.length, pages,
       generatedAt: timestamp(), generatedBy: elaborador.nombre, grupo, carrera, periodo,
-      unidadAcademica: relatedPlan?.currentArtifact.unidadAcademica || "Facultad de Ingeniería en Sistemas, Electrónica e Industrial", elaborador,
+      unidadAcademica: relatedPlan?.currentArtifact.unidadAcademica || datos.unidadAcademica || "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
+      institutionalUnitType: relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || "ACADEMIC",
+      institutionalUnitId: relatedPlan?.currentArtifact.institutionalUnitId || datos.institutionalUnitId || "unit-fisei",
+      careerId: relatedPlan?.currentArtifact.careerId || datos.careerId,
+      templateConfiguration: template ? { sectionOrder: template.configuracion.map(s=>s.id), activeSectionIds: template.configuracion.filter(s=>s.activa).map(s=>s.id), capturedAt: timestamp() } : undefined,
+      elaborador,
       justificacion: tipo === "PLAN_TRABAJO" ? JUSTIFICACION_INICIAL : undefined, objetivo: tipo === "PLAN_TRABAJO" ? OBJETIVO_INICIAL : undefined, matriz: tipo === "PLAN_TRABAJO" ? [] : undefined,
       informeData: tipo === "INFORME" ? { informeOrigen: datos.informeOrigen || "DERIVADO_PLAN", relatedPlanId: relatedPlan?.id, relatedPlanTitulo: relatedPlan?.nombre, antecedentes: datos.antecedentes || "", actividadesInforme: activities, conclusiones: "", oportunidadesMejora: "", aplicaRegistroContactos: false, contactosDelegacion: [] } : undefined,
       tieneAnexos: "no", anexos: [], signatures: [], signatureSlots: getSignatureSlots(pages),
@@ -145,6 +152,10 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       const carrera = relatedPlan?.carrera || datos.carrera || doc.carrera || "Ingeniería de Software";
       const artifact = composeArtifact({
         ...doc.currentArtifact, id: uniqueId(`art-${doc.id}-r${doc.reviewRound}`), titulo: normalizeInformeTitle(datos.titulo), grupo, periodo, carrera,
+        unidadAcademica: relatedPlan?.currentArtifact.unidadAcademica || datos.unidadAcademica || doc.currentArtifact.unidadAcademica,
+        institutionalUnitType: relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || doc.currentArtifact.institutionalUnitType,
+        institutionalUnitId: relatedPlan?.currentArtifact.institutionalUnitId || datos.institutionalUnitId || doc.currentArtifact.institutionalUnitId,
+        careerId: relatedPlan?.currentArtifact.careerId || datos.careerId || doc.currentArtifact.careerId,
         generatedAt: timestamp(), generatedBy: doc.currentArtifact.elaborador.nombre,
         informeData: { ...datos, relatedPlanId: relatedPlan?.id, relatedPlanTitulo: relatedPlan?.nombre, actividadesInforme: activities, contactosDelegacion: datos.aplicaRegistroContactos ? datos.contactosDelegacion || [] : [] },
         tieneAnexos: datos.tieneAnexos, anexos: datos.tieneAnexos === "si" ? datos.anexos : [],
@@ -259,9 +270,9 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const flowStages = stages.map(stage => ({ ...stage, ...(stage.actorRole === "docente" ? { actorId: doc.currentArtifact.elaborador.id, actorName: doc.currentArtifact.elaborador.nombre } : {}), estado: "PENDIENTE" as const, signature: undefined }));
     return { ...doc, flowStages, currentArtifact: composeArtifact(doc.currentArtifact, flowStages) };
   }, "FLUJO CONFIGURADO");
-  const actualizarDatosBasicos = (targetDocId: string, datos: { groupId: string; periodId: string; grupo: string; periodo: string }) => mutateDocument(targetDocId, doc => {
+  const actualizarDatosBasicos = (targetDocId: string, datos: { groupId: string; periodId: string; grupo: string; periodo: string } & UnitData) => mutateDocument(targetDocId, doc => {
     if (!canEdit(doc) || documentsRef.current.some(d => d.id !== doc.id && findPlanByIdentity([d], { teacherId: doc.teacherId, groupId: datos.groupId, periodId: datos.periodId }))) return doc;
-    return { ...doc, ...datos, nombre: doc.documentType === "PLAN_TRABAJO" ? `Plan de Trabajo — ${datos.grupo}` : doc.nombre, currentArtifact: { ...doc.currentArtifact, grupo: datos.grupo, periodo: datos.periodo }, fechaUltimaActualizacion: timestamp() };
+    return { ...doc, ...datos, nombre: doc.documentType === "PLAN_TRABAJO" ? `Plan de Trabajo — ${datos.grupo}` : doc.nombre, currentArtifact: { ...doc.currentArtifact, grupo: datos.grupo, periodo: datos.periodo, unidadAcademica: datos.unidadAcademica || doc.currentArtifact.unidadAcademica, institutionalUnitType: datos.institutionalUnitType || doc.currentArtifact.institutionalUnitType, institutionalUnitId: datos.institutionalUnitId || doc.currentArtifact.institutionalUnitId, careerId: datos.careerId, carrera: datos.institutionalUnitType === "ADMINISTRATIVE" ? "" : datos.carrera || doc.currentArtifact.carrera }, carrera: datos.institutionalUnitType === "ADMINISTRATIVE" ? "" : datos.carrera || doc.carrera, fechaUltimaActualizacion: timestamp() };
   });
   const restablecerDemo = useCallback(() => { commitDocuments(structuredClone(INITIAL_DOCUMENTS_LIST).map(hydrateDocument)); setSelectedDocId(INITIAL_DOCUMENTS_LIST[0]?.id || INITIAL_DOCUMENT_MASTER.id); }, [commitDocuments]);
 

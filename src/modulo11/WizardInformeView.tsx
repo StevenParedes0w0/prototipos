@@ -1,6 +1,6 @@
 import { buildDocumentPages, getSignatureSlots } from "../documentEngine/pagination";
-import React, { useState } from "react";
-import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
+import React, { useEffect, useState } from "react";
+import { normalizeInformeTitle, useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import {
   ActividadInformeDoc,
   AnexoDoc,
@@ -14,12 +14,18 @@ import {
 import DocumentPdfPageViewer from "../documentEngine/DocumentPdfPageViewer";
 import ModalFirmaDocumental from "../documentEngine/ModalFirmaDocumental";
 import { SignatureCredentialMode } from "../documentEngine/signatureCredential";
+import { useAdminState } from "../modulo7/useAdminState";
+import { TipoUnidadInstitucional } from "../modulo7/types";
 
 interface WizardInformeViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
   onFinish: () => void;
   onCancel: () => void;
+  adminState: ReturnType<typeof useAdminState>;
 }
+
+const T2_DRAFT_KEY = "fisei-informe-draft-v2";
+function readT2Draft(): Record<string, unknown> { try { return JSON.parse(localStorage.getItem(T2_DRAFT_KEY) || "{}"); } catch { return {}; } }
 
 const AI_OPTIONS_ANTECEDENTES = [
   "Enfocar en cumplimiento de objetivos del Plan de Trabajo",
@@ -43,6 +49,7 @@ export default function WizardInformeView({
   docEngine,
   onFinish,
   onCancel,
+  adminState,
 }: WizardInformeViewProps) {
   const { documents, crearNuevoDocumento, generarArtefactoInforme, firmarComoElaborador } = docEngine;
 
@@ -57,16 +64,24 @@ export default function WizardInformeView({
       (d.documentState === "VALIDADO" || d.documentState === "EN EJECUCIÓN" || d.operationalState === "EN EJECUCIÓN")
   );
   const defaultPlan = planesDisponibles[0];
+  const savedDraft = useState(readT2Draft)[0];
+  const defaultUnit = adminState.unidadesInstitucionales.find(u=>u.estado === "ACTIVO" && u.tipo === "ACADEMIC") || adminState.unidadesInstitucionales.find(u=>u.estado === "ACTIVO");
 
   // Paso 1: Información General
-  const [unidadAcademica] = useState("Facultad de Ingeniería en Sistemas, Electrónica e Industrial");
-  const [carrera, setCarrera] = useState<string>(CARRERAS_USUARIO_ANDREA[0]);
-  const [grupo, setGrupo] = useState("Unidad de Titulación");
-  const [periodo, setPeriodo] = useState("Julio – Diciembre 2026");
+  const [unitType, setUnitType] = useState<TipoUnidadInstitucional>((savedDraft.unitType as TipoUnidadInstitucional) || defaultPlan?.currentArtifact.institutionalUnitType || defaultUnit?.tipo || "ACADEMIC");
+  const [institutionalUnitId, setInstitutionalUnitId] = useState<string>((savedDraft.institutionalUnitId as string) || defaultPlan?.currentArtifact.institutionalUnitId || defaultUnit?.id || "");
+  const selectedUnit = adminState.unidadesInstitucionales.find(u=>u.id===institutionalUnitId);
+  const [careerId, setCareerId] = useState<string>((savedDraft.careerId as string) || defaultPlan?.currentArtifact.careerId || defaultUnit?.carreras.find(c=>c.estado === "ACTIVO")?.id || "");
+  const unidadAcademica = selectedUnit?.nombre || defaultPlan?.currentArtifact.unidadAcademica || "";
+  const carreraFromCatalog = selectedUnit?.carreras.find(c=>c.id===careerId)?.nombre || "";
+  const [carrera, setCarrera] = useState<string>((savedDraft.carrera as string) || defaultPlan?.carrera || carreraFromCatalog || CARRERAS_USUARIO_ANDREA[0]);
+  const [grupo, setGrupo] = useState((savedDraft.grupo as string) || "Unidad de Titulación");
+  const [periodo, setPeriodo] = useState((savedDraft.periodo as string) || "Julio – Diciembre 2026");
   const [fecha] = useState(() => new Date().toLocaleDateString("es-EC"));
-  const [titulo, setTitulo] = useState("Informe de seguimiento de actividades de titulación");
-  const [informeOrigen, setInformeOrigen] = useState<"DERIVADO_PLAN" | "INDEPENDIENTE">("DERIVADO_PLAN");
-  const [selectedPlanId, setSelectedPlanId] = useState<string>(defaultPlan?.id || "");
+  const [titulo, setTitulo] = useState((savedDraft.titulo as string) || "Seguimiento de actividades de titulación");
+  const [informeOrigen, setInformeOrigen] = useState<"DERIVADO_PLAN" | "INDEPENDIENTE">((savedDraft.informeOrigen as "DERIVADO_PLAN" | "INDEPENDIENTE") || "DERIVADO_PLAN");
+  const [selectedPlanId, setSelectedPlanId] = useState<string>((savedDraft.selectedPlanId as string) || defaultPlan?.id || "");
+  const [stepError, setStepError] = useState("");
 
   // Helper para extraer actividades de un plan
   const getActividadesFromPlan = (planId: string): ActividadInformeDoc[] => {
@@ -82,23 +97,21 @@ export default function WizardInformeView({
   };
 
   // Paso 2: Antecedentes
-  const [antecedentes, setAntecedentes] = useState<string>(
-    "En cumplimiento a la planificación académica aprobada en el Plan de Trabajo de la Unidad de Titulación correspondiente al período académico Julio – Diciembre 2026, se presenta el presente informe de avance, gestión y cumplimiento de actividades institucionales."
-  );
+  const [antecedentes, setAntecedentes] = useState<string>((savedDraft.antecedentes as string) || "En cumplimiento a la planificación académica aprobada en el Plan de Trabajo de la Unidad de Titulación correspondiente al período académico Julio – Diciembre 2026, se presenta el presente informe de avance, gestión y cumplimiento de actividades institucionales.");
 
   // Paso 3: Desarrollo de actividades
   const [actividadesInforme, setActividadesInforme] = useState<ActividadInformeDoc[]>(() => {
-    return defaultPlan ? getActividadesFromPlan(defaultPlan.id) : [];
+    return Array.isArray(savedDraft.actividadesInforme) ? savedDraft.actividadesInforme as ActividadInformeDoc[] : defaultPlan ? getActividadesFromPlan(defaultPlan.id) : [];
   });
   const [desarrolloTextoLibre, setDesarrolloTextoLibre] = useState<string>(
     "Durante el presente período académico se ejecutaron actividades emergentes y procesos de gestión no programados en atención a requerimientos institucionales de la facultad."
   );
 
   // Paso 4: Conclusiones y Oportunidades
-  const [conclusiones, setConclusiones] = useState<string>(
+  const [conclusiones, setConclusiones] = useState<string>((savedDraft.conclusiones as string) ||
     "Se ejecutaron satisfactoriamente las jornadas de revisión, asesoría metodológica y sustentación con un alto índice de cumplimiento del cronograma planificado."
   );
-  const [oportunidadesMejora, setOportunidadesMejora] = useState<string>(
+  const [oportunidadesMejora, setOportunidadesMejora] = useState<string>((savedDraft.oportunidadesMejora as string) ||
     "Fortalecer la articulación previa con los laboratorios de cómputo y coordinar con mayor antelación las agendas de los tribunales de grado."
   );
 
@@ -127,17 +140,28 @@ export default function WizardInformeView({
   const [showFirmaModal, setShowFirmaModal] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
 
+  useEffect(() => {
+    const draft = { unitType, institutionalUnitId, careerId, carrera, grupo, periodo, titulo, informeOrigen, selectedPlanId, antecedentes, actividadesInforme, conclusiones, oportunidadesMejora };
+    try { localStorage.setItem(T2_DRAFT_KEY, JSON.stringify(draft)); } catch {}
+  }, [unitType, institutionalUnitId, careerId, carrera, grupo, periodo, titulo, informeOrigen, selectedPlanId, antecedentes, actividadesInforme, conclusiones, oportunidadesMejora]);
+
   // Cambio de Plan seleccionado
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanId(planId);
     const targetPlan = documents.find((d) => d.id === planId);
     if (targetPlan) {
       setGrupo(targetPlan.grupo);
-      setTitulo(`Informe de actividades — ${targetPlan.grupo}`);
+      setTitulo(`Actividades — ${targetPlan.grupo}`);
       setAntecedentes(
         `En cumplimiento a la planificación académica aprobada en el Plan de Trabajo: ${targetPlan.nombre} (Versión ${targetPlan.formalVersion}) correspondiente al período académico ${targetPlan.periodo}, se presenta el informe de avance y resultados de las actividades ejecutadas.`
       );
       setActividadesInforme(getActividadesFromPlan(planId));
+      setUnitType(targetPlan.currentArtifact.institutionalUnitType || "ACADEMIC");
+      setInstitutionalUnitId(targetPlan.currentArtifact.institutionalUnitId || "unit-fisei");
+      setCareerId(targetPlan.currentArtifact.careerId || "career-software");
+      setCarrera(targetPlan.currentArtifact.carrera || "");
+      setPeriodo(targetPlan.periodo);
+      setStepError("");
     }
   };
 
@@ -174,6 +198,10 @@ export default function WizardInformeView({
   };
 
   const handleNextStep = () => {
+    if (step === 1 && informeOrigen === "DERIVADO_PLAN" && !planesDisponibles.some(p=>p.id===selectedPlanId)) { setStepError("Seleccione un Plan de Trabajo válido para continuar."); return; }
+    if (step === 1 && (!selectedUnit || (unitType === "ACADEMIC" && !selectedUnit.carreras.some(c=>c.id===careerId&&c.estado==="ACTIVO")))) { setStepError("Seleccione una unidad institucional válida y su carrera cuando corresponda."); return; }
+    if (step === 3 && informeOrigen === "DERIVADO_PLAN" && actividadesInforme.length === 0) { setStepError("El Plan seleccionado no contiene actividades para importar."); return; }
+    setStepError("");
     const next = step + 1;
     setStep(next);
     if (next > maxReached) setMaxReached(next);
@@ -191,8 +219,6 @@ export default function WizardInformeView({
   const previewPageCount = previewPages.length;
   const previewSignatureSlots = getSignatureSlots(previewPages);
 
-  const normalizeInformeTitle = (t: string) => t.replace(/^INFORME DE:\s*/i, "");
-
   const previewArtifact: DocumentArtifact = {
     id: "art-informe-preview",
     documentType: "INFORME",
@@ -209,6 +235,9 @@ export default function WizardInformeView({
     carrera,
     periodo,
     unidadAcademica,
+    institutionalUnitType: unitType,
+    institutionalUnitId,
+    careerId: unitType === "ACADEMIC" ? careerId : undefined,
     elaborador: {
       id: "usr-andrea-01",
       nombre: "Ing. Andrea Pérez, Mg.",
@@ -261,13 +290,17 @@ export default function WizardInformeView({
     if (!targetId) {
       const newDoc = crearNuevoDocumento("INFORME", {
         grupo,
-        carrera,
         periodo,
         titulo,
         informeOrigen,
         documentoRelacionadoId: informeOrigen === "DERIVADO_PLAN" ? selectedPlanId : undefined,
         documentoRelacionadoTitulo: relatedPlanTitulo,
         antecedentes,
+        institutionalUnitType: unitType,
+        institutionalUnitId,
+        unidadAcademica,
+        careerId: unitType === "ACADEMIC" ? careerId : undefined,
+        carrera: unitType === "ACADEMIC" ? carrera : "",
       });
       targetId = newDoc.id;
       setCreatedDocId(newDoc.id);
@@ -279,6 +312,10 @@ export default function WizardInformeView({
       grupo,
       carrera,
       periodo,
+      institutionalUnitType: unitType,
+      institutionalUnitId,
+      unidadAcademica,
+      careerId: unitType === "ACADEMIC" ? careerId : undefined,
       informeOrigen,
       relatedPlanId: informeOrigen === "DERIVADO_PLAN" ? selectedPlanId : undefined,
       relatedPlanTitulo,
@@ -295,6 +332,7 @@ export default function WizardInformeView({
 
     if (!firmarComoElaborador(targetId, certFile, ubicacion, mode)) return false;
     setIsSigned(true);
+    try { localStorage.removeItem(T2_DRAFT_KEY); } catch {}
     setShowFirmaModal(false);
     onFinish();
     return true;
@@ -382,10 +420,10 @@ export default function WizardInformeView({
               </div>
             </div>
             <div style={{ padding: "14px 22px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-ghost" onClick={() => setAiModalData(null)}>
+              <button className="btn btn-ghost" data-testid="ai-suggestion-discard" onClick={() => setAiModalData(null)}>
                 Descartar
               </button>
-              <button className="btn btn-primary" style={{ background: "#1a4f8a", border: "none" }} onClick={handleApplyAi}>
+              <button className="btn btn-primary" data-testid="ai-suggestion-apply" style={{ background: "#1a4f8a", border: "none" }} onClick={handleApplyAi}>
                 Aplicar Sugerencia
               </button>
             </div>
@@ -481,27 +519,10 @@ export default function WizardInformeView({
               </div>
 
               <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "22px", display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div>
-                    <label className="form-label required">Unidad Académica / Administrativa</label>
-                    <input className="form-input" value={unidadAcademica} disabled style={{ background: "#f8fafc" }} />
-                  </div>
-
-                  <div>
-                    <label className="form-label required">Carrera</label>
-                    <select
-                      className="form-select"
-                      value={carrera}
-                      onChange={(e) => setCarrera(e.target.value)}
-                    >
-                      {CARRERAS_USUARIO_ANDREA.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    <span style={{ fontSize: 11, color: "#64748b", marginTop: 3, display: "block" }}>
-                      Carreras institucionales vinculadas al docente elaborador.
-                    </span>
-                  </div>
+                <div style={{ display: "grid", gridTemplateColumns: unitType === "ACADEMIC" ? "1fr 1.4fr 1.2fr" : "1fr 2fr", gap: 16 }}>
+                  <div><label className="form-label required">Tipo de unidad</label><select className="form-select" data-testid="institutional-unit-type" value={unitType} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{const type=e.target.value as TipoUnidadInstitucional;const first=adminState.unidadesInstitucionales.find(u=>u.tipo===type&&u.estado==="ACTIVO");setUnitType(type);setInstitutionalUnitId(first?.id||"");const career=first?.carreras.find(c=>c.estado==="ACTIVO");setCareerId(career?.id||"");setCarrera(career?.nombre||"");}}><option value="ACADEMIC">Unidad académica</option><option value="ADMINISTRATIVE">Unidad administrativa</option></select></div>
+                  <div><label className="form-label required">Unidad</label><select className="form-select" data-testid="institutional-unit-select" value={institutionalUnitId} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{const unit=adminState.unidadesInstitucionales.find(u=>u.id===e.target.value);setInstitutionalUnitId(e.target.value);const career=unit?.carreras.find(c=>c.estado==="ACTIVO");setCareerId(career?.id||"");setCarrera(career?.nombre||"");}}><option value="">— Seleccione —</option>{adminState.unidadesInstitucionales.filter(u=>u.tipo===unitType&&u.estado==="ACTIVO").map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></div>
+                  {unitType === "ACADEMIC" && <div><label className="form-label required">Carrera</label><select className="form-select" data-testid="career-select" value={careerId} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{setCareerId(e.target.value);setCarrera(selectedUnit?.carreras.find(c=>c.id===e.target.value)?.nombre||"");}}><option value="">— Seleccione —</option>{selectedUnit?.carreras.filter(c=>c.estado==="ACTIVO").map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
@@ -509,6 +530,7 @@ export default function WizardInformeView({
                     <label className="form-label required">Informe de (Título institucional)</label>
                     <input
                       className="form-input"
+                      aria-label="Título institucional del informe"
                       value={titulo}
                       onChange={(e) => setTitulo(e.target.value)}
                     />
@@ -602,17 +624,19 @@ export default function WizardInformeView({
                         value={selectedPlanId}
                         onChange={(e) => handleSelectPlan(e.target.value)}
                       >
+                        <option value="">— Seleccione un Plan validado o en ejecución —</option>
                         {planesDisponibles.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.nombre} — {p.periodo} (v{p.formalVersion})
                           </option>
                         ))}
                       </select>
-                      <span style={{ fontSize: 11.5, color: "#1a4f8a", marginTop: 4, display: "block", fontWeight: 600 }}>
+                      {selectedPlanId && <span style={{ fontSize: 11.5, color: "#1a4f8a", marginTop: 4, display: "block", fontWeight: 600 }}>
                         ✓ Las actividades y medios de verificación se sincronizarán desde este Plan.
-                      </span>
+                      </span>}
                     </div>
                   )}
+                  {stepError && <p className="form-error" role="alert">{stepError}</p>}
                 </div>
               </div>
             </div>
@@ -665,6 +689,7 @@ export default function WizardInformeView({
                   className="form-textarea"
                   rows={6}
                   value={antecedentes}
+                  aria-label="Antecedentes"
                   onChange={(e) => setAntecedentes(e.target.value)}
                   placeholder="Redacte los antecedentes..."
                 />
@@ -813,6 +838,7 @@ export default function WizardInformeView({
                     className="form-textarea"
                     rows={4}
                     value={conclusiones}
+                    aria-label="Conclusiones"
                     onChange={(e) => setConclusiones(e.target.value)}
                   />
                 </div>
@@ -850,6 +876,7 @@ export default function WizardInformeView({
                     className="form-textarea"
                     rows={4}
                     value={oportunidadesMejora}
+                    aria-label="Oportunidades de mejora"
                     onChange={(e) => setOportunidadesMejora(e.target.value)}
                   />
                 </div>
@@ -1236,7 +1263,7 @@ export default function WizardInformeView({
           )}
 
           {step < 8 && (
-            <button className="btn btn-primary" style={{ background: "#1a4f8a", border: "none" }} onClick={handleNextStep}>
+            <button className="btn btn-primary" disabled={step === 1 && (informeOrigen === "DERIVADO_PLAN" ? !planesDisponibles.some(p=>p.id===selectedPlanId) : !selectedUnit || (unitType === "ACADEMIC" && !selectedUnit.carreras.some(c=>c.id===careerId&&c.estado==="ACTIVO")))} title={step === 1 && informeOrigen === "DERIVADO_PLAN" && !selectedPlanId ? "Seleccione un Plan de Trabajo válido para continuar." : undefined} style={{ background: "#1a4f8a", border: "none" }} onClick={handleNextStep}>
               Siguiente →
             </button>
           )}

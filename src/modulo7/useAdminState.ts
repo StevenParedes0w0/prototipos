@@ -1,5 +1,5 @@
 // Módulo 7 — Hook de Estado de Administración y Configuración Institucional
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   UsuarioAdmin,
   GrupoInstitucional,
@@ -14,6 +14,9 @@ import {
   TipoGrupoInstitucional,
   RolSistema,
   EtapaFlujo,
+  UnidadInstitucional,
+  TipoUnidadInstitucional,
+  PlantillaSeccionConfig,
 } from "./types";
 import {
   USUARIOS_ADMIN_INICIALES,
@@ -25,9 +28,21 @@ import {
   FLUJOS_INICIALES,
   FERIADOS_INICIALES,
   PLANTILLAS_INICIALES,
+  UNIDADES_INSTITUCIONALES_INICIALES,
 } from "./mockDataAdmin";
 
+const ADMIN_DEMO_STORAGE_KEY = "fisei_admin_configuration_v2";
+
+function readDemoConfiguration(): { unidades: UnidadInstitucional[]; plantillas: PlantillaDocumental[] } {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ADMIN_DEMO_STORAGE_KEY) || "null");
+    if (parsed && Array.isArray(parsed.unidades) && Array.isArray(parsed.plantillas) && parsed.plantillas.every((p: PlantillaDocumental) => Array.isArray(p.configuracion))) return parsed;
+  } catch { /* La configuración DEMO dañada se restablece con los fixtures. */ }
+  return { unidades: structuredClone(UNIDADES_INSTITUCIONALES_INICIALES), plantillas: structuredClone(PLANTILLAS_INICIALES) };
+}
+
 export function useAdminState() {
+  const initialConfiguration = useState(readDemoConfiguration)[0];
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>(USUARIOS_ADMIN_INICIALES);
   const [grupos, setGrupos] = useState<GrupoInstitucional[]>(GRUPOS_ADMIN_INICIALES);
   const [periodos, setPeriodos] = useState<PeriodoAcademico[]>(PERIODOS_ADMIN_INICIALES);
@@ -36,7 +51,12 @@ export function useAdminState() {
   const [medios, setMedios] = useState<MedioVerificacionCatalogo[]>(MEDIOS_CATALOGO_INICIALES);
   const [flujos, setFlujos] = useState<FlujoGrupo[]>(FLUJOS_INICIALES);
   const [feriados, setFeriados] = useState<FeriadoItem[]>(FERIADOS_INICIALES);
-  const [plantillas, setPlantillas] = useState<PlantillaDocumental[]>(PLANTILLAS_INICIALES);
+  const [plantillas, setPlantillas] = useState<PlantillaDocumental[]>(initialConfiguration.plantillas);
+  const [unidadesInstitucionales, setUnidadesInstitucionales] = useState<UnidadInstitucional[]>(initialConfiguration.unidades);
+
+  useEffect(() => {
+    try { localStorage.setItem(ADMIN_DEMO_STORAGE_KEY, JSON.stringify({ unidades: unidadesInstitucionales, plantillas })); } catch { /* El estado de sesión sigue disponible. */ }
+  }, [unidadesInstitucionales, plantillas]);
 
   // ─── Gestión de Usuarios ──────────────────────────────────────────────────
 
@@ -319,6 +339,35 @@ export function useAdminState() {
 
   const restablecerPeriodosDemo = useCallback(() => setPeriodos(structuredClone(PERIODOS_ADMIN_INICIALES)), []);
 
+  const guardarUnidadInstitucional = useCallback((data: { id?: string; nombre: string; tipo: TipoUnidadInstitucional; carreras: string[] }) => {
+    if (!data.nombre.trim()) return { success: false, error: "El nombre de la unidad es obligatorio." };
+    if (data.tipo === "ACADEMIC" && !data.carreras.some(c => c.trim())) return { success: false, error: "La unidad académica requiere al menos una carrera." };
+    const generatedId = data.id || `unit-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const carreras = data.tipo === "ACADEMIC" ? data.carreras.filter(Boolean).map((nombre, index) => ({ id: `${generatedId}-career-${index}`, nombre: nombre.trim(), estado: "ACTIVO" as const })) : [];
+    if (data.id) setUnidadesInstitucionales(prev => prev.map(unit => unit.id === data.id ? { ...unit, nombre: data.nombre.trim(), tipo: data.tipo, carreras } : unit));
+    else setUnidadesInstitucionales(prev => [...prev, { id: generatedId, nombre: data.nombre.trim(), tipo: data.tipo, estado: "ACTIVO", carreras }]);
+    return { success: true };
+  }, []);
+
+  const toggleEstadoUnidadInstitucional = useCallback((id: string) => {
+    setUnidadesInstitucionales(prev => prev.map(unit => unit.id === id ? { ...unit, estado: unit.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO" } : unit));
+  }, []);
+
+  const guardarConfiguracionPlantilla = useCallback((plantillaId: string, configuracion: PlantillaSeccionConfig[]) => {
+    setPlantillas(prev => prev.map(p => p.id === plantillaId ? { ...p, configuracion: structuredClone(configuracion), ultimaActualizacion: new Date().toLocaleDateString("es-EC") } : p));
+  }, []);
+
+  const restaurarConfiguracionPlantilla = useCallback((plantillaId: string) => {
+    const original = PLANTILLAS_INICIALES.find(p => p.id === plantillaId);
+    if (original) setPlantillas(prev => prev.map(p => p.id === plantillaId ? structuredClone(original) : p));
+  }, []);
+
+  const restablecerDemo = useCallback(() => {
+    setUnidadesInstitucionales(structuredClone(UNIDADES_INSTITUCIONALES_INICIALES));
+    setPlantillas(structuredClone(PLANTILLAS_INICIALES));
+    try { localStorage.removeItem(ADMIN_DEMO_STORAGE_KEY); localStorage.removeItem("fisei-informe-draft-v2"); } catch {}
+  }, []);
+
   return {
     usuarios,
     grupos,
@@ -329,6 +378,7 @@ export function useAdminState() {
     flujos,
     feriados,
     plantillas,
+    unidadesInstitucionales,
     // Actions
     toggleEstadoUsuario,
     crearUsuario,
@@ -347,5 +397,10 @@ export function useAdminState() {
     toggleEstadoFeriado,
     establecerEstadoPeriodoDemo,
     restablecerPeriodosDemo,
+    guardarUnidadInstitucional,
+    toggleEstadoUnidadInstitucional,
+    guardarConfiguracionPlantilla,
+    restaurarConfiguracionPlantilla,
+    restablecerDemo,
   };
 }

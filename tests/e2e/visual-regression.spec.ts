@@ -4,6 +4,7 @@ import {reset,createPlan,completeMatrix} from './helpers';
 test('T1 mantiene portada, matriz y página de firmas',async({page})=>{
  await reset(page);await createPlan(page);await completeMatrix(page);
  const documentPage=page.getByTestId('document-page');
+ const header=documentPage.getByTestId('document-institutional-header');await expect(header.locator('tr')).toHaveCount(4);await expect(header).not.toContainText('Carrera:');await expect(header).toContainText('Carrera de Ingeniería de Software');
  await expect(documentPage).toHaveScreenshot('t1-portada.png');
  await page.getByRole('button',{name:'3',exact:true}).click();
  await expect(documentPage).toHaveScreenshot('t1-matriz.png');

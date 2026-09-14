@@ -1,872 +1,1232 @@
-# CORRECCIÓN FOCALIZADA POST-REUNIÓN
-## Gestión Documental Académica FISEI — Fidelidad funcional + regresión E2E
+# PASADA FOCALIZADA DE CORRECCIÓN INSTITUCIONAL Y FUNCIONAL
+## Gestión Documental Académica FISEI — T1, T2, IA, catálogos institucionales, dashboard y plantillas configurables
 
-Quiero que realices una intervención MUY CONTROLADA sobre el mockup existente.
+Quiero que realices una intervención focalizada sobre el mockup interactivo actual.
 
-NO debes rediseñar la aplicación.
-NO debes hacer un refactor general.
-NO debes sustituir componentes que ya funcionan correctamente.
-NO debes modificar T1/T2, flujos, permisos, evidencias, versiones, rondas o persistencia salvo donde sea estrictamente necesario para cumplir las correcciones descritas en este prompt.
-NO debes romper ninguna de las pruebas existentes.
+Esta tarea NO es una nueva auditoría general del proyecto.
+NO quiero refactors arquitectónicos oportunistas.
+NO quiero reconstruir componentes que ya funcionan.
+NO quiero convertir el mockup en un sistema productivo.
 
-El objetivo es corregir cuatro puntos concretos que todavía no reflejan completamente lo solicitado durante la última reunión de validación con los docentes/clientes.
+El objetivo es resolver SEIS hallazgos concretos identificados durante la revisión manual de aproximadamente 110 capturas del sistema y al contrastar la implementación con los documentos institucionales de referencia.
 
-Antes de modificar código:
+============================================================
+0. CONTEXTO Y REGLA GENERAL
+============================================================
 
-1. Lee:
-   - AGENTS.md
-   - requirements.md
-   - implementation-status.md
-   - prompt.md si existe
-   - reporte-e2e-secundario.md
-   - README de E2E
-   - transcripciones/notas de la última reunión disponibles en el proyecto
-   - especialmente cualquier archivo donde aparezcan expresiones similares a:
-     - “Responsable de la comisión”
-     - “Seleccionar todos”
-     - “Firmar y finalizar”
-     - “Subrayar”
-     - “Resaltar”
-     - “Observación”
-     - “Fuente”
-     - “Elaborado por”
+El proyecto es un:
 
-2. Inspecciona primero el comportamiento actual antes de corregirlo.
+MOCKUP INTERACTIVO DE ALTA FIDELIDAD
 
-3. Considera la última reunión institucional como nueva evidencia funcional.
-   Si un requerimiento anterior entra en conflicto directo con una decisión explícita posterior de esa reunión, NO adaptes silenciosamente el código:
-   - documenta el conflicto;
-   - determina cuál es la decisión posterior;
-   - actualiza la documentación funcional correspondiente únicamente si realmente la reunión modifica el requisito;
-   - deja trazabilidad en el reporte final.
+Stack actual:
+- React
+- TypeScript
+- Vite
+- Playwright
+- estado/persistencia DEMO
+- motor documental propio
 
-IMPORTANTE:
-No cambies requisitos solamente para justificar el código existente.
+Ya existe una suite estable de aproximadamente:
 
----
+19 E2E PASS / 0 FAIL
++
+tests del motor PASS
++
+TypeScript PASS
++
+Build PASS
++
+snapshots T1/T2 PASS
 
-# CONTEXTO GENERAL QUE DEBES PRESERVAR
+DEBES PRESERVAR ESA ESTABILIDAD.
 
-La aplicación es un MOCKUP INTERACTIVO DE ALTA FIDELIDAD, no un sistema productivo.
+No se permite resolver estos hallazgos rompiendo funcionalidades previamente estabilizadas.
 
-Conservar:
+============================================================
+1. FUENTES QUE DEBES REVISAR ANTES DE MODIFICAR CÓDIGO
+============================================================
 
-- React + TypeScript + Vite.
-- Motor documental existente.
-- targetDocId explícito.
-- separación de identidad de sesión y contexto.
+Lee completamente, en este orden:
+
+1. AGENTS.md
+2. requirements.md
+3. implementation-status.md
+4. reporte-correcciones-post-reunion.md
+5. reporte-e2e-secundario.md
+6. tests/document-engine.test.mjs
+7. playwright.config.ts
+8. tests/e2e/README.md
+9. tests/e2e/helpers.ts
+10. todos los specs E2E existentes relacionados con:
+    - T1
+    - T2
+    - firma
+    - responsables
+    - administración
+    - plantillas
+    - IA
+    - revisión
+11. carpeta Documentos_guia completa
+
+Debes revisar de forma ESPECIAL:
+
+Documentos_guia/TI-JD2026-UTIT-PLAN-V01-signed.pdf
+
+Este documento es una REFERENCIA REAL de cómo debe verse el Plan de Trabajo.
+
+También revisar:
+
+Documentos_guia/UTA-SGC-A-2-1-P7-T2 Formato Informe (1).docx
+
+Este documento es la referencia institucional del Informe T2.
+
+Si existen otras versiones T1/T2 posteriores dentro de Documentos_guia, determina cuál es la más reciente y documenta la decisión.
+
+NO inventes formato documental.
+
+============================================================
+2. FUNCIONES YA ESTABLES QUE NO DEBES ROMPER
+============================================================
+
+Preservar explícitamente:
+
+- identidad autenticada separada del contexto;
+- currentUser separado de activeContext;
+- cambio de sesión DEMO explícito;
 - unicidad del Plan por:
-  teacherId + groupId + periodId.
-- formalVersion separada de reviewRound.
-- artefactos firmados inmutables.
-- artifactHistory.
-- observaciones por documento/ronda.
-- T1 y T2 aislados.
-- evidencia independiente del versionado del Plan.
-- una evidencia PDF por medio.
-- flujo configurable por grupo.
-- revisores paralelos dentro de una misma etapa cuando corresponda.
-- siguiente etapa bloqueada hasta cumplir la etapa actual.
-- flujo incompleto del Club Académico permanece PENDIENTE.
-- NO inventar actores institucionales.
-- NO inventar hashes, QR o firma real.
-- firma DEMO claramente identificada como simulación.
-- certificado/contraseña no persistidos.
-- estilo institucional azul/blanco.
-- documentos A4 ya existentes.
-- footer T1 vigente.
-- portada T1 vigente.
-- paginación dinámica.
-- signatureSlots dinámicos.
-- Source/Fuente y Elaborado por ya separados.
-- fecha de elaboración persistida.
-- periodos cerrados en solo lectura.
-- Administración actual.
-- notificaciones actuales.
-- reportes sin ranking ni evaluación de desempeño.
+  teacherId + groupId + periodId;
+- formalVersion separada de reviewRound;
+- ronda 2 sin convertir automáticamente el Plan en versión 2.0;
+- artifactHistory;
+- artefactos firmados inmutables;
+- targetDocId explícito;
+- aislamiento Plan ↔ Informe;
+- revisión paralela;
+- Coordinación posterior a revisores obligatorios;
+- Validación final;
+- observaciones;
+- Resaltar y observar;
+- anchors normalizados;
+- firma DEMO;
+- flujo incompleto del Club;
+- responsables colectivos;
+- responsableIds individuales;
+- responsableNames individuales;
+- denominación colectiva de presentación;
+- feriados;
+- regla de 23:59;
+- anexos;
+- evidencias;
+- exactamente un PDF vigente por medio;
+- reemplazo de evidencia;
+- versionado independiente de evidencia;
+- período cerrado = solo lectura;
+- histórico;
+- notificaciones;
+- reportes sin rankings ni evaluación de personal;
+- footer T1;
+- portada T1;
+- pageCount dinámico;
+- signatureSlots dinámicos;
+- snapshots visuales existentes.
 
-No reintroduzcas mocks paralelos ni estados duplicados.
+NO reintroduzcas mocks paralelos.
+NO dupliques fuentes de verdad.
+NO hardcodees documentos o usuarios para hacer pasar pruebas.
 
----
+============================================================
+3. OBJETIVOS DE ESTA PASADA
+============================================================
 
-# OBJETIVO 1
-# CORREGIR “SELECCIONAR TODOS” EN RESPONSABLES
+Resolver únicamente estos SEIS bloques:
 
-La última reunión fue explícita:
+A. Bug del asistente IA al aplicar sugerencias.
+B. Corregir encabezado institucional T1 según PDF firmado.
+C. Implementar selección Unidad académica / administrativa y catálogo configurable por Administración.
+D. Corregir T2 funcional y documentalmente según plantilla oficial.
+E. Convertir Panel General de Administración en un dashboard útil.
+F. Implementar realmente el configurador drag-and-drop de plantillas documentales.
 
-Cuando TODOS los integrantes del grupo son responsables de una actividad, NO se desea que el documento muestre todos los nombres individualmente.
+Cada bloque debe:
+- auditar estado actual;
+- reproducir el comportamiento;
+- corregir solo lo necesario;
+- incorporar E2E/regresión;
+- preservar comportamiento previo.
 
-La reunión utilizó expresamente como ejemplo:
+============================================================
+A. BUG DEL ASISTENTE DE IA
+============================================================
 
-“Responsable de la comisión”
+PROBLEMA CONFIRMADO MANUALMENTE:
 
-También se habló de usar una denominación general en lugar de detallar a cada integrante.
+Los asistentes de:
 
-Actualmente existen casos donde:
+- Mejorar redacción
+- Mejorar objetivo
+- y equivalentes en Informe
 
-- la interfaz de revisión de matriz sigue mostrando:
-  Andrea, Carlos, Patricia...
-- o el documento imprime:
-  “Integrantes de la Unidad”.
+sí generan una sugerencia.
 
-Eso no refleja de forma suficientemente fiel lo solicitado.
+PERO:
 
-## Comportamiento requerido
+al pulsar APLICAR,
+la sugerencia NO rellena/reemplaza correctamente el campo de texto correspondiente.
 
-Internamente SIEMPRE deben conservarse:
+Esto es un bug funcional.
 
-- responsableIds
-- responsableNames
+------------------------------------------------------------
+A1. COMPORTAMIENTO ESPERADO
+------------------------------------------------------------
 
-de todas las personas seleccionadas.
+El flujo debe ser:
 
-NO eliminar trazabilidad individual.
+Texto original
+→ solicitar sugerencia
+→ mostrar propuesta
+→ usuario elige:
 
-NO guardar solamente la denominación colectiva.
+APLICAR
+o
+DESCARTAR
 
-La denominación colectiva es únicamente de PRESENTACIÓN.
+APLICAR debe:
 
-Crear una función central y reutilizable para determinar el texto visible.
+1. identificar exactamente qué campo originó la solicitud;
+2. copiar la propuesta al campo correcto;
+3. actualizar estado React;
+4. activar autosave normal;
+5. actualizar contador de palabras si existe;
+6. actualizar estado de completitud;
+7. persistir tras recarga;
+8. NO modificar otros campos.
+
+DESCARTAR debe:
+
+- cerrar propuesta;
+- conservar exactamente el texto original.
+
+------------------------------------------------------------
+A2. CAMPOS A AUDITAR
+------------------------------------------------------------
+
+T1:
+- Justificación
+- Objetivo
+
+T2:
+- Antecedentes
+- conclusiones
+- oportunidades
+- cualquier otro campo que actualmente tenga helper de redacción
+
+No hardcodear un único textarea.
+
+Crear una abstracción razonable si actualmente existen handlers duplicados.
 
 Ejemplo conceptual:
 
-getResponsibleDisplayLabel({
-  groupType,
-  selectedResponsibleIds,
-  allGroupMemberIds,
-  selectedResponsibleNames
-})
+applySuggestion(targetFieldId, suggestion)
 
-Reglas:
+pero utiliza la arquitectura existente.
 
-### Si NO están seleccionados todos
+------------------------------------------------------------
+A3. SEGURIDAD DE ESTADO
+------------------------------------------------------------
 
-Mostrar los nombres individuales correspondientes.
+Evitar bugs como:
 
-Ejemplo:
+- sugerencia de Justificación aplicada en Objetivo;
+- sugerencia T2 aplicada en T1;
+- aplicar después de cambiar de documento;
+- suggestion stale;
+- closure antigua;
+- textareas uncontrolled que no reciben el nuevo valor;
+- state local separado de draft;
+- autosave escribiendo el valor anterior.
 
-Andrea + Carlos
+------------------------------------------------------------
+A4. E2E IA
+------------------------------------------------------------
 
-→
-“Ing. Andrea Pérez, Mg., Ing. Carlos López, Mg.”
+Crear algo similar a:
 
-### Si están seleccionados TODOS los integrantes
+tests/e2e/ai-writing-assistant.spec.ts
 
-Mostrar una denominación colectiva.
+Escenario mínimo T1:
 
-Para Comisión:
+1. reset DEMO;
+2. crear Plan;
+3. ir a Contenido;
+4. escribir:
+   "texto inicial"
+5. pulsar Mejorar redacción;
+6. esperar sugerencia DEMO;
+7. APLICAR;
+8. comprobar:
+   textarea != "texto inicial";
+9. comprobar que contiene la sugerencia;
+10. recargar;
+11. comprobar persistencia.
 
-“Responsable de la comisión”
+Después:
 
-Para Unidad:
+12. generar sugerencia para Objetivo;
+13. DESCARTAR;
+14. comprobar que Objetivo mantiene el valor original.
 
-“Responsable de la unidad”
+Agregar al menos una comprobación equivalente en T2.
 
-Para Club:
+============================================================
+B. CORREGIR ENCABEZADO T1 SEGÚN PDF FIRMADO
+============================================================
 
-“Responsable del club”
+REFERENCIA PRINCIPAL:
 
-Para Otro:
+Documentos_guia/TI-JD2026-UTIT-PLAN-V01-signed.pdf
 
-“Responsable del grupo”
+El encabezado actual del T1 mejoró, pero su estructura todavía NO coincide suficientemente con el documento real.
+
+------------------------------------------------------------
+B1. PROBLEMA ACTUAL
+------------------------------------------------------------
+
+Actualmente se representa aproximadamente:
+
+Unidad académica / administrativa | Facultad...
+Carrera                           | Ingeniería de Software
+Fecha de elaboración             | ...
+
+Sin embargo, en el PDF firmado la Facultad y la Carrera forman parte del mismo bloque/celda de información institucional.
+
+NO debe existir una fila visual independiente para Carrera si el documento de referencia no la tiene de esa manera.
+
+------------------------------------------------------------
+B2. ESTRUCTURA ESPERADA
+------------------------------------------------------------
+
+Debes reproducir la estructura del PDF firmado lo más fielmente posible.
+
+La celda asociada a:
+
+Unidad académica / administrativa
+
+debe contener la información institucional correspondiente, incluyendo:
+
+Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+Carrera de Software
+
+o la nomenclatura vigente del documento de referencia.
+
+Después:
+
+Fecha de elaboración
+
+debe aparecer en su fila correspondiente.
 
 IMPORTANTE:
 
-La frase confirmada literalmente en la reunión fue
-“Responsable de la comisión”.
+No interpretes esto como concatenar arbitrariamente texto.
 
-Las otras denominaciones son equivalentes semánticos según el tipo de grupo.
+Reproduce:
+- distribución;
+- bordes;
+- combinaciones de celdas;
+- alturas;
+- alineación;
+- jerarquía;
+- tipografía;
+- logo;
+- gris/azul institucional
 
-Si existe en los documentos institucionales o requisitos una denominación mejor confirmada para Unidad/Club/Otro, utiliza esa en lugar de inventar una nueva.
+según el PDF real.
 
-NO mostrar:
+------------------------------------------------------------
+B3. PORTADA CENTRAL
+------------------------------------------------------------
 
-“3 personas”
+Audita también que la carátula T1 muestre correctamente:
 
-en el documento formal cuando el grupo completo está seleccionado.
+UNIVERSIDAD TÉCNICA DE AMBATO
 
-NO mostrar:
+UNIDAD ACADÉMICA / ADMINISTRATIVA:
+<valor>
 
-“Integrantes de la Unidad”
+CARRERA:
+<valor, cuando aplique>
 
-si la decisión posterior de la reunión exige la representación como Responsable del grupo.
+PLAN DE TRABAJO DE:
+<grupo>
 
-## Lugares a revisar
+PERÍODO:
+<período>
 
-No corrijas solamente el PDF.
+Si el ejemplo firmado separa visualmente Facultad y Carrera en la portada:
+respétalo.
 
-Audita TODOS los consumidores:
+NO empujes otra vez el bloque central hacia abajo.
 
-- drawer/modal de configuración de actividad;
-- tabla de matriz;
-- vista “Revisar matriz de actividades”;
-- previsualización T1;
-- artefacto firmado T1;
-- documento abierto desde bandeja del docente;
-- documento abierto desde bandeja del revisor;
-- corrección de ronda;
-- T2 derivado si consume el responsable del Plan;
-- ejecución de actividades;
-- evidencias;
-- historial;
-- cualquier helper que transforme responsables.
+Debe continuar equilibrado alrededor del centro vertical.
 
-La representación visual puede ser colectiva.
+------------------------------------------------------------
+B4. NO ROMPER FOOTER
+------------------------------------------------------------
 
-Los permisos SIEMPRE deben continuar usando IDs reales.
+Mantener EXACTAMENTE el comportamiento actual validado:
 
-## Regla importante
+izquierda:
+Documento de uso interno controlado por la Universidad Técnica de Ambato
 
-Si existen 3 miembros y se seleccionan los 3:
+centro:
+Formato Nº: UTA-SGC-A-2-1-P7-T1
 
-responsableIds =
-[A, B, C]
+derecha:
+número dinámico de página
 
-responsableNames =
-[Andrea, Carlos, Patricia]
+una sola fila
 
-display =
-“Responsable de la unidad”
+SIN border-top
+SIN hr
 
-Si luego se desmarca Patricia:
+------------------------------------------------------------
+B5. VISUAL REGRESSION
+------------------------------------------------------------
 
-responsableIds =
-[A, B]
+La modificación del encabezado T1 probablemente cambiará snapshots.
 
-display =
-“Andrea Pérez, Carlos López”
+NO ejecutar:
 
-Nunca perder los IDs de A/B/C por haber utilizado previamente “Seleccionar todos”.
+--update-snapshots
 
----
+automáticamente.
 
-# PRUEBA E2E DEL OBJETIVO 1
+Primero:
+- comparar contra PDF firmado;
+- confirmar que el cambio es una mejora legítima;
+- actualizar únicamente los snapshots T1 afectados.
 
-Añadir o ampliar la cobertura existente.
+Documentar qué snapshot cambió y por qué.
 
-Caso:
+============================================================
+C. UNIDAD ACADÉMICA / ADMINISTRATIVA CONFIGURABLE
+============================================================
 
-1. Restablecer DEMO.
-2. Andrea crea Plan de Unidad de Titulación.
-3. Seleccionar todos los responsables en una actividad.
-4. Guardar.
-5. Verificar estado interno:
-   - existen todos los IDs;
-   - existen todos los nombres.
-6. Verificar pantalla de matriz:
-   - utiliza representación colectiva.
-7. Verificar PDF T1:
-   - utiliza representación colectiva.
-8. Desmarcar una persona.
-9. Guardar.
-10. Verificar:
-    - representación vuelve a nombres individuales;
-    - IDs correctos;
-    - no existen duplicados.
-11. Volver a seleccionar todos.
-12. Verificar nuevamente etiqueta colectiva.
-13. Recargar navegador.
-14. Verificar persistencia de IDs y representación.
+Este requerimiento fue mencionado explícitamente durante reunión.
 
----
+Actualmente:
 
-# OBJETIVO 2
-# TEXTO DEL HISTORIAL INICIAL
+“Unidad académica / administrativa”
 
-En el artefacto T1 actual aparece algo similar a:
+se maneja demasiado como un texto fijo.
 
-“Elaboración inicial del Plan de Trabajo”
+La solución debe permitir definir correctamente:
 
-La reunión pidió como redacción predeterminada:
+TIPO DE UNIDAD
 
-“Elaboración del Plan de Trabajo”
+y
 
-Corrige la primera entrada del:
+UNIDAD
+
+desde catálogos administrativos.
+
+------------------------------------------------------------
+C1. MODELO DEMO
+------------------------------------------------------------
+
+Separar conceptualmente:
+
+unitType:
+ACADEMIC
+ADMINISTRATIVE
+
+institutionalUnitId
+
+institutionalUnitName
+
+careerId opcional
+
+careerName opcional
+
+NO mezclar esta entidad con:
+
+Grupo institucional
+(Comisión, Unidad, Club, Otro)
+
+Son conceptos diferentes.
+
+------------------------------------------------------------
+C2. ADMINISTRACIÓN
+------------------------------------------------------------
+
+Agregar un catálogo administrativo claramente identificable, por ejemplo:
+
+Unidades académicas y administrativas
+
+El Administrador debe poder DEMOSTRAR:
+
+- listar;
+- crear;
+- editar;
+- activar/desactivar;
+- seleccionar tipo:
+  Académica
+  Administrativa
+
+Para una unidad académica:
+puede tener asociadas carreras.
+
+Para una administrativa:
+no exigir carrera.
+
+No implementar backend.
+
+Usar estado DEMO existente.
+
+------------------------------------------------------------
+C3. WIZARD T1
+------------------------------------------------------------
+
+En Información general:
+
+Tipo de unidad *
+[ Unidad académica ▼ ]
+
+Unidad *
+[ Facultad de Ingeniería en Sistemas, Electrónica e Industrial ▼ ]
+
+Carrera *
+[ Software ▼ ]
+
+Cuando se seleccione:
+
+Unidad administrativa
+
+Carrera debe:
+
+- ocultarse;
+o
+- quedar como No aplica,
+
+según mejor coherencia UX.
+
+NO pedir carrera obligatoria a una unidad administrativa.
+
+------------------------------------------------------------
+C4. WIZARD T2
+------------------------------------------------------------
+
+El Informe debe consumir la misma fuente institucional.
+
+NO crear un catálogo T2 independiente.
+
+------------------------------------------------------------
+C5. DOCUMENTOS GENERADOS
+------------------------------------------------------------
+
+T1/T2 deben renderizar:
+
+Unidad académica:
+<valor>
+
+o
+
+Unidad administrativa:
+<valor>
+
+según la selección.
+
+Evitar imprimir siempre:
+
+Unidad académica / administrativa:
+
+si ya conocemos el tipo concreto.
+
+EXCEPCIÓN:
+
+Si el formato institucional oficial exige literalmente ese rótulo genérico en el encabezado,
+conservar el rótulo de la plantilla pero insertar correctamente el valor.
+
+Distingue:
+modelo funcional
+vs
+texto fijo de plantilla.
+
+------------------------------------------------------------
+C6. E2E
+------------------------------------------------------------
+
+Crear algo como:
+
+tests/e2e/institutional-units.spec.ts
+
+Probar:
+
+1. Administrador crea unidad académica DEMO;
+2. asocia carrera;
+3. Andrea crea Plan;
+4. selecciona esa unidad;
+5. carrera aparece;
+6. PDF la refleja.
+
+Luego:
+
+7. Administrador crea/usa unidad administrativa;
+8. Andrea la selecciona;
+9. carrera no se exige;
+10. PDF refleja correctamente la selección.
+
+También comprobar:
+- opción desactivada no aparece en nuevo documento;
+- documento existente conserva su valor histórico aunque luego la opción administrativa sea desactivada.
+
+============================================================
+D. CORREGIR INFORME T2
+============================================================
+
+Este es uno de los bloques más importantes.
+
+REFERENCIA:
+
+Documentos_guia/UTA-SGC-A-2-1-P7-T2 Formato Informe (1).docx
+
+La implementación actual del T2 tiene avances funcionales, pero todavía existen errores de fidelidad y validación.
+
+NO reutilices ciegamente el layout T1.
+
+T1 y T2 comparten algunos elementos institucionales, pero NO tienen exactamente la misma estructura.
+
+------------------------------------------------------------
+D1. TÍTULO DUPLICADO
+------------------------------------------------------------
+
+PROBLEMA:
+
+Actualmente puede aparecer:
+
+INFORME DE: INFORME DE SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
+
+Eso es incorrecto.
+
+El modelo debe guardar el contenido semántico:
+
+Seguimiento de actividades de titulación
+
+y el renderer agrega UNA sola vez:
+
+INFORME DE:
+SEGUIMIENTO DE ACTIVIDADES DE TITULACIÓN
+
+Centraliza la normalización.
+
+Debe aceptar entradas legacy como:
+
+"Informe de seguimiento de actividades"
+
+y normalizar sin duplicar.
+
+E2E obligatorio.
+
+------------------------------------------------------------
+D2. ENCABEZADO T2
+------------------------------------------------------------
+
+Reproduce el encabezado de la plantilla T2.
+
+NO reutilizar automáticamente:
+
+Plan de Trabajo / Carrera / estructuras exclusivas de T1.
+
+La plantilla T2 contiene conceptualmente:
+
+UNIVERSIDAD TÉCNICA DE AMBATO
+INFORME DE: ...
+Unidad académica / administrativa:
+Fecha de elaboración:
+
+Respeta:
+- celdas;
+- bordes;
+- gris;
+- alineación;
+- logo;
+- alturas.
+
+Si Carrera no forma parte del header T2 oficial:
+NO agregarla solo porque T1 la tenga.
+
+------------------------------------------------------------
+D3. INFORME DERIVADO DE PLAN
+------------------------------------------------------------
+
+Existe actualmente un bug/deficiencia visual:
+
+Puede seleccionarse:
+
+Derivado de un Plan de Trabajo
+
+pero continuar sin seleccionar realmente un Plan relacionado.
+
+Eso NO debe permitirse.
+
+Cuando modo === DERIVED:
+
+relatedPlanId es obligatorio.
+
+Sin Plan:
+- mostrar error;
+- impedir Continuar.
+
+------------------------------------------------------------
+D4. PLANES ELEGIBLES
+------------------------------------------------------------
+
+Mostrar únicamente Planes que cumplan reglas canónicas actuales:
+
+- pertenecen al usuario actual cuando corresponda;
+- VALIDADO o EN EJECUCIÓN según requirements;
+- no usar Planes ajenos;
+- no usar un Informe;
+- no usar Plan inválido.
+
+No inventar condiciones institucionales nuevas.
+
+------------------------------------------------------------
+D5. IMPORTACIÓN
+------------------------------------------------------------
+
+Después de seleccionar un Plan derivado:
+
+importar automáticamente al T2:
+
+- actividades;
+- medios de verificación;
+- referencias necesarias;
+- metadatos institucionales;
+- período;
+- grupo cuando corresponda.
+
+NO compartir referencias mutables con el Plan.
+
+Debe existir copia/derivación aislada.
+
+Crear/firmar/editar T2 nunca modifica el Plan.
+
+------------------------------------------------------------
+D6. TABLA DE ACTIVIDADES
+------------------------------------------------------------
+
+Si el Informe es derivado:
+
+la Tabla 1 debe mostrar las actividades del Plan.
+
+No puede llegar vacía si el Plan tiene actividades.
+
+Para cada actividad revisar la plantilla oficial y renderizar únicamente los campos institucionalmente previstos.
+
+Si el Informe es INDEPENDIENTE:
+
+no mostrar una Tabla 1 vacía fingiendo derivación.
+
+Seguir lo indicado por la plantilla/documentación:
+el desarrollo independiente debe seguir la modalidad prevista.
+
+------------------------------------------------------------
+D7. SECCIONES T2
+------------------------------------------------------------
+
+Auditar contra la plantilla oficial:
+
+1. Información General
+2. Antecedentes
+3. Desarrollo de Actividades
+4. Conclusiones y Oportunidades
+5. Registro de Contactos
+6. Anexos
+7. Previsualización
+8. Firma y Finalización
+
+Confirmar que ninguna nota instructiva de la plantilla se imprime como contenido real.
+
+------------------------------------------------------------
+D8. CONTACTOS
+------------------------------------------------------------
+
+Auditar:
+- estructura;
+- títulos;
+- columnas;
+- representación;
+- vacíos;
+- no imprimir placeholders instructivos.
+
+------------------------------------------------------------
+D9. FIRMAS T2
+------------------------------------------------------------
+
+Las firmas deben derivarse de:
+
+signatureSlots
+
+y del flujo configurado.
+
+NO usar páginas hardcodeadas.
+
+NO asumir:
+Página 5
+
+Usar:
+
+artifact.pages.length
+signatureSlots
+
+------------------------------------------------------------
+D10. HISTORIAL T2
+------------------------------------------------------------
 
 CONTROL DE HISTORIAL DE CAMBIOS
 
-para que utilice exactamente:
+debe respetar la plantilla T2.
 
-“Elaboración del Plan de Trabajo”
+No inventar entradas.
 
-salvo que el documento institucional oficial entregado por el cliente muestre una redacción distinta y posterior.
+------------------------------------------------------------
+D11. FOOTER T2
+------------------------------------------------------------
 
-No cambies:
+Usar:
 
-- Versión 1.0
-- fecha;
-- formalVersion;
-- reviewRound;
-- artifactHistory.
+Formato Nº: UTA-SGC-A-2-1-P7-T2
 
-Esto es una corrección textual, no de modelo.
+página dinámica.
 
-Audita también documentos DEMO nuevos.
+Revisar disposición contra DOCX.
 
-NO reescribas silenciosamente documentos históricos firmados ya existentes si conceptualmente deben permanecer inmutables.
+------------------------------------------------------------
+D12. E2E T2
+------------------------------------------------------------
 
-El reset DEMO sí puede generar nuevamente los fixtures canónicos con la redacción corregida si corresponde.
+Extender o crear:
 
-Crear una regresión automática sencilla para esta cadena.
+tests/e2e/t2-derived-validation.spec.ts
 
----
+Probar:
 
-# OBJETIVO 3
-# REVISAR “FIRMAR Y FINALIZAR” VS “ENVIAR A REVISIÓN”
+A.
+Seleccionar Derivado
+sin Plan
+→ Continuar bloqueado.
 
-ESTE PUNTO REQUIERE AUDITORÍA ANTES DE MODIFICAR.
+B.
+Seleccionar Plan válido
+→ actividades importadas.
 
-La última reunión contiene una decisión que parece contradecir parcialmente el comportamiento actual.
+C.
+Previsualización
+→ título no duplicado.
 
-Durante la reunión se corrigió:
+D.
+Header coincide estructuralmente con T2.
 
-“Firmar y enviar”
+E.
+Tabla de actividades contiene datos.
 
-por:
+F.
+Crear/firmar T2.
 
-“Firmar y finalizar”
+G.
+Volver al Plan.
 
-y se indicó que cuando el docente finaliza, el documento continúa al flujo de revisión.
+H.
+Plan conserva:
+- estado
+- firmas
+- versión
+- ronda
+- actividades
 
-Actualmente el mockup separa:
+sin modificación.
 
-1. FIRMAR Y FINALIZAR ELABORACIÓN
-2. ENVIAR A REVISIÓN
+------------------------------------------------------------
+D13. SNAPSHOTS T2
+------------------------------------------------------------
 
-Esta separación fue implementada anteriormente y cuenta con pruebas E2E.
+Como el layout va a cambiar:
 
-NO cambies esto automáticamente sin investigar.
+NO actualizar snapshots automáticamente.
 
-## Debes hacer lo siguiente
+Contrastar con DOCX.
 
-Busca la fuente exacta de la última reunión.
+Actualizar solo:
+- portada/header;
+- contenido;
+- firmas
 
-Determina si la decisión final realmente fue:
+si el cambio es correcto.
 
-A)
+Documentar cada diferencia.
 
-FIRMAR Y FINALIZAR
-→ firma
-→ finaliza elaboración
-→ automáticamente EN REVISIÓN
+============================================================
+E. DASHBOARD REAL DE ADMINISTRACIÓN
+============================================================
 
-o si se confirmó posteriormente:
+Actualmente:
 
-B)
+Panel General
 
-FIRMAR Y FINALIZAR ELABORACIÓN
-→ FIRMADO POR ELABORADOR
-→ acción separada ENVIAR A REVISIÓN
-→ EN REVISIÓN
+ya contiene tarjetas como:
 
-Debes establecer cuál es la decisión MÁS RECIENTE Y EXPLÍCITA.
+- usuarios activos;
+- grupos;
+- período;
+- flujos;
 
-## Si la última reunión confirma A
+pero se comporta más como portada/configuración que como un dashboard operativo.
 
-Entonces:
+Quiero mejorarlo SIN convertirlo en sistema de BI.
 
-modifica el comportamiento para que la firma exitosa del elaborador:
+------------------------------------------------------------
+E1. OBJETIVO
+------------------------------------------------------------
 
-BORRADOR / LISTO PARA FIRMA
-↓
-FIRMAR Y FINALIZAR ELABORACIÓN
-↓
-firma válida
-↓
-elaboración terminada
-↓
-activa siguiente etapa configurada
-↓
-EN REVISIÓN
+El Dashboard debe responder visualmente:
 
-No debe existir una segunda confirmación “ENVIAR A REVISIÓN”.
+¿Qué está ocurriendo en Gestión Documental ahora mismo?
 
-La pantalla posterior debe indicar:
+Sin:
+- rankings;
+- productividad;
+- scores;
+- evaluación docente;
+- predicciones;
+- sanciones.
 
-“Plan de Trabajo enviado a revisión”
+------------------------------------------------------------
+E2. MÉTRICAS SUGERIDAS
+------------------------------------------------------------
 
-o equivalente coherente.
+Con datos DEMO actuales:
 
-Pero esta transición SOLO puede ocurrir si existe una siguiente etapa válida/configurada.
+Documentos
+- Borradores
+- En revisión
+- En corrección
+- Validados
+- En ejecución
 
-### Flujo incompleto
+Evidencias
+- Pendientes de validación
+- Observadas
+- Validadas
 
-Para Club Académico, que permanece PENDIENTE:
+Configuración
+- Flujos configurados
+- Flujos pendientes
 
-NO inventar revisores.
+Período
+- período activo;
+- fecha/estado;
+- próximos eventos si existen.
 
-NO pasar a EN REVISIÓN.
+Auditoría
+- actividad reciente documental
+  SIN mostrar datos sensibles innecesarios.
 
-Mantener el bloqueo ya existente.
+------------------------------------------------------------
+E3. DISEÑO
+------------------------------------------------------------
 
-Si la política vigente impide incluso la firma del elaborador cuando no existe etapa posterior, conservarla salvo que la reunión contradiga explícitamente ese comportamiento.
+Mantener:
 
-### Revisores
+azul institucional
+verde éxito
+ámbar advertencia
+rojo solo para error/destructivo
+grises neutrales
 
-El flujo posterior mantiene:
+No introducir morado dominante.
 
-- etapas paralelas;
-- etapas secuenciales;
-- firmas;
-- rondas;
-- devolución;
-- corrección;
-- historial.
+Usar:
+- cards;
+- contadores;
+- pequeños indicadores;
+- quizá una gráfica simple si ya existe infraestructura;
 
-## Si la última decisión confirma B
+pero NO sobrecargar.
 
-NO cambies el comportamiento actual.
+Preferir conteos a porcentajes.
 
-En ese caso documenta claramente que:
+------------------------------------------------------------
+E4. INTERACCIÓN
+------------------------------------------------------------
 
-- la reunión fue revisada;
-- existía una formulación ambigua;
-- la decisión posterior/canónica mantiene firma y envío separados.
+Cuando sea razonable:
 
-No hagas cambios solamente porque este prompt señala la discrepancia.
+clic en
+“3 En revisión”
+→ filtra/navega a documentos En revisión.
 
-## Si se cambia a A
+clic en
+“2 evidencias pendientes”
+→ lleva a seguimiento/validación correspondiente.
 
-Actualizar todas las pruebas que actualmente esperan:
+No es obligatorio si implica complejidad excesiva, pero sí deseable.
 
-FIRMADO POR ELABORADOR
-→ ENVIAR A REVISIÓN
+------------------------------------------------------------
+E5. E2E
+------------------------------------------------------------
 
-pero NO reducir cobertura.
+Crear smoke:
 
-Las nuevas pruebas deben garantizar:
+tests/e2e/admin-dashboard.spec.ts
 
-- una sola firma del elaborador;
-- no doble envío;
-- no doble activación de etapa;
-- recarga conserva EN REVISIÓN;
-- primer revisor recibe el documento;
-- otro documento no cambia;
-- flujo incompleto sigue bloqueado.
+Comprobar:
+- cards visibles;
+- conteos coherentes con fixtures;
+- sin conceptos prohibidos;
+- links principales no llevan a pantallas incorrectas.
 
----
+============================================================
+F. CONFIGURADOR DRAG-AND-DROP DE PLANTILLAS
+============================================================
 
-# OBJETIVO 4
-# VALIDAR Y COMPLETAR “RESALTAR Y OBSERVAR”
+PROBLEMA ACTUAL:
 
-La última reunión solicitó que el revisor pudiera:
+Administración → Plantillas documentales → CONFIGURAR
 
-- señalar visualmente una parte del documento;
-- resaltar/subrayar una zona;
-- asociar una observación a esa zona;
-- identificar en qué página está;
-- posteriormente permitir al docente localizar exactamente lo observado.
+actualmente solo permite VER la estructura.
 
-La conversación terminó inclinándose por una solución SIMPLE:
+No existe configuración real por arrastre.
 
-una función de RESALTADO.
+Se solicitó poder ordenar/configurar secciones.
 
-NO implementar:
+Necesitamos implementarlo como funcionalidad DEMO de alta fidelidad.
 
-- editor de dibujo completo;
-- lápiz libre;
-- múltiples herramientas complejas;
-- Photoshop;
-- anotaciones PDF reales;
-- OCR;
-- modificación física del PDF;
-- edición del artefacto firmado.
+NO construir un diseñador de PDFs completo.
 
-El artefacto firmado debe seguir siendo INMUTABLE.
+------------------------------------------------------------
+F1. OBJETIVO UX
+------------------------------------------------------------
 
-Los resaltados pertenecen al sistema de revisión.
+Abrir:
 
-## Ya existe implementación parcial
+Administración
+→ Plantillas documentales
+→ T1 o T2
+→ CONFIGURAR
 
-El código/reporte anterior menciona:
+Debe mostrar:
 
-- DocumentObservationAnchor
-- pageNumber
-- x
-- y
-- width
-- height
-- selección rectangular
-- capa semitransparente
-- número de observación
-- “IR AL RESALTADO”
+“Configurar plantilla”
 
-No reimplementar si ya funciona.
-
-PRIMERO PRUÉBALO.
-
----
-
-# COMPORTAMIENTO ESPERADO DEL RESALTADO
-
-En vista de revisión:
-
-Debe existir una acción claramente identificable:
-
-“RESALTAR Y OBSERVAR”
-
-o equivalente accesible.
-
-Flujo:
-
-1. Revisor pulsa Resaltar y observar.
-2. Cursor entra en modo selección.
-3. Revisor arrastra sobre el A4.
-4. Se calcula un rectángulo normalizado relativo a la página.
-5. Se abre formulario de observación.
-6. Página se asigna automáticamente.
-7. Revisor escribe observación.
-8. Guarda.
-9. Aparece un resaltado semitransparente sobre esa zona.
-10. Aparece un identificador visible:
-    1, 2, 3...
-11. Panel de observaciones muestra la observación correspondiente.
-12. “IR AL RESALTADO”:
-    - cambia a la página correcta;
-    - desplaza/focaliza la zona;
-    - ofrece feedback visual.
-
-La observación debe conservar:
-
-- documentId;
-- round;
-- pageNumber;
-- anchor;
-- author/reviewer;
-- text;
-- timestamp;
-- status.
-
-NO modificar artifact.pages.
-
-NO incorporar el resaltado dentro de la representación serializada del artefacto firmado.
-
----
-
-# ZOOM
-
-Este punto es especialmente importante.
-
-Las coordenadas deben almacenarse NORMALIZADAS respecto a la página.
+con una lista de secciones.
 
 Ejemplo:
 
-x = 0.32
-y = 0.41
-width = 0.25
-height = 0.08
+⋮⋮ Información general
+    REQUERIDA
+    Bloqueada
 
-NO almacenar solamente píxeles absolutos del viewport.
+⋮⋮ Justificación
+    REQUERIDA
 
-El resaltado debe mantenerse sobre la misma región con:
+⋮⋮ Objetivo
+    REQUERIDA
 
-- 80 %
-- 100 %
-- 125 %
+⋮⋮ Matriz de actividades
+    REQUERIDA
 
-o los niveles disponibles equivalentes.
+⋮⋮ Anexos
+    OPCIONAL
 
-NO debe desplazarse visualmente por cambiar el zoom.
+⋮⋮ Firmas
+    INSTITUCIONAL / BLOQUEADA
 
----
+⋮⋮ Historial
+    INSTITUCIONAL / BLOQUEADA
 
-# NAVEGACIÓN ENTRE PÁGINAS
+------------------------------------------------------------
+F2. DRAG-AND-DROP
+------------------------------------------------------------
 
-Caso:
+Implementar drag-and-drop para las secciones permitidas.
 
-Observación 1 → página 3
-Observación 2 → página 4
+Usar una solución liviana ya compatible con el proyecto.
 
-Desde página 1:
+Antes de agregar una nueva dependencia:
+revisa package.json.
 
-“IR AL RESALTADO” de Obs.2
+Si ya existe una librería:
+reutilízala.
 
-debe abrir página 4 y enfocar Obs.2.
+Si no:
+puedes implementar HTML5 drag/drop o una dependencia pequeña y justificada.
 
-No debe mostrar el resaltado en todas las páginas.
+NO introducir una dependencia enorme para esto.
 
----
+------------------------------------------------------------
+F3. BLOQUES BLOQUEADOS
+------------------------------------------------------------
 
-# DEVOLUCIÓN Y CORRECCIÓN
+No todo debe ser movible.
 
-Después de devolver el documento:
+Los elementos institucionalmente rígidos deben aparecer bloqueados.
 
-Andrea debe poder visualizar:
+Por ejemplo:
 
-- observación;
-- página;
-- texto;
-- revisor;
-- resaltado asociado.
+- encabezado;
+- footer;
+- firmas;
+- historial
 
-En modo corrección:
+según lo que permita cada formato.
 
-debe existir forma de navegar al resaltado.
+No permitas que el administrador destruya el documento oficial.
 
-Al marcar la observación como resuelta:
+------------------------------------------------------------
+F4. PROPIEDADES
+------------------------------------------------------------
 
-NO eliminarla.
+Cada sección puede tener, según corresponda:
 
-Debe pasar al historial cuando corresponda.
+Estado:
+- Requerida
+- Opcional
+- Condicional
 
-Al preparar Ronda 2:
+Visibilidad:
+- Activa
 
-- formalVersion permanece 1.0;
-- reviewRound pasa a 2;
-- resaltados/observaciones de la ronda anterior permanecen históricos;
-- el nuevo artefacto no hereda marcas como si fueran contenido físico del documento.
+Orden:
+- drag/drop
 
----
+No permitir desactivar una sección institucional obligatoria.
 
-# APROBACIÓN
+------------------------------------------------------------
+F5. VISTA PREVIA
+------------------------------------------------------------
 
-Con observaciones ACTIVAS:
+Agregar una pequeña vista previa o representación de orden.
 
-APROBAR / APROBAR Y FIRMAR
+NO hace falta renderizar PDF en tiempo real si complica excesivamente.
 
-debe permanecer bloqueado conforme a la regla actual.
+Puede ser:
 
-Después de resolver/devolver según el flujo:
+Vista previa de estructura
 
-el comportamiento debe ser coherente.
+1. Información general
+2. Justificación
+3. Objetivo
+4. Matriz
+5. Anexos
+6. Firmas
+7. Historial
 
-No confundir:
+Actualizada después del drag.
 
-observación registrada
-≠
-resaltado gráfico.
+------------------------------------------------------------
+F6. GUARDAR
+------------------------------------------------------------
 
-Una observación general puede existir SIN anchor.
+Botones:
 
-Una observación por página puede existir con o sin anchor.
+Cancelar
+Restaurar predeterminado
+Guardar configuración
 
-Un resaltado SIEMPRE debe estar asociado a una observación.
+Al guardar:
+- persistir estado DEMO;
+- cerrar modal;
+- mostrar confirmación.
 
----
+NO modificar documentos firmados existentes.
 
-# ACCESIBILIDAD
+La configuración se aplica únicamente a nuevos borradores/documentos generados posteriormente.
 
-Agregar si falta:
+------------------------------------------------------------
+F7. T1/T2
+------------------------------------------------------------
 
-aria-label="Resaltar y observar"
+Mantener configuraciones separadas:
 
-aria-label contextual para:
+T1
+T2
 
-“Ir al resaltado de observación 1”
+Modificar T1 no debe cambiar T2.
 
-El modo de resaltado debe poder cancelarse.
+------------------------------------------------------------
+F8. E2E DRAG
+------------------------------------------------------------
 
-Escape debería cancelar el modo si es sencillo y no introduce regresiones.
+Crear:
 
-No depender únicamente del color para identificar observaciones.
+tests/e2e/template-builder.spec.ts
 
-Debe existir número/etiqueta.
+Probar:
 
----
+1. entrar como Admin;
+2. Plantillas;
+3. Configurar T1;
+4. capturar orden inicial;
+5. arrastrar una sección movible;
+6. verificar nuevo orden;
+7. guardar;
+8. cerrar/reabrir;
+9. orden persiste;
+10. Restaurar predeterminado;
+11. orden vuelve al original.
 
-# E2E DEL RESALTADO
+Además:
 
-Añadir una prueba Playwright específica.
+12. intentar mover bloque bloqueado;
+13. comprobar que no cambia.
 
-Sugerencia:
+14. Configurar T2;
+15. comprobar que orden T2 es independiente.
 
-tests/e2e/highlight-observation.spec.ts
+------------------------------------------------------------
+F9. APLICACIÓN EN DOCUMENTO
+------------------------------------------------------------
 
-Escenario:
+IMPORTANTE:
 
-1. Reset DEMO.
-2. Crear/usar Plan en revisión.
-3. Cambiar sesión a revisor asignado.
-4. Abrir documento.
-5. Ir a página 4.
-6. Activar “Resaltar y observar”.
-7. Ejecutar mouse drag sobre una región estable del A4.
-8. Registrar:
-   “Corregir esta actividad”.
-9. Verificar:
-   Observaciones (1)
-10. Verificar que existe anchor.
-11. Verificar:
-   anchor.pageNumber === 4
-12. Verificar:
-   0 <= x <= 1
-   0 <= y <= 1
-   width > 0
-   height > 0
-13. Cambiar a página 2.
-14. Pulsar “Ir al resaltado”.
-15. Verificar página 4.
-16. Verificar resaltado visible.
-17. Cambiar zoom.
-18. Verificar que el anchor sigue correspondiendo a la misma zona.
-19. Recargar.
-20. Verificar persistencia.
-21. Devolver.
-22. Cambiar sesión realmente a Andrea.
-23. Continuar corrección.
-24. Verificar observación + resaltado.
-25. Marcar resuelta.
-26. Preparar Ronda 2.
-27. Verificar:
-    - ronda 2;
-    - formalVersion 1.0;
-    - observación anterior histórica;
-    - artifactHistory intacto.
+No basta con mover tarjetas solo visualmente.
 
-Si Playwright no permite comparar geométricamente con precisión absoluta debido a fuentes/renderizado:
+Si la configuración actual del motor documental permite que el orden controle realmente el documento generado, conecta el builder con esa configuración.
 
-usar tolerancia razonable.
+Si hacerlo contradice el formato institucional rígido:
 
-NO crear pruebas extremadamente frágiles por diferencias de 1-2 píxeles.
+NO inventes libertad absoluta.
 
----
+En ese caso:
+- permite ordenar únicamente las secciones realmente configurables;
+- documenta los límites.
 
-# AUDITORÍA VISUAL COMPLEMENTARIA
+El mockup debe demostrar configuración real sin falsificar que todo el formato es editable.
 
-Después de las cuatro correcciones anteriores, revisa específicamente T1:
+============================================================
+4. HALLAZGOS ADICIONALES RELACIONADOS
+============================================================
 
-## Página 1
+Si mientras trabajas encuentras un bug DIRECTAMENTE relacionado con A–F:
 
-Debe conservar:
+- corrígelo;
+- agrega regresión;
+- documenta.
 
-- encabezado institucional;
-- Facultad;
-- Carrera;
-- Fecha de elaboración;
-- UNIVERSIDAD TÉCNICA DE AMBATO;
-- UNIDAD ACADÉMICA / ADMINISTRATIVA;
-- PLAN DE TRABAJO DE;
-- PERÍODO;
-- bloque principal equilibrado verticalmente.
+Si encuentras algo no relacionado:
 
-NO mover nuevamente la portada si ya cumple.
+NO amplíes el alcance.
 
-## Footer
+Añádelo a:
+“HALLAZGOS PENDIENTES”
 
-Conservar:
+en el reporte.
 
-izquierda:
-“Documento de uso interno controlado por la Universidad Técnica de Ambato”
+============================================================
+5. PRUEBAS OBLIGATORIAS
+============================================================
 
-centro:
-“Formato Nº: UTA-SGC-A-2-1-P7-T1”
-
-derecha:
-número dinámico.
-
-UNA sola fila.
-
-SIN border-top.
-
-SIN hr.
-
-## Página índice
-
-Páginas derivadas de artifact.pages.
-
-Nunca hardcodear 5.
-
-## Matriz
-
-Si todos son responsables:
-
-debe utilizar la denominación colectiva corregida.
-
-## Página final
-
-Conservar:
-
-ANEXOS
-FIRMAS DE RESPONSABILIDAD
-CONTROL DE HISTORIAL DE CAMBIOS
-
-Primera descripción:
-
-“Elaboración del Plan de Trabajo”
-
----
-
-# NO REGRESIONES CRÍTICAS
-
-Después de los cambios deben seguir funcionando:
-
-1. Unicidad del Plan.
-2. Duplicate modal.
-3. Continuar corrección.
-4. Otro recurso.
-5. Otro medio.
-6. Responsables parciales.
-7. Responsables totales.
-8. Feriados.
-9. 23:59.
-10. Permisos.
-11. Identidad/contexto separados.
-12. Sesión real de revisor.
-13. Revisores paralelos.
-14. Coordinación secuencial.
-15. Validación final.
-16. Devolución.
-17. Ronda 2 sin versión formal 2.0.
-18. artifactHistory.
-19. T2 derivado.
-20. aislamiento Plan/Informe.
-21. Evidencias.
-22. reemplazo de evidencia.
-23. evidencia v2.0.
-24. cierre DEMO.
-25. histórico solo lectura.
-26. reset.
-27. notificaciones.
-28. reportes.
-29. flujo incompleto.
-30. snapshots T1.
-31. snapshots T2.
-
----
-
-# NO HACER
-
-NO introducir backend.
-
-NO introducir API.
-
-NO introducir PostgreSQL.
-
-NO introducir Firebase.
-
-NO introducir Supabase.
-
-NO introducir firma criptográfica real.
-
-NO introducir almacenamiento cloud.
-
-NO crear QR falsos.
-
-NO crear hashes falsos.
-
-NO inventar procedimiento QIPOC.
-
-NO inventar decisión del Consejo Directivo.
-
-NO inventar cargos o revisores.
-
-NO modificar formatos institucionales sin evidencia.
-
-NO migrar a otro framework.
-
-NO cambiar la paleta institucional.
-
-NO eliminar datos DEMO necesarios para pruebas.
-
-NO convertir el mockup en un producto de producción.
-
-NO reescribir componentes completos que ya están estables.
-
----
-
-# PRUEBAS OBLIGATORIAS
-
-Al finalizar ejecuta:
+Al finalizar ejecutar EN ESTE ORDEN:
 
 npx tsc --noEmit
 
@@ -874,234 +1234,357 @@ npm run build
 
 node --test tests/document-engine.test.mjs
 
+Ejecutar individualmente cada spec nuevo:
+
+npx playwright test tests/e2e/ai-writing-assistant.spec.ts
+
+npx playwright test tests/e2e/institutional-units.spec.ts
+
+npx playwright test tests/e2e/t2-derived-validation.spec.ts
+
+npx playwright test tests/e2e/admin-dashboard.spec.ts
+
+npx playwright test tests/e2e/template-builder.spec.ts
+
+y cualquier spec adicional nuevo.
+
+Después:
+
 npm run test:e2e
 
-Además ejecutar individualmente las nuevas pruebas antes de la suite completa.
+Toda la suite debe pasar.
 
-La suite actual parte aproximadamente de:
+La suite actual tiene alrededor de:
 
-17 E2E PASS
-+
-1 Node PASS
+19 E2E
 
-El resultado final NO puede tener menos cobertura.
+No reportes números inventados.
 
-Si actualizas una prueba porque un requisito confirmado cambió:
+Reporta el número real final.
 
-documenta explícitamente:
+============================================================
+6. VISUAL REGRESSION
+============================================================
 
-ANTES:
-comportamiento esperado anterior
+T1 y T2 tienen snapshots.
 
-AHORA:
-comportamiento confirmado por reunión
+Ante fallo:
 
-FUENTE:
-decisión de reunión
+NO hacer automáticamente:
+--update-snapshots
 
-No “arregles” un test solamente para hacerlo pasar.
+Primero inspeccionar.
 
----
+Solo actualizar si:
 
-# SNAPSHOTS
+- la modificación proviene de una corrección institucional confirmada;
+- el nuevo resultado coincide mejor con Documentos_guia.
 
-Solo actualizar snapshots si existe un cambio visual legítimo derivado de estos requerimientos.
+Documentar:
+- snapshot anterior;
+- snapshot nuevo;
+- razón.
 
-NO regenerar snapshots masivamente.
+============================================================
+7. ACCESIBILIDAD Y TESTABILIDAD
+============================================================
 
-Si cambia la matriz únicamente porque:
+Puedes añadir únicamente lo necesario:
 
-“Integrantes de la Unidad”
+aria-label
+aria-describedby
+role
+title
+data-testid
 
-pasa a:
+Ejemplos:
 
-“Responsable de la unidad”
+data-testid="ai-suggestion-apply"
+data-testid="institutional-unit-type"
+data-testid="institutional-unit-select"
+data-testid="career-select"
+data-testid="template-section-justification"
+data-testid="template-drag-handle"
+data-testid="admin-dashboard"
 
-entonces actualizar exclusivamente los snapshots afectados.
+No contaminar toda la UI.
 
-Conservar cualquier otro snapshot sin modificaciones.
+============================================================
+8. NO HACER
+============================================================
 
----
+NO backend.
 
-# DOCUMENTACIÓN
+NO PostgreSQL.
+
+NO Firebase.
+
+NO Supabase.
+
+NO AWS.
+
+NO API real de IA.
+
+NO S3.
+
+NO autenticación productiva.
+
+NO firma criptográfica.
+
+NO QR.
+
+NO hash ficticio.
+
+NO editor PDF real.
+
+NO canvas gráfico complejo.
+
+NO diseñador WYSIWYG completo.
+
+NO ranking de docentes.
+
+NO desempeño laboral.
+
+NO predicciones.
+
+NO inventar normas institucionales.
+
+NO reescribir arquitectura estable.
+
+NO cambiar colores globales.
+
+============================================================
+9. DOCUMENTACIÓN
+============================================================
 
 Actualizar:
 
 implementation-status.md
 
-y crear o actualizar:
+Crear:
 
-reporte-correcciones-post-reunion.md
+reporte-pasada-focalizada-ui-documentos.md
 
-El reporte debe incluir:
+Debe incluir:
 
-# Reporte de correcciones post-reunión
+# Reporte — Pasada focalizada UI y documentos
 
-## 1. Fuentes revisadas
+## 1. Fuentes institucionales revisadas
 
-## 2. Responsable colectivo
-- comportamiento anterior;
-- requerimiento confirmado;
-- implementación;
-- persistencia de IDs;
-- consumidores corregidos;
-- pruebas.
+Indicar:
+- PDF T1 firmado
+- DOCX T2
+- requirements
+- reuniones
 
-## 3. Historial inicial
-- texto anterior;
-- texto final;
-- alcance.
+## 2. Asistente IA
 
-## 4. Firmar y finalizar
-- transcripción/requisito encontrado;
-- comportamiento anterior;
-- decisión final;
-- si cambió o no;
-- justificación;
-- pruebas actualizadas.
+- causa raíz;
+- campos afectados;
+- solución;
+- autosave;
+- tests.
 
-## 5. Resaltar y observar
-- estado previo;
-- componentes reutilizados;
-- funcionamiento;
-- coordenadas;
-- zoom;
+## 3. Encabezado T1
+
+- diferencia anterior;
+- estructura oficial;
+- implementación final;
+- snapshots.
+
+## 4. Unidad académica / administrativa
+
+- modelo;
+- catálogo;
+- comportamiento T1;
+- comportamiento T2;
+- Administración;
+- tests.
+
+## 5. T2
+
+- errores encontrados;
+- título;
+- header;
+- relación Plan;
+- importación;
+- tabla;
+- firmas;
+- footer;
+- aislamiento;
+- snapshots.
+
+## 6. Dashboard administrador
+
+- métricas;
 - navegación;
-- corrección;
-- historial.
+- restricciones;
+- capturas/test.
 
-## 6. Archivos modificados
+## 7. Configurador de plantillas
 
-## 7. Nuevas pruebas
+- drag/drop;
+- bloques bloqueados;
+- propiedades;
+- persistencia;
+- aplicación;
+- reset;
+- tests.
 
-## 8. Resultados completos
+## 8. Bugs adicionales encontrados
 
-## 9. Bugs reales encontrados
+Solo relacionados.
 
-## 10. Pendientes institucionales
+## 9. Archivos modificados
 
-## 11. Riesgos restantes
+## 10. Tests nuevos
 
----
+## 11. Resultado de todos los comandos
 
-# CRITERIOS DE ACEPTACIÓN
+## 12. Snapshots modificados
 
-No declares completado el trabajo hasta comprobar:
+## 13. Pendientes institucionales reales
 
-### RESPONSABLES
+## 14. Riesgos que aún no tienen cobertura automática
 
-[ ] Seleccionar una persona muestra una persona.
+============================================================
+10. CRITERIO DE ACEPTACIÓN FINAL
+============================================================
 
-[ ] Seleccionar varias, pero no todas, muestra esas personas.
+NO declarar terminado hasta cumplir:
 
-[ ] Seleccionar todos usa denominación colectiva.
+-----------------------
+IA
+-----------------------
 
-[ ] IDs individuales permanecen guardados.
+[ ] Aplicar actualiza el campo correcto.
+[ ] Descartar conserva original.
+[ ] Autosave funciona.
+[ ] Persistencia tras reload.
+[ ] T1 probado.
+[ ] T2 probado.
 
-[ ] Desmarcar uno revierte a nombres individuales.
+-----------------------
+T1 HEADER
+-----------------------
 
-[ ] PDF usa la misma lógica.
+[ ] Coincide estructuralmente con PDF firmado.
+[ ] Facultad/Carrera están en la celda correcta.
+[ ] Fecha correcta.
+[ ] Portada central conserva alineación.
+[ ] Footer no regresó.
+[ ] Snapshot revisado.
 
-[ ] T2/ejecución/evidencias no pierden permisos.
+-----------------------
+UNIDAD
+-----------------------
 
-### HISTORIAL
+[ ] Tipo académica/administrativa seleccionable.
+[ ] Catálogo controlado por Admin.
+[ ] Unidad académica permite carrera.
+[ ] Unidad administrativa no exige carrera.
+[ ] T1 consume catálogo.
+[ ] T2 consume catálogo.
+[ ] Documento histórico no se rompe.
 
-[ ] Primera entrada usa “Elaboración del Plan de Trabajo”.
+-----------------------
+T2
+-----------------------
 
-[ ] Versión y ronda no cambian por esta corrección.
+[ ] No existe “INFORME DE: INFORME DE”.
+[ ] Header coincide con plantilla T2.
+[ ] Derivado exige Plan.
+[ ] Plan válido importa actividades.
+[ ] Tabla no queda vacía indebidamente.
+[ ] Informe independiente no simula derivación.
+[ ] Contactos coherentes.
+[ ] Firmas dinámicas.
+[ ] pageCount dinámico.
+[ ] footer T2 correcto.
+[ ] Plan origen no se modifica.
+[ ] visual regression revisada.
 
-### FIRMA
+-----------------------
+DASHBOARD
+-----------------------
 
-[ ] Se investigó la última decisión real.
+[ ] Existe resumen operativo.
+[ ] Sin rankings.
+[ ] Sin scoring.
+[ ] Conteos coherentes.
+[ ] UI institucional.
+[ ] smoke E2E.
 
-[ ] Comportamiento implementado coincide con la decisión más reciente.
+-----------------------
+PLANTILLAS
+-----------------------
 
-[ ] Flujo incompleto no inventa actores.
+[ ] Drag/drop real.
+[ ] Persistencia.
+[ ] Restaurar predeterminado.
+[ ] Secciones bloqueadas no movibles.
+[ ] T1 y T2 independientes.
+[ ] Configuración afecta solo nuevos documentos cuando corresponda.
+[ ] No se altera documento firmado histórico.
+[ ] E2E drag/drop PASS.
 
-[ ] No hay doble firma.
-
-[ ] No hay doble envío.
-
-### RESALTADO
-
-[ ] Existe Resaltar y observar.
-
-[ ] Mouse drag funciona.
-
-[ ] Observación queda vinculada.
-
-[ ] Página correcta.
-
-[ ] Coordenadas normalizadas.
-
-[ ] Persiste tras recarga.
-
-[ ] Ir al resaltado funciona.
-
-[ ] Zoom no desalineó significativamente la marca.
-
-[ ] Docente ve el resaltado durante corrección.
-
-[ ] Observación resuelta queda histórica.
-
-[ ] Artefacto firmado no se modifica.
-
-### REGRESIÓN
+-----------------------
+REGRESIÓN
+-----------------------
 
 [ ] TypeScript PASS.
-
 [ ] Build PASS.
-
 [ ] Motor PASS.
+[ ] Nuevos E2E PASS.
+[ ] Suite completa E2E PASS.
+[ ] Snapshots válidos.
+[ ] Sin pérdida de cobertura previa.
 
-[ ] E2E completo PASS.
+============================================================
+11. PRIORIDAD
+============================================================
 
-[ ] Ninguna funcionalidad institucional previamente estable se degradó.
+Orden de prioridad:
 
----
+1. Corrección funcional real.
+2. Fidelidad institucional T1/T2.
+3. Consistencia de estado.
+4. No regresiones.
+5. Configurabilidad DEMO.
+6. UX.
+7. Apariencia.
 
-# PRIORIDAD
+No sacrifiques fidelidad documental por facilidad técnica.
 
-Prioridad de decisión:
+============================================================
+12. ENTREGA
+============================================================
 
-1. Última decisión explícita del cliente/reunión.
-2. Documento institucional oficial.
-3. requirements.md actualizado con evidencia real.
-4. Arquitectura documental ya estabilizada.
-5. UX.
-6. Conveniencia técnica.
+Trabaja directamente sobre el proyecto.
 
-No uses una solución técnicamente cómoda si contradice lo solicitado por el cliente.
+No me respondas con una propuesta.
 
----
+Debes:
 
-# FORMA DE TRABAJO
+INSPECCIONAR
+→ REPRODUCIR
+→ CORREGIR
+→ IMPLEMENTAR E2E
+→ EJECUTAR
+→ CORREGIR REGRESIONES
+→ VALIDAR SNAPSHOTS
+→ DOCUMENTAR
 
-Quiero que trabajes directamente sobre el proyecto.
+Al terminar responde únicamente con:
 
-NO me devuelvas únicamente recomendaciones.
+1. resumen breve;
+2. bugs reales encontrados;
+3. cantidad final E2E PASS/FAIL;
+4. resultado TypeScript/build/motor;
+5. snapshots modificados;
+6. archivos principales modificados;
+7. pendientes institucionales;
+8. ruta de reporte-pasada-focalizada-ui-documentos.md.
 
-Inspecciona.
-Reproduce.
-Corrige.
-Prueba.
-Vuelve a probar.
-Documenta.
-
-Si encuentras un defecto adicional directamente relacionado con estos cuatro puntos, corrígelo si la solución es segura y agrega una regresión.
-
-Si encuentras algo no relacionado:
-NO amplíes el alcance.
-Regístralo como hallazgo pendiente.
-
-Al terminar, entrégame el reporte técnico completo junto con:
-
-- cantidad final de E2E;
-- PASS/FAIL;
-- archivos modificados;
-- bugs encontrados;
-- decisión final sobre Firmar y finalizar;
-- evidencia de la denominación colectiva;
-- estado real de Resaltar y observar;
-- si hubo actualización de snapshots;
-- cualquier discrepancia aún pendiente con la última reunión.
+No continúes con mejoras adicionales después de completar esta tarea.
+Detente.

@@ -12,7 +12,7 @@ import RevisarEvidenciaView from "./modulo6/RevisarEvidenciaView";
 import SeguimientoPlanesView from "./modulo6/SeguimientoPlanesView";
 import DetalleSeguimientoPlanView from "./modulo6/DetalleSeguimientoPlanView";
 import { GRUPOS_ADMIN_INICIALES, RECURSOS_CATALOGO_INICIALES, MEDIOS_CATALOGO_INICIALES } from "./modulo7/mockDataAdmin";
-import { GrupoInstitucional, PeriodoAcademico, FeriadoItem } from "./modulo7/types";
+import { GrupoInstitucional, PeriodoAcademico, FeriadoItem, TipoUnidadInstitucional, UnidadInstitucional } from "./modulo7/types";
 import { useAdminState } from "./modulo7/useAdminState";
 import AdminDashboardView from "./modulo7/AdminDashboardView";
 import UsuariosView from "./modulo7/UsuariosView";
@@ -25,6 +25,7 @@ import FlujosAprobacionView from "./modulo7/FlujosAprobacionView";
 import ConfigurarFlujoView from "./modulo7/ConfigurarFlujoView";
 import FeriadosView from "./modulo7/FeriadosView";
 import PlantillasDocumentalesView from "./modulo7/PlantillasDocumentalesView";
+import UnidadesInstitucionalesView from "./modulo7/UnidadesInstitucionalesView";
 import { useNotificacionesState } from "./modulo8/useNotificacionesState";
 import { useAuditoriaState } from "./modulo8/useAuditoriaState";
 import NotificacionesDropdown from "./modulo8/NotificacionesDropdown";
@@ -81,6 +82,7 @@ type AppView =
   | "adminFlujos"
   | "adminFeriados"
   | "adminPlantillas"
+  | "adminUnidades"
   | "adminAuditoria"
   | "reportes"
   | "cierrePeriodos";
@@ -802,6 +804,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
     { id: "adminPeriodos",     label: "Períodos Académicos",     icon: Ico.clock },
     { id: "adminActividades",  label: "Catálogo Actividades",    icon: Ico.activity },
     { id: "adminCatalogos",    label: "Recursos y Medios",       icon: Ico.paperclip },
+    { id: "adminUnidades",     label: "Unidades Institucionales",icon: Ico.home },
     { id: "adminFlujos",       label: "Flujos de Aprobación",    icon: Ico.shieldCheck },
     { id: "adminFeriados",     label: "Feriados y Restricciones",icon: Ico.alert },
     { id: "adminPlantillas",   label: "Plantillas Documentales", icon: Ico.file },
@@ -1024,6 +1027,7 @@ function TopBar({
     adminFlujos: "Flujos de Aprobación",
     adminFeriados: "Feriados y Días Restringidos",
     adminPlantillas: "Plantillas Documentales",
+    adminUnidades: "Unidades Académicas y Administrativas",
     adminAuditoria: "Auditoría Institucional",
     reportes: "Reportes y Consulta Histórica",
     cierrePeriodos: "Cierre de Períodos Académicos",
@@ -1932,12 +1936,13 @@ function PlanesListado({ onNew, onContinuar, planEstado, formalVersion = "1.0", 
 
 // ─── 02 — Información General ─────────────────────────────────────────────────
 
-function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, onChange, grupos, periodos, elaborador, error, onSave }: { onNext: () => void; onCancel: () => void; maxReached?: number; grupo: string; periodo: string; onChange: (v: Partial<PlanDraft>) => void; grupos: GrupoInstitucional[]; periodos: PeriodoAcademico[]; elaborador: string; error: string; onSave: () => void }) {
+function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, unitType, institutionalUnitId, careerId, onChange, grupos, periodos, unidades, elaborador, error, onSave }: { onNext: () => void; onCancel: () => void; maxReached?: number; grupo: string; periodo: string; unitType: TipoUnidadInstitucional; institutionalUnitId: string; careerId: string; onChange: (v: Partial<PlanDraft>) => void; grupos: GrupoInstitucional[]; periodos: PeriodoAcademico[]; unidades: UnidadInstitucional[]; elaborador: string; error: string; onSave: () => void }) {
   const setGrupo = (grupo: string) => onChange({grupo});
   const setPeriodo = (periodo: string) => onChange({periodo});
   const [saving] = useState(false);
   const [showExit, setShowExit] = useState(false);
-  const canContinue = grupos.some(g => g.nombre === grupo) && periodos.some(p => p.nombre === periodo);
+  const selectedUnit = unidades.find(u => u.id === institutionalUnitId && u.tipo === unitType);
+  const canContinue = grupos.some(g => g.nombre === grupo) && periodos.some(p => p.nombre === periodo) && Boolean(selectedUnit) && (unitType === "ADMINISTRATIVE" || Boolean(selectedUnit?.carreras.some(c => c.id === careerId && c.estado === "ACTIVO")));
   const [showMembers,setShowMembers] = useState(false);
 
   return (
@@ -1977,6 +1982,15 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, on
                   </select>
                   <div className="form-hint">Las fechas de las actividades deben estar dentro de este período.</div>
                 </div>
+              </div>
+            </div>
+
+            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 14 }}>Procedencia institucional</h3>
+              <div style={{ display: "grid", gridTemplateColumns: unitType === "ACADEMIC" ? "1fr 1.4fr 1.2fr" : "1fr 2fr", gap: 14 }}>
+                <div><label className="form-label required">Tipo de unidad</label><select className="form-select" data-testid="institutional-unit-type" value={unitType} onChange={e=>{const nextType=e.target.value as TipoUnidadInstitucional;const first=unidades.find(u=>u.tipo===nextType&&u.estado==="ACTIVO");onChange({unitType:nextType,institutionalUnitId:first?.id||"",careerId:nextType==="ACADEMIC"?(first?.carreras.find(c=>c.estado==="ACTIVO")?.id||""):""});}}><option value="ACADEMIC">Unidad académica</option><option value="ADMINISTRATIVE">Unidad administrativa</option></select></div>
+                <div><label className="form-label required">Unidad</label><select className="form-select" data-testid="institutional-unit-select" value={institutionalUnitId} onChange={e=>{const u=unidades.find(x=>x.id===e.target.value);onChange({institutionalUnitId:e.target.value,careerId:u?.tipo==="ACADEMIC"?(u.carreras.find(c=>c.estado==="ACTIVO")?.id||""):""});}}><option value="">— Seleccione —</option>{unidades.filter(u=>u.tipo===unitType&&u.estado==="ACTIVO").map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></div>
+                {unitType === "ACADEMIC" && <div><label className="form-label required">Carrera</label><select className="form-select" data-testid="career-select" value={careerId} onChange={e=>onChange({careerId:e.target.value})}><option value="">— Seleccione —</option>{selectedUnit?.carreras.filter(c=>c.estado==="ACTIVO").map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>}
               </div>
             </div>
 
@@ -3146,7 +3160,6 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
     } else {
       setObjetivo(aiModal.suggestion);
     }
-    onSave?.();
     setAiModal(null);
   }
 
@@ -3224,8 +3237,8 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
               </div>
             </div>
             <div style={{ padding: "14px 24px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-ghost" onClick={() => setAiModal(null)}>DESCARTAR</button>
-              <button className="btn btn-primary" style={{ background: "#7c3aed", border: "none" }} onClick={applyAiSuggestion}>APLICAR SUGERENCIA</button>
+              <button className="btn btn-ghost" data-testid="ai-suggestion-discard" onClick={() => setAiModal(null)}>DESCARTAR</button>
+              <button className="btn btn-primary" data-testid="ai-suggestion-apply" style={{ background: "#1a4f8a", border: "none" }} onClick={applyAiSuggestion}>APLICAR SUGERENCIA</button>
             </div>
           </div>
         </div>
@@ -3268,7 +3281,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                     </span>
                   )}
                   <div style={{ position: "relative" }}>
-                    <button className="btn btn-ghost btn-xs" style={{ fontSize: 11.5, gap: 4, border: "1px solid #e9d5ff", color: "#7c3aed", background: "#faf5ff" }}
+                    <button className="btn btn-ghost btn-xs" aria-label="Mejorar redacción de Justificación" style={{ fontSize: 11.5, gap: 4, border: "1px solid #bfdbfe", color: "#1a4f8a", background: "#eff6ff" }}
                       onClick={e => { e.stopPropagation(); setAiMenu(aiMenu === "justificacion" ? null : "justificacion"); }}>
                       ✨ MEJORAR REDACCIÓN
                     </button>
@@ -3297,6 +3310,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                 className="form-textarea"
                 style={{ minHeight: 130, fontSize: 13.5, lineHeight: 1.65, resize: "vertical" }}
                 value={justificacion}
+                aria-label="Justificación"
                 onChange={e => setJustificacion(e.target.value)}
                 placeholder="Describa la necesidad, contexto y fundamento..."
               />
@@ -3324,7 +3338,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                     </span>
                   )}
                   <div style={{ position: "relative" }}>
-                    <button className="btn btn-ghost btn-xs" style={{ fontSize: 11.5, gap: 4, border: "1px solid #e9d5ff", color: "#7c3aed", background: "#faf5ff" }}
+                    <button className="btn btn-ghost btn-xs" aria-label="Mejorar redacción de Objetivo" style={{ fontSize: 11.5, gap: 4, border: "1px solid #bfdbfe", color: "#1a4f8a", background: "#eff6ff" }}
                       onClick={e => { e.stopPropagation(); setAiMenu(aiMenu === "objetivo" ? null : "objetivo"); }}>
                       ✨ MEJORAR OBJETIVO
                     </button>
@@ -3353,6 +3367,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                 className="form-textarea"
                 style={{ minHeight: 90, fontSize: 13.5, lineHeight: 1.65, resize: "vertical" }}
                 value={objetivo}
+                aria-label="Objetivo"
                 onChange={e => setObjetivo(e.target.value)}
                 placeholder="Defina el objetivo general..."
               />
@@ -3820,6 +3835,9 @@ const DEFAULT_JUSTIFICACION = "La Comisión de Eventos Académicos de la FISEI p
 const DEFAULT_OBJETIVO = "Organizar y ejecutar 5 eventos académicos institucionales de alto impacto durante el período académico Julio – Diciembre 2026, garantizando la participación de docentes y estudiantes.";
 
 interface PlanDraft {
+  unitType: TipoUnidadInstitucional;
+  institutionalUnitId: string;
+  careerId: string;
   fuente: string;
   collectsPersonalData: boolean;
   grupo: string;
@@ -3837,6 +3855,9 @@ function todayFormatted() {
 }
 
 const DEFAULT_DRAFT: PlanDraft = {
+  unitType: "ACADEMIC",
+  institutionalUnitId: "unit-fisei",
+  careerId: "career-software",
   fuente: "",
   collectsPersonalData: false,
   grupo: "Unidad de Titulación",
@@ -3877,6 +3898,8 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
   const [formError, setFormError] = useState("");
 
   const grupoActual = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).find(g => g.nombre === draft.grupo);
+  const unidadActual = adminState?.unidadesInstitucionales.find(u => u.id === draft.institutionalUnitId);
+  const carreraActual = unidadActual?.carreras.find(c => c.id === draft.careerId);
   const periodoActual = adminState?.periodos.find(p => p.nombre === draft.periodo);
   const miembrosAplicables = (grupoActual?.miembros || []).filter(m => !adminState || adminState.usuarios.some(u => u.id === m.usuarioId && u.estado === "ACTIVO"));
   const responsablesGrupo = miembrosAplicables.map(m => m.nombreCompleto);
@@ -3897,7 +3920,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
     let saved: Partial<PlanDraft> = {};
     try { saved = JSON.parse(localStorage.getItem(`${DRAFT_KEY}:${docId}`) || "{}"); } catch {}
     const a = doc.currentArtifact;
-    setDraftState({...DEFAULT_DRAFT, grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", collectsPersonalData:a.collectsPersonalData || false, justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m,categoria:"Actividad",tipo:"otra",descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
+    setDraftState({...DEFAULT_DRAFT, unitType:a.institutionalUnitType || "ACADEMIC", institutionalUnitId:a.institutionalUnitId || "unit-fisei", careerId:a.careerId || "career-software", grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", collectsPersonalData:a.collectsPersonalData || false, justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m,categoria:"Actividad",tipo:"otra",descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
   }
 
   function updateDraft(changes: Partial<PlanDraft>) {
@@ -3933,7 +3956,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           <MisDocumentosView
             docEngine={docEngine}
             grupos={gruposDisponibles} periodos={adminState?.periodos || []}
-            onNewPlan={(groupId, periodId) => { const selectedGroup=gruposDisponibles.find(g => g.id === groupId); const selectedPeriod=adminState?.periodos.find(p => p.id === periodId); if(!selectedGroup || !selectedPeriod)return; docEngine.crearNuevoDocumento("PLAN_TRABAJO", {groupId,periodId,grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre}); setDraftState({...structuredClone(DEFAULT_DRAFT),grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre,matriz:[],objetivo:"",justificacion:selectedGroup.descripcion || "",fechaElaboracion:todayFormatted()}); setMaxReached(1); setFormError(""); setSub("step1"); }}
+            onNewPlan={(groupId, periodId) => { const selectedGroup=gruposDisponibles.find(g => g.id === groupId); const selectedPeriod=adminState?.periodos.find(p => p.id === periodId); const firstUnit=adminState?.unidadesInstitucionales.find(u=>u.estado==="ACTIVO"&&u.tipo==="ACADEMIC"); const firstCareer=firstUnit?.carreras.find(c=>c.estado==="ACTIVO"); if(!selectedGroup || !selectedPeriod)return; docEngine.crearNuevoDocumento("PLAN_TRABAJO", {groupId,periodId,grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre,institutionalUnitType:firstUnit?.tipo,institutionalUnitId:firstUnit?.id,unidadAcademica:firstUnit?.nombre,careerId:firstCareer?.id,carrera:firstCareer?.nombre}); setDraftState({...structuredClone(DEFAULT_DRAFT),unitType:firstUnit?.tipo||"ACADEMIC",institutionalUnitId:firstUnit?.id||"unit-fisei",careerId:firstCareer?.id||"career-software",grupo:selectedGroup.nombre,periodo:selectedPeriod.nombre,matriz:[],objetivo:"",justificacion:selectedGroup.descripcion || "",fechaElaboracion:todayFormatted()}); setMaxReached(1); setFormError(""); setSub("step1"); }}
             onNewInforme={() => {setInformeEditId(undefined); setSub("wizardInforme");}}
             onContinuarInforme={id => {setInformeEditId(id); setSub("wizardInforme");}}
             onContinuarPlan={(docId) => {
@@ -3965,16 +3988,18 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
       {sub === "wizardInforme" && docEngine && (
         <WizardInformeView
           docEngine={docEngine}
+          adminState={adminState!}
           onFinish={() => setSub("list")}
           onCancel={() => setSub("list")}
         />
       )}
       {sub !== "list" && docEngine?.docMaster.documentState === "EN CORRECCIÓN" && <details style={{padding:"8px 28px"}}><summary>Ver observaciones y resaltados del documento devuelto</summary><div style={{height:650}}><DocumentPdfPageViewer artifact={docEngine.currentArtifact} formalVersion={docEngine.docMaster.formalVersion} reviewRound={docEngine.docMaster.reviewRound} documentState="EN CORRECCIÓN" observations={docEngine.observations} flowStages={docEngine.flowStages} currentUser={{id:docEngine.currentArtifact.elaborador.id,nombre:docEngine.currentArtifact.elaborador.nombre,cargo:docEngine.currentArtifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} onResolveObservacion={id => docEngine.resolverObservacion(docEngine.docMaster.id,id)} /></div></details>}
       {sub === "step1" && (
-        <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} elaborador={docEngine?.currentUser.nombre || DOCENTE.nombre} error={formError} onSave={() => saveDraft({})} onChange={v => {setFormError("");saveDraft(v.grupo && v.grupo !== draft.grupo ? {...v,matriz:[],justificacion:gruposDisponibles.find(g => g.nombre === v.grupo)?.descripcion || "",objetivo:""} : v);}} grupos={gruposDisponibles} periodos={adminState?.periodos.filter(p => p.estado === "ACTIVO") || []} maxReached={maxReached} onNext={() => {
+        <Step1InfoGeneral grupo={draft.grupo} periodo={draft.periodo} unitType={draft.unitType} institutionalUnitId={draft.institutionalUnitId} careerId={draft.careerId} elaborador={docEngine?.currentUser.nombre || DOCENTE.nombre} error={formError} onSave={() => saveDraft({})} onChange={v => {setFormError("");saveDraft(v.grupo && v.grupo !== draft.grupo ? {...v,matriz:[],justificacion:gruposDisponibles.find(g => g.nombre === v.grupo)?.descripcion || "",objetivo:""} : v);}} grupos={gruposDisponibles} periodos={adminState?.periodos.filter(p => p.estado === "ACTIVO") || []} unidades={adminState?.unidadesInstitucionales || []} maxReached={maxReached} onNext={() => {
           const selectedPeriod=adminState?.periodos.find(p=>p.nombre===draft.periodo);
           if (docEngine?.documents.some(d => d.id !== docEngine.docMaster.id && d.documentType === "PLAN_TRABAJO" && d.teacherId === docEngine.currentUser.id && d.groupId === grupoActual?.id && d.periodId === selectedPeriod?.id)) {setFormError("Ya existe un Plan de Trabajo para este docente, grupo y período.");return;}
-          if (docEngine && grupoActual && selectedPeriod) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{groupId:grupoActual.id,periodId:selectedPeriod.id,grupo:draft.grupo,periodo:draft.periodo}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual.id); if(flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
+          if (!unidadActual || (draft.unitType === "ACADEMIC" && !carreraActual)) {setFormError("Seleccione una unidad institucional válida y su carrera cuando corresponda.");return;}
+          if (docEngine && grupoActual && selectedPeriod) {docEngine.actualizarDatosBasicos(docEngine.docMaster.id,{groupId:grupoActual.id,periodId:selectedPeriod.id,grupo:draft.grupo,periodo:draft.periodo,institutionalUnitType:draft.unitType,institutionalUnitId:unidadActual.id,unidadAcademica:unidadActual.nombre,careerId:draft.unitType==="ACADEMIC"?carreraActual?.id:undefined,carrera:draft.unitType==="ACADEMIC"?carreraActual?.nombre:""}); const flow=adminState?.flujos.find(f => f.grupoId === grupoActual.id); if(flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(docEngine.docMaster.id,flowFromConfiguration(flow,adminState.usuarios));}
           setMaxReached(m => Math.max(m, 2)); setSub("step4"); }} onCancel={() => setSub("list")} />
       )}
       {sub === "step2" && (
@@ -4017,9 +4042,9 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           textoBase={grupoActual?.descripcion}
           maxReached={maxReached}
           justificacion={draft.justificacion}
-          setJustificacion={v => updateDraft({ justificacion: v })}
+          setJustificacion={v => saveDraft({ justificacion: v })}
           objetivo={draft.objetivo}
-          setObjetivo={v => updateDraft({ objetivo: v })}
+          setObjetivo={v => saveDraft({ objetivo: v })}
           saving={saving}
           onSave={() => saveDraft({})}
           onPrev={() => setSub("step1")}
@@ -4048,14 +4073,14 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
             if (!base) throw new Error("Documento no seleccionado");
             const matriz = matrizDocumental;
             const pages = buildDocumentPages("PLAN_TRABAJO",matriz.length,docEngine?.flowStages || []);
-            return {...base,grupo:draft.grupo,periodo:draft.periodo,fuente:draft.fuente,collectsPersonalData:draft.collectsPersonalData,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""})),pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
+            return {...base,grupo:draft.grupo,periodo:draft.periodo,unidadAcademica:unidadActual?.nombre||base.unidadAcademica,institutionalUnitType:draft.unitType,institutionalUnitId:draft.institutionalUnitId,careerId:draft.careerId,carrera:draft.unitType==="ACADEMIC"?(carreraActual?.nombre||base.carrera):"",fuente:draft.fuente,collectsPersonalData:draft.collectsPersonalData,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""})),pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
           })()}
           onPrev={() => setSub("step5")}
           onNext={() => {
             if (docEngine) {
               const id = docEngine.docMaster.id;
               if (docEngine.docMaster.documentState === "EN CORRECCIÓN") docEngine.prepararNuevaRonda(id);
-              docEngine.actualizarDatosBasicos(id, {groupId:grupoActual?.id || docEngine.docMaster.groupId, periodId:periodoActual?.id || docEngine.docMaster.periodId, grupo:draft.grupo, periodo:draft.periodo});
+              docEngine.actualizarDatosBasicos(id, {groupId:grupoActual?.id || docEngine.docMaster.groupId, periodId:periodoActual?.id || docEngine.docMaster.periodId, grupo:draft.grupo, periodo:draft.periodo,institutionalUnitType:draft.unitType,institutionalUnitId:draft.institutionalUnitId,unidadAcademica:unidadActual?.nombre,carrera:draft.unitType==="ACADEMIC"?carreraActual?.nombre:"",careerId:draft.unitType==="ACADEMIC"?draft.careerId:undefined});
               const flow = adminState?.flujos.find(f => f.grupoId === grupoActual?.id);
               if (flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
               docEngine.generarArtefacto(id, {collectsPersonalData:draft.collectsPersonalData,fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: matrizDocumental, tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
@@ -4092,7 +4117,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [planesViewKey, setPlanesViewKey] = useState(0);
   const auditoriaState = useAuditoriaState();
   const adminState = useAdminState();
-  const docEngine = useDocumentEngine(auditoriaState.registrarEvento, {flujos:adminState.flujos,usuarios:adminState.usuarios,periodos:adminState.periodos});
+  const docEngine = useDocumentEngine(auditoriaState.registrarEvento, {flujos:adminState.flujos,usuarios:adminState.usuarios,periodos:adminState.periodos,plantillas:adminState.plantillas});
   const sessionAdmin=adminState.usuarios.find(u => canonicalDemoActorId(u.id) === docEngine.currentUser.id);
   const sessionDisplay={nombre:docEngine.currentUser.nombre,nombreCorto:docEngine.currentUser.nombre,correo:sessionAdmin?.correo || "",avatar:sessionAdmin ? sessionAdmin.nombres[0]+sessionAdmin.apellidos[0] : "DE",rol:userRole === "admin" ? "Administrador" : userRole === "revisor" ? "Revisor" : "Docente"};
   const reviewerGroupNames=adminState.flujos.filter(f => f.etapas.some(e => e.revisoresIds?.some(id => canonicalDemoActorId(id) === docEngine.currentUser.id))).map(f => f.grupoNombre);
@@ -4224,7 +4249,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 20px",background:"#eff6ff",borderBottom:"1px solid #bfdbfe",fontSize:12}}>
           <label>Sesión DEMO: <select aria-label="Cambiar persona de la sesión DEMO" value={sessionAdmin?.id || ""} onChange={e => {const u=adminState.usuarios.find(u => u.id === e.target.value);if(u){docEngine.simularSesionDemo(u.id,u.nombreCompleto);setPlanesViewKey(k=>k+1);setRevisorInitialSub("bandeja");setView(u.rol === "Administrador" ? "adminInicio" : u.rol.includes("Revisor") ? "bandeja" : "planes");setUserRole(u.rol === "Administrador" ? "admin" : u.rol.includes("Revisor") ? "revisor" : "docente");}}}>{adminState.usuarios.filter(u => u.estado === "ACTIVO").map(u => <option key={u.id} value={u.id}>{u.nombreCompleto}</option>)}</select></label>
           <span>Cambiar contexto conserva esta identidad.</span>
-          <button className="btn btn-ghost btn-xs" onClick={() => {docEngine.restablecerDemo();setPlanesViewKey(k=>k+1);setView("planes");}}>Restablecer documentos DEMO</button>
+          <button className="btn btn-ghost btn-xs" onClick={() => {docEngine.restablecerDemo();adminState.restablecerDemo();seguimientoState.restablecerDemo();setPlanesViewKey(k=>k+1);setView("planes");}}>Restablecer documentos DEMO</button>
         </div>
         <main style={{ flex: 1, overflowY: "auto", background: "#f0f4f8" }}>
           {view === "inicio" && (
@@ -4350,7 +4375,17 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
                 usuariosActivos: adminState.usuarios.filter(u => u.estado === "ACTIVO").length,
                 gruposInstitucionales: adminState.grupos.length,
                 periodoActivo: adminState.periodos.find(p => p.estado === "ACTIVO")?.nombre ?? "Julio – Diciembre 2026",
-                flujosConfigurados: adminState.flujos.length,
+                borradores: docEngine.documents.filter(d=>d.documentState === "BORRADOR" || d.documentState === "LISTO PARA FIRMA").length,
+                enRevision: docEngine.documents.filter(d=>d.documentState === "EN REVISIÓN" || d.documentState === "EN VALIDACIÓN FINAL").length,
+                enCorreccion: docEngine.documents.filter(d=>d.documentState === "EN CORRECCIÓN" || d.documentState === "DEVUELTO").length,
+                validados: docEngine.documents.filter(d=>d.documentState === "VALIDADO").length,
+                enEjecucion: docEngine.documents.filter(d=>d.documentState === "EN EJECUCIÓN" || d.operationalState === "EN EJECUCIÓN").length,
+                evidenciasPendientes: seguimientoState.actividades.flatMap(a=>a.medios).filter(m=>m.estado === "PENDIENTE DE VALIDACIÓN").length,
+                evidenciasObservadas: seguimientoState.actividades.flatMap(a=>a.medios).filter(m=>m.estado === "OBSERVADA").length,
+                evidenciasValidadas: seguimientoState.actividades.flatMap(a=>a.medios).filter(m=>m.estado === "VALIDADA").length,
+                flujosConfigurados: adminState.flujos.filter(f=>f.estado === "CONFIGURADO").length,
+                flujosPendientes: adminState.flujos.filter(f=>f.estado === "PENDIENTE").length,
+                actividadReciente: auditoriaState.eventos.slice(0,4).map(e=>`${e.accion}: ${e.objeto}`),
               }}
               onNavigate={(v) => {
                 if (v === "adminGrupos") setAdminSelectedGrupoId(null);
@@ -4414,6 +4449,9 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
               onToggleEstadoMedio={adminState.toggleEstadoMedio}
             />
           )}
+          {view === "adminUnidades" && (
+            <UnidadesInstitucionalesView unidades={adminState.unidadesInstitucionales} onGuardar={adminState.guardarUnidadInstitucional} onToggleEstado={adminState.toggleEstadoUnidadInstitucional} />
+          )}
           {view === "adminFlujos" && (
             adminSelectedFlujoGrupoId && adminState.flujos.find(f => f.grupoId === adminSelectedFlujoGrupoId) ? (
               <ConfigurarFlujoView
@@ -4442,6 +4480,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {view === "adminPlantillas" && (
             <PlantillasDocumentalesView
               plantillas={adminState.plantillas}
+              onGuardar={adminState.guardarConfiguracionPlantilla}
+              onRestaurar={adminState.restaurarConfiguracionPlantilla}
             />
           )}
 
