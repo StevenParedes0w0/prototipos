@@ -107,7 +107,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       justificacion: tipo === "PLAN_TRABAJO" ? JUSTIFICACION_INICIAL : undefined, objetivo: tipo === "PLAN_TRABAJO" ? OBJETIVO_INICIAL : undefined, matriz: tipo === "PLAN_TRABAJO" ? [] : undefined,
       informeData: tipo === "INFORME" ? { informeOrigen: datos.informeOrigen || "DERIVADO_PLAN", relatedPlanId: relatedPlan?.id, relatedPlanTitulo: relatedPlan?.nombre, antecedentes: datos.antecedentes || "", actividadesInforme: activities, conclusiones: "", oportunidadesMejora: "", aplicaRegistroContactos: false, contactosDelegacion: [] } : undefined,
       tieneAnexos: "no", anexos: [], signatures: [], signatureSlots: getSignatureSlots(pages),
-      historialCambios: [{ version: "1.0", descripcion: `Elaboración inicial del ${tipo === "INFORME" ? "Informe" : "Plan de Trabajo"}`, fecha: documentDate() }],
+      historialCambios: [{ version: "1.0", descripcion: tipo === "INFORME" ? "Elaboración inicial del Informe" : "Elaboración del Plan de Trabajo", fecha: documentDate() }],
     };
     const newDoc: DocumentMasterState = {
       id, teacherId, groupId, periodId, codigo: `DEMO-${tipo === "INFORME" ? "INF" : "PT"}-${Date.now()}`, codigoFormatoOficial, nombre: titulo, documentType: tipo, grupo, carrera, periodo,
@@ -164,9 +164,13 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const signature: DocumentSignature = { stageId: stage.id, actorId: stage.actorId, actor: doc.currentArtifact.elaborador.nombre, cargo: stage.actorCargo, role: "docente", fecha: documentDate(), hora: documentTime(), ubicacion: `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}`, credentialMode, isDemo: credentialMode === "demo" };
     const finalizedDate = doc.currentArtifact.elaborationFinalizedAt || documentDate();
     const artifact = { ...doc.currentArtifact, elaborationFinalizedAt: finalizedDate, signatures: [signature], historialCambios: (doc.currentArtifact.historialCambios || []).map((row, i) => i === 0 ? { ...row, fecha: finalizedDate } : row) };
+    const signedStages = doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO" as const, signature } : s);
+    const stages = activateNextStages(signedStages);
+    const next = stages.find(s => s.estado === "EN_CURSO");
+    if (!next || next.actorRole === "docente") return doc;
     signed = true;
-    return { ...doc, documentState: "FIRMADO POR ELABORADOR", currentArtifact: artifact, signedArtifact: structuredClone(artifact), flowStages: doc.flowStages.map(s => s.id === stage.id ? { ...s, estado: "FIRMADO", signature } : s), fechaUltimaActualizacion: timestamp() };
-    }, "DOCUMENTO FIRMADO", credentialMode === "demo" ? "Firma DEMO del elaborador; no corresponde a una firma electrónica real." : "Firma simulada del elaborador.");
+    return { ...doc, documentState: next.actorRole === "validador" ? "EN VALIDACIÓN FINAL" : "EN REVISIÓN", currentArtifact: artifact, signedArtifact: structuredClone(artifact), flowStages: stages, fechaUltimaActualizacion: timestamp() };
+    }, "DOCUMENTO FIRMADO Y ENVIADO A REVISIÓN", credentialMode === "demo" ? "Firma DEMO del elaborador y envío automático; no corresponde a una firma electrónica real." : "Firma simulada del elaborador y envío automático.");
     return signed;
   };
 

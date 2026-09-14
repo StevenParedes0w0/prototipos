@@ -33,6 +33,7 @@ const {emptySignatureCredential,demoSignatureCredential,canSubmitSignatureCreden
 const {findPlanByIdentity}=load('src/documentEngine/documentIdentity.ts');
 const {documentInconsistencies}=load('src/documentEngine/invariants.ts');
 const {T1_FOOTER_TEXT,T1_FORMAT_TEXT,t1FooterStyle,t1CoverStyle,t1CoverMainBlockStyle}=load('src/documentEngine/t1Layout.ts');
+const {getResponsibleDisplayLabel}=load('src/documentEngine/responsibleDisplay.ts');
 const {parseFechaDMY,estadoActividadDesdeMedios}=load('src/modulo5/useActividadesState.ts');
 const {esResponsableDeActividad}=load('src/modulo6/useSeguimientoState.ts');
 function engine(){cursor=0;return useDocumentEngine();}
@@ -52,12 +53,11 @@ assert.equal(canSubmitSignatureCredential(demoCredential,true,true),false,'B: DE
 demoCredential.confirmed=true;
 assert.equal(canSubmitSignatureCredential(demoCredential,true,true),true,'A: credencial DEMO válida');
 e.firmarComoElaborador(plan.id,demoCredential.fileName,`Página ${planSignaturePage}`,'demo');
-assert.equal(doc(plan.id).documentState,'FIRMADO POR ELABORADOR');
+assert.equal(doc(plan.id).documentState,'EN REVISIÓN','A: firmar y finalizar envía automáticamente a revisión');
 assert.equal(doc(plan.id).currentArtifact.signatures.length,1,'A: Andrea firma y queda una firma canónica');
 assert.equal(doc(plan.id).currentArtifact.signatures[0].isDemo,true);
 assert.equal(e.firmarComoElaborador(plan.id,demoCredential.fileName,'','demo'),false,'F: no ofrece una segunda firma');
-e.enviarARevision(plan.id);
-assert.equal(doc(plan.id).documentState,'EN REVISIÓN','B: Andrea envía y el documento queda en revisión');
+assert.equal(e.enviarARevision(plan.id),false,'B: no admite un segundo envío después de la transición automática');
 const finalized=doc(plan.id).currentArtifact.elaborationFinalizedAt;
 assert.equal(finalized,"07/09/2026");
 clockDate="2026-09-10T15:00:00.000Z";
@@ -108,9 +108,9 @@ assert.equal(doc(plan.id).observations[0].estado,'historica','N: observaciones d
 assert.equal(doc(plan.id).observations[0].status,'HISTORICAL','N: observaciones históricas no quedan activas');
 assert.equal(doc(plan.id).currentArtifact.signatures.length,0,'O: firmas de ronda 1 no cuentan en ronda 2');
 e.generarArtefacto(plan.id,data);
+assert.equal(doc(plan.id).currentArtifact.historialCambios[0].descripcion,'Elaboración del Plan de Trabajo');
 e.firmarComoElaborador(plan.id,'demo.p12',`Página ${doc(plan.id).currentArtifact.signatureSlots[0].pageNumber}`,'demo');
 assert.equal(doc(plan.id).currentArtifact.elaborationFinalizedAt,finalized);
-e.enviarARevision(plan.id);
 assert.equal(doc(plan.id).reviewRound,2,'M: reenviar conserva la ronda 2 preparada');
 assert.equal(doc(plan.id).formalVersion,'1.0','M: reenviar no incrementa la versión formal');
 assert.equal(doc(plan.id).observations.filter(o=>o.estado==='activa'&&o.ronda===2).length,0,'N: la ronda 1 no bloquea el reenvío');
@@ -128,8 +128,7 @@ e.simularSesionDemo('usr-andrea-01','Ing. Andrea Pérez, Mg.');
 const report=e.crearNuevoDocumento('INFORME',{grupo:plan.grupo,documentoRelacionadoId:plan.id});
 e.generarArtefactoInforme(report.id,{titulo:'INFORME DE: Seguimiento',grupo:plan.grupo,periodo:plan.periodo,informeOrigen:'DERIVADO_PLAN',relatedPlanId:plan.id,antecedentes:'Antecedentes',actividadesInforme:matrix.map(a=>({id:a.id,actividad:a.nombre,mediosVerificacion:a.medios.join(', '),porcentajeEjecucion:85,observaciones:''})),conclusiones:'Conclusiones',oportunidadesMejora:'Mejoras',aplicaRegistroContactos:false,tieneAnexos:'no',anexos:[]});
 e.firmarComoElaborador(report.id,'demo.p12',`Página ${doc(report.id).currentArtifact.signatureSlots[0].pageNumber}`,'demo');
-assert.equal(doc(report.id).documentState,'FIRMADO POR ELABORADOR');
-e.enviarARevision(report.id);
+assert.equal(doc(report.id).documentState,'EN REVISIÓN');
 assert.equal(doc(report.id).documentState,'EN REVISIÓN');
 assert.equal(doc(report.id).currentArtifact.informeData.actividadesInforme.length,25);
 assert.equal(JSON.stringify(doc(plan.id)),planSnapshot);
@@ -154,7 +153,6 @@ assert.equal(doc(organizationPlan.id).currentArtifact.signatures.length,0,'otra 
 e.simularSesionDemo('usr-andrea-01','Ing. Andrea Pérez, Mg.');
 e.firmarComoElaborador(organizationPlan.id,'demo.p12','','demo');
 assert.equal(e.firmarComoElaborador(organizationPlan.id,'demo.p12','','demo'),false,'D/F: etapa ya firmada no admite firma');
-e.enviarARevision(organizationPlan.id);
 e.aprobarSinFirma(organizationPlan.id,'registration');
 assert.equal(doc(organizationPlan.id).documentState,'VALIDADO');
 assert.equal(doc(organizationPlan.id).currentArtifact.signatures.length,1);
@@ -174,7 +172,6 @@ const parallelStages=[
 e.configurarFlujoDocumento(parallel.id,parallelStages);
 e.generarArtefacto(parallel.id,data);
 e.firmarComoElaborador(parallel.id,'demo.p12','','demo');
-e.enviarARevision(parallel.id);
 assert.equal(doc(parallel.id).flowStages.filter(s=>s.estado==='EN_CURSO').length,2,'revisores obligatorios se activan en paralelo');
 e.simularSesionDemo('usr-carlos-02','Ing. Carlos López, Mg.');
 e.aprobarYFirmarRevisor(parallel.id,'Ing. Carlos López, Mg.');
@@ -236,3 +233,11 @@ assert.equal(estadoActividadDesdeMedios(twoMedia),'EVIDENCIAS COMPLETAS','cada m
 assert.equal(esResponsableDeActividad({id:'usr-owner',nombre:'Otro nombre'},twoMedia),true,'permisos de evidencia usan ID responsable');
 assert.equal(esResponsableDeActividad({id:'usr-other',nombre:'Nombre visible'},twoMedia),false,'el ID prevalece sobre coincidencias de nombre');
 console.log('PASS: unicidad por IDs, reset DEMO, combinación libre, footer T1, portada y metadata dinámica.');
+
+const allIds=['a','b','c'];
+assert.equal(getResponsibleDisplayLabel({groupType:'Comisión',selectedResponsibleIds:allIds,allGroupMemberIds:allIds,selectedResponsibleNames:['Andrea','Carlos','Patricia']}),'Responsable de la comisión');
+assert.equal(getResponsibleDisplayLabel({groupType:'Unidad',selectedResponsibleIds:allIds,allGroupMemberIds:allIds,selectedResponsibleNames:['Andrea','Carlos','Patricia']}),'Responsable de la unidad');
+assert.equal(getResponsibleDisplayLabel({groupType:'Club',selectedResponsibleIds:allIds,allGroupMemberIds:allIds,selectedResponsibleNames:['Andrea','Carlos','Patricia']}),'Responsable del club');
+assert.equal(getResponsibleDisplayLabel({groupType:'Otro',selectedResponsibleIds:allIds,allGroupMemberIds:allIds,selectedResponsibleNames:['Andrea','Carlos','Patricia']}),'Responsable del grupo');
+assert.equal(getResponsibleDisplayLabel({groupType:'Unidad',selectedResponsibleIds:['a','b'],allGroupMemberIds:allIds,selectedResponsibleNames:['Andrea','Carlos']}),'Andrea, Carlos');
+console.log('PASS: denominación colectiva central, responsables parciales e historial inicial T1.');

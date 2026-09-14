@@ -1,754 +1,872 @@
-Lee COMPLETAMENTE antes de modificar cualquier archivo:
+# CORRECCIÓN FOCALIZADA POST-REUNIÓN
+## Gestión Documental Académica FISEI — Fidelidad funcional + regresión E2E
 
-- AGENTS.md
-- requirements.md
-- implementation-status.md
-- reporte.md o el último reporte de implementación disponible
-- tests/document-engine.test.mjs
-- playwright.config.ts
-- tests/e2e/README.md
-- todos los archivos existentes dentro de tests/e2e/
-- la carpeta Documentos_guia únicamente cuando una prueba toque fidelidad documental
+Quiero que realices una intervención MUY CONTROLADA sobre el mockup existente.
+
+NO debes rediseñar la aplicación.
+NO debes hacer un refactor general.
+NO debes sustituir componentes que ya funcionan correctamente.
+NO debes modificar T1/T2, flujos, permisos, evidencias, versiones, rondas o persistencia salvo donde sea estrictamente necesario para cumplir las correcciones descritas en este prompt.
+NO debes romper ninguna de las pruebas existentes.
+
+El objetivo es corregir cuatro puntos concretos que todavía no reflejan completamente lo solicitado durante la última reunión de validación con los docentes/clientes.
+
+Antes de modificar código:
+
+1. Lee:
+   - AGENTS.md
+   - requirements.md
+   - implementation-status.md
+   - prompt.md si existe
+   - reporte-e2e-secundario.md
+   - README de E2E
+   - transcripciones/notas de la última reunión disponibles en el proyecto
+   - especialmente cualquier archivo donde aparezcan expresiones similares a:
+     - “Responsable de la comisión”
+     - “Seleccionar todos”
+     - “Firmar y finalizar”
+     - “Subrayar”
+     - “Resaltar”
+     - “Observación”
+     - “Fuente”
+     - “Elaborado por”
+
+2. Inspecciona primero el comportamiento actual antes de corregirlo.
+
+3. Considera la última reunión institucional como nueva evidencia funcional.
+   Si un requerimiento anterior entra en conflicto directo con una decisión explícita posterior de esa reunión, NO adaptes silenciosamente el código:
+   - documenta el conflicto;
+   - determina cuál es la decisión posterior;
+   - actualiza la documentación funcional correspondiente únicamente si realmente la reunión modifica el requisito;
+   - deja trazabilidad en el reporte final.
 
 IMPORTANTE:
-Este proyecto es un MOCKUP INTERACTIVO DE ALTA FIDELIDAD.
+No cambies requisitos solamente para justificar el código existente.
 
-NO debes:
-- convertirlo en una implementación productiva;
-- agregar backend;
-- agregar servicios externos;
-- implementar criptografía real;
-- integrar DTIC;
-- agregar correo real;
-- agregar almacenamiento remoto;
-- sustituir las simulaciones DEMO existentes;
-- reestructurar el motor documental si no es estrictamente necesario;
-- cambiar reglas ya validadas solo para facilitar los tests;
-- eliminar comportamiento correcto para hacer pasar Playwright;
-- inventar requisitos institucionales.
-
-La suite E2E principal ya existe y actualmente pasa 6/6.
-
-El objetivo de esta nueva tarea NO es rehacer esos tests.
-El objetivo es crear una SEGUNDA CAPA DE COBERTURA E2E sobre escenarios secundarios, casos límite, permisos negativos, administración e histórico.
+---
 
-==================================================
-1. REGLA PRINCIPAL DE TRABAJO
-==================================================
+# CONTEXTO GENERAL QUE DEBES PRESERVAR
 
-Primero audita la implementación actual contra estos escenarios.
+La aplicación es un MOCKUP INTERACTIVO DE ALTA FIDELIDAD, no un sistema productivo.
 
-Para cada escenario:
+Conservar:
 
-1. verifica si el comportamiento ya existe;
-2. intenta automatizarlo con Playwright;
-3. si la prueba revela que la aplicación ya funciona correctamente, conserva el comportamiento y agrega únicamente la prueba;
-4. si la prueba revela un bug real respecto de requirements.md, corrige el bug;
-5. agrega una prueba de regresión que demuestre la corrección;
-6. no modifiques comportamiento correcto para adaptar la aplicación al test;
-7. no debilites aserciones solo para conseguir PASS.
+- React + TypeScript + Vite.
+- Motor documental existente.
+- targetDocId explícito.
+- separación de identidad de sesión y contexto.
+- unicidad del Plan por:
+  teacherId + groupId + periodId.
+- formalVersion separada de reviewRound.
+- artefactos firmados inmutables.
+- artifactHistory.
+- observaciones por documento/ronda.
+- T1 y T2 aislados.
+- evidencia independiente del versionado del Plan.
+- una evidencia PDF por medio.
+- flujo configurable por grupo.
+- revisores paralelos dentro de una misma etapa cuando corresponda.
+- siguiente etapa bloqueada hasta cumplir la etapa actual.
+- flujo incompleto del Club Académico permanece PENDIENTE.
+- NO inventar actores institucionales.
+- NO inventar hashes, QR o firma real.
+- firma DEMO claramente identificada como simulación.
+- certificado/contraseña no persistidos.
+- estilo institucional azul/blanco.
+- documentos A4 ya existentes.
+- footer T1 vigente.
+- portada T1 vigente.
+- paginación dinámica.
+- signatureSlots dinámicos.
+- Source/Fuente y Elaborado por ya separados.
+- fecha de elaboración persistida.
+- periodos cerrados en solo lectura.
+- Administración actual.
+- notificaciones actuales.
+- reportes sin ranking ni evaluación de desempeño.
 
-La aplicación debe ser la fuente de verdad funcional.
-Playwright debe comprobarla, no condicionarla artificialmente.
+No reintroduzcas mocks paralelos ni estados duplicados.
 
-==================================================
-2. INFRAESTRUCTURA EXISTENTE
-==================================================
+---
 
-Reutiliza la infraestructura ya implementada:
+# OBJETIVO 1
+# CORREGIR “SELECCIONAR TODOS” EN RESPONSABLES
 
-- Playwright 1.63.0
-- Chromium
-- Vite
-- puerto estable 4173
-- timezone America/Guayaquil
-- locale es-EC
-- viewport 1600x900
-- screenshots
-- video
-- trace
-- HTML report
-- helpers existentes
+La última reunión fue explícita:
 
-No dupliques helpers si ya existe una función equivalente.
+Cuando TODOS los integrantes del grupo son responsables de una actividad, NO se desea que el documento muestre todos los nombres individualmente.
 
-Si necesitas agregar selectores estables, prioriza:
+La reunión utilizó expresamente como ejemplo:
 
-- aria-label
-- role
-- accessible name
-- data-testid solo cuando sea realmente necesario
+“Responsable de la comisión”
 
-Evita selectores basados en:
-- índices arbitrarios
-- nth-child frágiles
-- clases Tailwind
-- posición visual
-- texto DEMO susceptible a cambiar si existe una alternativa semántica más estable
+También se habló de usar una denominación general en lugar de detallar a cada integrante.
 
-==================================================
-3. NUEVA SUITE: COBERTURA SECUNDARIA
-==================================================
+Actualmente existen casos donde:
 
-Quiero ampliar la suite con los siguientes escenarios.
+- la interfaz de revisión de matriz sigue mostrando:
+  Andrea, Carlos, Patricia...
+- o el documento imprime:
+  “Integrantes de la Unidad”.
 
-No es obligatorio que cada apartado sea un archivo independiente.
-Agrúpalos de forma coherente.
+Eso no refleja de forma suficientemente fiel lo solicitado.
 
---------------------------------------------------
-ESCENARIO A — UNICIDAD DE PLANES
---------------------------------------------------
+## Comportamiento requerido
 
-Validar de extremo a extremo la regla:
+Internamente SIEMPRE deben conservarse:
 
-PLAN DE TRABAJO único por:
+- responsableIds
+- responsableNames
 
-teacherId + groupId + periodId
+de todas las personas seleccionadas.
 
-Debe comprobarse:
+NO eliminar trazabilidad individual.
 
-A1.
-Andrea + Comisión de Eventos Académicos + Julio–Diciembre 2026
+NO guardar solamente la denominación colectiva.
 
-debe detectar un Plan existente.
+La denominación colectiva es únicamente de PRESENTACIÓN.
 
-Debe mostrar:
-- grupo;
-- período;
-- versión formal;
-- ronda;
-- estado;
-- acción contextual coherente.
+Crear una función central y reutilizable para determinar el texto visible.
 
-En el dataset actual debe poder mostrarse:
-“Continuar corrección”
-si el Plan está EN CORRECCIÓN.
+Ejemplo conceptual:
 
-A2.
-Andrea + Unidad de Titulación + una combinación libre definida actualmente
+getResponsibleDisplayLabel({
+  groupType,
+  selectedResponsibleIds,
+  allGroupMemberIds,
+  selectedResponsibleNames
+})
 
-debe permitir crear un nuevo borrador.
+Reglas:
 
-No hardcodees una combinación diferente si el dataset canónico ya define cuál es libre.
+### Si NO están seleccionados todos
 
-A3.
-Después de crear ese Plan:
-la misma combinación debe considerarse ocupada inmediatamente.
+Mostrar los nombres individuales correspondientes.
 
-A4.
-Un INFORME relacionado con el Plan NO debe bloquear la creación de un Plan.
+Ejemplo:
 
-A5.
-Otro período no debe producir falso duplicado.
+Andrea + Carlos
 
-A6.
-Otro grupo no debe producir falso duplicado.
+→
+“Ing. Andrea Pérez, Mg., Ing. Carlos López, Mg.”
 
-A7.
-Otro docente no debe producir falso duplicado.
+### Si están seleccionados TODOS los integrantes
 
-A8.
-Después de ejecutar:
-“Restablecer documentos DEMO”
+Mostrar una denominación colectiva.
 
-la colección debe volver exactamente al dataset canónico.
+Para Comisión:
 
-El documento creado durante el test debe desaparecer y una combinación que originalmente era libre debe volver a estar libre.
+“Responsable de la comisión”
 
---------------------------------------------------
-ESCENARIO B — MATRIZ / CAMPO “OTRO”
---------------------------------------------------
+Para Unidad:
 
-Reproducir exactamente el problema que ya fue corregido.
+“Responsable de la unidad”
 
-B1.
-Abrir configuración de una actividad.
+Para Club:
 
-B2.
-En Recursos:
-marcar “Otro”.
+“Responsable del club”
 
-B3.
-Dejar vacío:
-“Especifique el recurso”
+Para Otro:
 
-B4.
-Intentar:
-“Guardar actividad”.
+“Responsable del grupo”
 
-Debe suceder todo esto:
+IMPORTANTE:
 
-- el drawer NO se cierra;
-- el documento NO avanza;
-- aparece un error inline;
-- el campo inválido recibe foco;
-- los demás datos permanecen intactos.
+La frase confirmada literalmente en la reunión fue
+“Responsable de la comisión”.
 
-B5.
-Escribir un recurso personalizado válido.
+Las otras denominaciones son equivalentes semánticos según el tipo de grupo.
 
-El error debe desaparecer.
+Si existe en los documentos institucionales o requisitos una denominación mejor confirmada para Unidad/Club/Otro, utiliza esa en lugar de inventar una nueva.
 
-B6.
-Repetir la misma lógica para:
-Medios de verificación → Otro.
+NO mostrar:
 
-B7.
-Un “Otro” vacío NO debe incrementar el contador de recursos o medios.
+“3 personas”
 
-B8.
-Una vez completado correctamente:
-- estado COMPLETA;
-- contador actualizado;
-- botón Continuar habilitado.
+en el documento formal cuando el grupo completo está seleccionado.
 
---------------------------------------------------
-ESCENARIO C — RESPONSABLES MÚLTIPLES
---------------------------------------------------
+NO mostrar:
 
-C1.
-Abrir una actividad con tres integrantes disponibles.
+“Integrantes de la Unidad”
 
-C2.
-Marcar:
-“Seleccionar todos”.
+si la decisión posterior de la reunión exige la representación como Responsable del grupo.
 
-Comprobar:
+## Lugares a revisar
 
-- todos los responsables quedan seleccionados;
-- se conservan IDs individuales;
-- la vista de revisión muestra los nombres individuales;
-- el documento puede usar una denominación colectiva impresa cuando corresponda;
-- esa denominación colectiva NO reemplaza internamente la trazabilidad individual.
+No corrijas solamente el PDF.
 
-C3.
-Desmarcar uno.
+Audita TODOS los consumidores:
 
-“Seleccionar todos” debe reflejar correctamente el estado resultante.
+- drawer/modal de configuración de actividad;
+- tabla de matriz;
+- vista “Revisar matriz de actividades”;
+- previsualización T1;
+- artefacto firmado T1;
+- documento abierto desde bandeja del docente;
+- documento abierto desde bandeja del revisor;
+- corrección de ronda;
+- T2 derivado si consume el responsable del Plan;
+- ejecución de actividades;
+- evidencias;
+- historial;
+- cualquier helper que transforme responsables.
 
-C4.
-Volver a marcar todos.
+La representación visual puede ser colectiva.
 
-No deben aparecer:
-- duplicados;
-- responsables fantasma;
-- IDs repetidos.
+Los permisos SIEMPRE deben continuar usando IDs reales.
 
---------------------------------------------------
-ESCENARIO D — FECHAS Y FERIADOS
---------------------------------------------------
+## Regla importante
 
-Usar un período y feriados DEMO ya existentes.
+Si existen 3 miembros y se seleccionan los 3:
 
-No inventar nuevos feriados salvo que sea estrictamente necesario para el test y se definan claramente como fixtures de prueba.
+responsableIds =
+[A, B, C]
 
-D1.
-Intentar iniciar una actividad en una fecha marcada como feriado.
+responsableNames =
+[Andrea, Carlos, Patricia]
 
-Debe rechazarse.
+display =
+“Responsable de la unidad”
 
-D2.
-Intentar terminar una actividad en una fecha marcada como feriado.
+Si luego se desmarca Patricia:
 
-Debe rechazarse.
+responsableIds =
+[A, B]
 
-D3.
-Crear una actividad donde exista un feriado ENTRE Desde y Hasta.
+display =
+“Andrea Pérez, Carlos López”
 
-Debe permitirse.
+Nunca perder los IDs de A/B/C por haber utilizado previamente “Seleccionar todos”.
 
-D4.
-La fecha Hasta debe seguir representando que la evidencia estará disponible hasta:
-23:59 del día seleccionado.
+---
 
-D5.
-Probar fechas ISO YYYY-MM-DD y comprobar que no exista desfase por timezone.
+# PRUEBA E2E DEL OBJETIVO 1
 
---------------------------------------------------
-ESCENARIO E — AUTORIZACIONES NEGATIVAS
---------------------------------------------------
+Añadir o ampliar la cobertura existente.
 
-Este bloque es especialmente importante.
+Caso:
 
-E1.
-Andrea autenticada NO puede aprobar una etapa asignada a Carlos.
+1. Restablecer DEMO.
+2. Andrea crea Plan de Unidad de Titulación.
+3. Seleccionar todos los responsables en una actividad.
+4. Guardar.
+5. Verificar estado interno:
+   - existen todos los IDs;
+   - existen todos los nombres.
+6. Verificar pantalla de matriz:
+   - utiliza representación colectiva.
+7. Verificar PDF T1:
+   - utiliza representación colectiva.
+8. Desmarcar una persona.
+9. Guardar.
+10. Verificar:
+    - representación vuelve a nombres individuales;
+    - IDs correctos;
+    - no existen duplicados.
+11. Volver a seleccionar todos.
+12. Verificar nuevamente etiqueta colectiva.
+13. Recargar navegador.
+14. Verificar persistencia de IDs y representación.
 
-E2.
-Carlos autenticado como Revisor NO puede firmar como Patricia.
+---
 
-E3.
-Carlos en etapa de Revisión NO puede ejecutar anticipadamente Coordinación.
+# OBJETIVO 2
+# TEXTO DEL HISTORIAL INICIAL
 
-E4.
-Patricia en Validación final NO debe poder actuar si las etapas anteriores aún no han concluido.
+En el artefacto T1 actual aparece algo similar a:
 
-E5.
-Un docente no responsable de una actividad NO puede cargar o reemplazar evidencia.
+“Elaboración inicial del Plan de Trabajo”
 
-E6.
-Un revisor no asignado NO puede validar evidencia.
+La reunión pidió como redacción predeterminada:
 
-E7.
-Cambiar únicamente el contexto visual Docente/Revisor/Administrador NO debe cambiar la identidad autenticada.
+“Elaboración del Plan de Trabajo”
 
-E8.
-Perfil debe continuar mostrando la persona autenticada real.
+Corrige la primera entrada del:
 
-Cuando una acción esté bloqueada:
-la UI no debe limitarse silenciosamente a deshabilitarla.
+CONTROL DE HISTORIAL DE CAMBIOS
 
-Debe existir una explicación accesible, mediante:
-- texto;
-- tooltip;
-- title;
-- aria-description;
-- mensaje contextual;
-o mecanismo equivalente.
+para que utilice exactamente:
 
-Si actualmente un botón queda deshabilitado sin explicar por qué, considera esto una deficiencia UX y corrígelo de forma mínima.
+“Elaboración del Plan de Trabajo”
 
---------------------------------------------------
-ESCENARIO F — APROBACIÓN Y OBSERVACIONES
---------------------------------------------------
+salvo que el documento institucional oficial entregado por el cliente muestre una redacción distinta y posterior.
 
-Este escenario debe proteger el bug que vimos manualmente.
+No cambies:
 
-F1.
-Abrir un documento asignado a Carlos.
-
-F2.
-Comprobar que el documento realmente está:
-EN REVISIÓN
-y que la etapa actual corresponde a Carlos.
-
-F3.
-Verificar que antes de completar las condiciones necesarias:
-APROBAR Y FIRMAR
-puede estar bloqueado.
-
-Debe existir una explicación observable de por qué.
-
-F4.
-Completar los aspectos requeridos de revisión.
-
-F5.
-Sin observaciones activas:
-APROBAR Y FIRMAR debe habilitarse.
-
-F6.
-Registrar una observación.
-
-Comprobar inmediatamente:
-
-Observaciones (1)
-
-F7.
-Recargar la página.
-
-Debe continuar:
-Observaciones (1)
-
-F8.
-Abrir el documento nuevamente desde bandeja.
-
-La observación debe seguir asociada a:
-- documentId;
+- Versión 1.0
+- fecha;
 - formalVersion;
+- reviewRound;
+- artifactHistory.
+
+Esto es una corrección textual, no de modelo.
+
+Audita también documentos DEMO nuevos.
+
+NO reescribas silenciosamente documentos históricos firmados ya existentes si conceptualmente deben permanecer inmutables.
+
+El reset DEMO sí puede generar nuevamente los fixtures canónicos con la redacción corregida si corresponde.
+
+Crear una regresión automática sencilla para esta cadena.
+
+---
+
+# OBJETIVO 3
+# REVISAR “FIRMAR Y FINALIZAR” VS “ENVIAR A REVISIÓN”
+
+ESTE PUNTO REQUIERE AUDITORÍA ANTES DE MODIFICAR.
+
+La última reunión contiene una decisión que parece contradecir parcialmente el comportamiento actual.
+
+Durante la reunión se corrigió:
+
+“Firmar y enviar”
+
+por:
+
+“Firmar y finalizar”
+
+y se indicó que cuando el docente finaliza, el documento continúa al flujo de revisión.
+
+Actualmente el mockup separa:
+
+1. FIRMAR Y FINALIZAR ELABORACIÓN
+2. ENVIAR A REVISIÓN
+
+Esta separación fue implementada anteriormente y cuenta con pruebas E2E.
+
+NO cambies esto automáticamente sin investigar.
+
+## Debes hacer lo siguiente
+
+Busca la fuente exacta de la última reunión.
+
+Determina si la decisión final realmente fue:
+
+A)
+
+FIRMAR Y FINALIZAR
+→ firma
+→ finaliza elaboración
+→ automáticamente EN REVISIÓN
+
+o si se confirmó posteriormente:
+
+B)
+
+FIRMAR Y FINALIZAR ELABORACIÓN
+→ FIRMADO POR ELABORADOR
+→ acción separada ENVIAR A REVISIÓN
+→ EN REVISIÓN
+
+Debes establecer cuál es la decisión MÁS RECIENTE Y EXPLÍCITA.
+
+## Si la última reunión confirma A
+
+Entonces:
+
+modifica el comportamiento para que la firma exitosa del elaborador:
+
+BORRADOR / LISTO PARA FIRMA
+↓
+FIRMAR Y FINALIZAR ELABORACIÓN
+↓
+firma válida
+↓
+elaboración terminada
+↓
+activa siguiente etapa configurada
+↓
+EN REVISIÓN
+
+No debe existir una segunda confirmación “ENVIAR A REVISIÓN”.
+
+La pantalla posterior debe indicar:
+
+“Plan de Trabajo enviado a revisión”
+
+o equivalente coherente.
+
+Pero esta transición SOLO puede ocurrir si existe una siguiente etapa válida/configurada.
+
+### Flujo incompleto
+
+Para Club Académico, que permanece PENDIENTE:
+
+NO inventar revisores.
+
+NO pasar a EN REVISIÓN.
+
+Mantener el bloqueo ya existente.
+
+Si la política vigente impide incluso la firma del elaborador cuando no existe etapa posterior, conservarla salvo que la reunión contradiga explícitamente ese comportamiento.
+
+### Revisores
+
+El flujo posterior mantiene:
+
+- etapas paralelas;
+- etapas secuenciales;
+- firmas;
+- rondas;
+- devolución;
+- corrección;
+- historial.
+
+## Si la última decisión confirma B
+
+NO cambies el comportamiento actual.
+
+En ese caso documenta claramente que:
+
+- la reunión fue revisada;
+- existía una formulación ambigua;
+- la decisión posterior/canónica mantiene firma y envío separados.
+
+No hagas cambios solamente porque este prompt señala la discrepancia.
+
+## Si se cambia a A
+
+Actualizar todas las pruebas que actualmente esperan:
+
+FIRMADO POR ELABORADOR
+→ ENVIAR A REVISIÓN
+
+pero NO reducir cobertura.
+
+Las nuevas pruebas deben garantizar:
+
+- una sola firma del elaborador;
+- no doble envío;
+- no doble activación de etapa;
+- recarga conserva EN REVISIÓN;
+- primer revisor recibe el documento;
+- otro documento no cambia;
+- flujo incompleto sigue bloqueado.
+
+---
+
+# OBJETIVO 4
+# VALIDAR Y COMPLETAR “RESALTAR Y OBSERVAR”
+
+La última reunión solicitó que el revisor pudiera:
+
+- señalar visualmente una parte del documento;
+- resaltar/subrayar una zona;
+- asociar una observación a esa zona;
+- identificar en qué página está;
+- posteriormente permitir al docente localizar exactamente lo observado.
+
+La conversación terminó inclinándose por una solución SIMPLE:
+
+una función de RESALTADO.
+
+NO implementar:
+
+- editor de dibujo completo;
+- lápiz libre;
+- múltiples herramientas complejas;
+- Photoshop;
+- anotaciones PDF reales;
+- OCR;
+- modificación física del PDF;
+- edición del artefacto firmado.
+
+El artefacto firmado debe seguir siendo INMUTABLE.
+
+Los resaltados pertenecen al sistema de revisión.
+
+## Ya existe implementación parcial
+
+El código/reporte anterior menciona:
+
+- DocumentObservationAnchor
+- pageNumber
+- x
+- y
+- width
+- height
+- selección rectangular
+- capa semitransparente
+- número de observación
+- “IR AL RESALTADO”
+
+No reimplementar si ya funciona.
+
+PRIMERO PRUÉBALO.
+
+---
+
+# COMPORTAMIENTO ESPERADO DEL RESALTADO
+
+En vista de revisión:
+
+Debe existir una acción claramente identificable:
+
+“RESALTAR Y OBSERVAR”
+
+o equivalente accesible.
+
+Flujo:
+
+1. Revisor pulsa Resaltar y observar.
+2. Cursor entra en modo selección.
+3. Revisor arrastra sobre el A4.
+4. Se calcula un rectángulo normalizado relativo a la página.
+5. Se abre formulario de observación.
+6. Página se asigna automáticamente.
+7. Revisor escribe observación.
+8. Guarda.
+9. Aparece un resaltado semitransparente sobre esa zona.
+10. Aparece un identificador visible:
+    1, 2, 3...
+11. Panel de observaciones muestra la observación correspondiente.
+12. “IR AL RESALTADO”:
+    - cambia a la página correcta;
+    - desplaza/focaliza la zona;
+    - ofrece feedback visual.
+
+La observación debe conservar:
+
+- documentId;
 - round;
-- page;
-- author;
+- pageNumber;
+- anchor;
+- author/reviewer;
+- text;
+- timestamp;
 - status.
 
-F9.
-Con observación activa:
-APROBAR Y FIRMAR debe permanecer bloqueado.
+NO modificar artifact.pages.
 
-F10.
-Devolver el documento.
+NO incorporar el resaltado dentro de la representación serializada del artefacto firmado.
 
-F11.
-Andrea debe ver:
-- documento DEVUELTO / EN CORRECCIÓN según la vista;
-- observación recibida;
-- motivo de devolución;
-- ronda original preservada.
+---
 
-F12.
-Corregir y reenviar.
+# ZOOM
 
-Debe iniciar:
-Ronda 2
+Este punto es especialmente importante.
 
-pero mantener:
-Versión formal 1.0
+Las coordenadas deben almacenarse NORMALIZADAS respecto a la página.
 
-F13.
-Las firmas de la ronda anterior deben quedar históricas y no válidas para el artefacto corregido.
+Ejemplo:
 
---------------------------------------------------
-ESCENARIO G — FLUJO INCOMPLETO
---------------------------------------------------
+x = 0.32
+y = 0.41
+width = 0.25
+height = 0.08
 
-Usar un grupo DEMO cuyo flujo permanezca intencionalmente incompleto.
+NO almacenar solamente píxeles absolutos del viewport.
 
-Actualmente puede ser:
-Club Académico de Software
+El resaltado debe mantenerse sobre la misma región con:
 
-si requirements.md y el dataset siguen definiéndolo así.
+- 80 %
+- 100 %
+- 125 %
 
-G1.
-Crear o abrir Plan.
+o los niveles disponibles equivalentes.
 
-G2.
-Llegar a Firma y Finalización.
+NO debe desplazarse visualmente por cambiar el zoom.
 
-G3.
-Comprobar mensaje:
+---
 
-“El flujo de aprobación de este grupo aún no está completamente configurado.”
+# NAVEGACIÓN ENTRE PÁGINAS
 
-o equivalente vigente.
+Caso:
 
-G4.
-Firma/envío que requiere siguiente etapa no debe inventar responsable.
+Observación 1 → página 3
+Observación 2 → página 4
 
-G5.
-Documento NO debe pasar artificialmente a EN REVISIÓN.
+Desde página 1:
 
-G6.
-La UI debe indicar que se requiere configuración administrativa.
+“IR AL RESALTADO” de Obs.2
 
---------------------------------------------------
-ESCENARIO H — ADMINISTRACIÓN DE FLUJOS
---------------------------------------------------
+debe abrir página 4 y enfocar Obs.2.
 
-Crear un smoke test funcional de Administración.
+No debe mostrar el resaltado en todas las páginas.
 
-H1.
-Entrar como Laura / Administrador DEMO.
+---
 
-H2.
-Abrir configuración de flujos.
+# DEVOLUCIÓN Y CORRECCIÓN
 
-H3.
-Abrir al menos dos grupos.
+Después de devolver el documento:
 
-H4.
-Confirmar que la configuración es POR GRUPO y no global.
+Andrea debe poder visualizar:
 
-H5.
-Comprobar que:
-Unidad de Titulación
-puede tener un flujo completo.
+- observación;
+- página;
+- texto;
+- revisor;
+- resaltado asociado.
 
-H6.
-Comprobar que:
-Club Académico de Software
-puede mantener un flujo incompleto.
+En modo corrección:
 
-H7.
-No inventar actores faltantes.
+debe existir forma de navegar al resaltado.
 
-Cuando un actor no esté definido:
-debe conservarse como:
-pendiente de configuración
-o texto equivalente.
+Al marcar la observación como resuelta:
 
---------------------------------------------------
-ESCENARIO I — CIERRE E HISTÓRICO
---------------------------------------------------
+NO eliminarla.
 
-Automatizar el comportamiento DEMO ya definido.
+Debe pasar al historial cuando corresponda.
 
-I1.
-Entrar a histórico/cierre.
+Al preparar Ronda 2:
 
-I2.
-Período activo Julio–Diciembre 2026 NO debe aparecer como cerrado ordinariamente.
+- formalVersion permanece 1.0;
+- reviewRound pasa a 2;
+- resaltados/observaciones de la ronda anterior permanecen históricos;
+- el nuevo artefacto no hereda marcas como si fueran contenido físico del documento.
 
-I3.
-Debe existir:
-PROBAR CIERRE — DEMO
+---
 
-I4.
-Al activarlo:
-mostrar advertencia de simulación.
+# APROBACIÓN
 
-I5.
-Después de confirmar:
-estado CERRADO DEMO.
+Con observaciones ACTIVAS:
 
-I6.
-Los documentos del período deben quedar:
-SOLO LECTURA.
+APROBAR / APROBAR Y FIRMAR
 
-I7.
-No debe existir edición normal.
+debe permanecer bloqueado conforme a la regla actual.
 
-I8.
-Debe existir:
-RESTABLECER DEMO
+Después de resolver/devolver según el flujo:
 
-I9.
-RESTABLECER DEMO NO debe describirse como:
-“reapertura institucional”.
+el comportamiento debe ser coherente.
 
-Debe presentarse claramente como restauración de la simulación.
+No confundir:
 
-I10.
-Verificar histórico de Enero–Junio 2026.
+observación registrada
+≠
+resaltado gráfico.
 
-Comprobar al menos el caso canónico vigente:
+Una observación general puede existir SIN anchor.
 
-- Plan FINALIZADO;
-- período CERRADO;
-- actividades y evidencias históricas;
-- formal versioning separado de rondas;
-- modo solo lectura.
+Una observación por página puede existir con o sin anchor.
 
-No hardcodear cifras si el dataset canónico cambió legítimamente.
-Usar los valores actuales definidos por fixtures.
+Un resaltado SIEMPRE debe estar asociado a una observación.
 
---------------------------------------------------
-ESCENARIO J — NOTIFICACIONES CONTEXTUALES
---------------------------------------------------
+---
 
-Crear un smoke test.
+# ACCESIBILIDAD
 
-J1.
-Entrar con un usuario que tenga notificaciones.
+Agregar si falta:
 
-J2.
-Abrir una notificación asociada a:
-- Plan;
-- evidencia;
-o documento existente.
+aria-label="Resaltar y observar"
 
-J3.
-Comprobar que navega al objeto correcto.
+aria-label contextual para:
 
-J4.
-No debe abrir otro Plan por depender de selectedDocument global.
+“Ir al resaltado de observación 1”
 
-J5.
-El contador de sin leer debe actualizarse si el comportamiento actual lo contempla.
+El modo de resaltado debe poder cancelarse.
 
-No convertir notificaciones DEMO en notificaciones reales.
+Escape debería cancelar el modo si es sencillo y no introduce regresiones.
 
---------------------------------------------------
-ESCENARIO K — REPORTES
---------------------------------------------------
+No depender únicamente del color para identificar observaciones.
 
-Crear smoke tests de los reportes actuales.
+Debe existir número/etiqueta.
 
-K1.
-Abrir reportes como Docente.
+---
 
-K2.
-Abrir reportes como Revisor/Administrador cuando corresponda.
+# E2E DEL RESALTADO
 
-K3.
-Comprobar que se muestran estados documentales.
+Añadir una prueba Playwright específica.
 
-K4.
-No deben aparecer conceptos prohibidos como:
+Sugerencia:
 
-- ranking de docentes;
-- score individual;
-- desempeño laboral;
-- productividad individual;
-- sanciones automáticas;
-- predicciones;
-- calificaciones del profesor.
+tests/e2e/highlight-observation.spec.ts
 
-K5.
-Validar que:
-evidencia completa
-y
-evidencia validada
+Escenario:
 
-se mantienen como conceptos diferentes.
+1. Reset DEMO.
+2. Crear/usar Plan en revisión.
+3. Cambiar sesión a revisor asignado.
+4. Abrir documento.
+5. Ir a página 4.
+6. Activar “Resaltar y observar”.
+7. Ejecutar mouse drag sobre una región estable del A4.
+8. Registrar:
+   “Corregir esta actividad”.
+9. Verificar:
+   Observaciones (1)
+10. Verificar que existe anchor.
+11. Verificar:
+   anchor.pageNumber === 4
+12. Verificar:
+   0 <= x <= 1
+   0 <= y <= 1
+   width > 0
+   height > 0
+13. Cambiar a página 2.
+14. Pulsar “Ir al resaltado”.
+15. Verificar página 4.
+16. Verificar resaltado visible.
+17. Cambiar zoom.
+18. Verificar que el anchor sigue correspondiendo a la misma zona.
+19. Recargar.
+20. Verificar persistencia.
+21. Devolver.
+22. Cambiar sesión realmente a Andrea.
+23. Continuar corrección.
+24. Verificar observación + resaltado.
+25. Marcar resuelta.
+26. Preparar Ronda 2.
+27. Verificar:
+    - ronda 2;
+    - formalVersion 1.0;
+    - observación anterior histórica;
+    - artifactHistory intacto.
 
-K6.
-Los previews o descargas DEMO deben seguir identificándose como DEMO cuando corresponda.
+Si Playwright no permite comparar geométricamente con precisión absoluta debido a fuentes/renderizado:
 
---------------------------------------------------
-ESCENARIO L — REGRESIÓN VISUAL T2
---------------------------------------------------
+usar tolerancia razonable.
 
-Actualmente ya existe regresión visual T1.
+NO crear pruebas extremadamente frágiles por diferencias de 1-2 píxeles.
 
-Agregar al menos una prueba visual para T2.
+---
 
-Generar un Informe derivado de un Plan válido.
+# AUDITORÍA VISUAL COMPLEMENTARIA
 
-Capturar de forma estable:
+Después de las cuatro correcciones anteriores, revisa específicamente T1:
 
-- una página inicial/encabezado representativa;
-- una página de contenido;
-- página que contenga firmas si corresponde.
+## Página 1
 
-Validar:
+Debe conservar:
 
-- estructura institucional;
-- título normalizado;
-- ausencia de “INFORME DE: INFORME DE:”;
-- ausencia de notas instructivas de plantilla;
-- footer coherente;
-- páginas calculadas desde artifact.pages;
-- firmas ubicadas desde signatureSlots;
-- ninguna dependencia de pageCount fijo.
+- encabezado institucional;
+- Facultad;
+- Carrera;
+- Fecha de elaboración;
+- UNIVERSIDAD TÉCNICA DE AMBATO;
+- UNIDAD ACADÉMICA / ADMINISTRATIVA;
+- PLAN DE TRABAJO DE;
+- PERÍODO;
+- bloque principal equilibrado verticalmente.
 
-NO modificar T2 solo para que coincida con un snapshot nuevo.
+NO mover nuevamente la portada si ya cumple.
 
-Primero inspecciona visualmente la implementación contra Documentos_guia.
+## Footer
 
-Si detectas una desviación REAL:
-corrige la aplicación y después genera el snapshot.
+Conservar:
 
-==================================================
-4. REGRESIONES VISUALES
-==================================================
+izquierda:
+“Documento de uso interno controlado por la Universidad Técnica de Ambato”
 
-Los snapshots existentes T1 son importantes.
+centro:
+“Formato Nº: UTA-SGC-A-2-1-P7-T1”
 
-No los actualices automáticamente al primer fallo.
+derecha:
+número dinámico.
 
-Ante una diferencia:
+UNA sola fila.
 
-1. inspecciona screenshot esperado;
-2. inspecciona screenshot actual;
-3. determina si el cambio es:
-   a) mejora legítima;
-   b) regresión;
-   c) diferencia de rendering;
-4. únicamente actualiza snapshots si la nueva representación es correcta respecto de Documentos_guia.
+SIN border-top.
 
-NO utilizar:
---update-snapshots
+SIN hr.
 
-como solución automática.
+## Página índice
 
-==================================================
-5. ESTADO DEMO Y AISLAMIENTO
-==================================================
+Páginas derivadas de artifact.pages.
 
-Todos los tests deben ser independientes.
+Nunca hardcodear 5.
 
-Cada spec debe poder ejecutarse:
-- sola;
-- dentro de toda la suite;
-- repetida;
-sin depender del orden de ejecución.
+## Matriz
 
-Antes de cada escenario:
-restaura o inicializa explícitamente el estado DEMO requerido.
+Si todos son responsables:
 
-No permitas dependencia accidental entre tests mediante localStorage.
+debe utilizar la denominación colectiva corregida.
 
-Confirma particularmente que:
+## Página final
 
-- Plan A no muta Plan B;
-- Plan no muta Informe;
-- Informe no muta Plan;
-- evidencia no cambia versión formal del Plan;
-- una devolución cambia ronda, no versión formal;
-- reset DEMO realmente reinicia fixtures.
+Conservar:
 
-==================================================
-6. NO REGRESAR FUNCIONES YA VALIDADAS
-==================================================
+ANEXOS
+FIRMAS DE RESPONSABILIDAD
+CONTROL DE HISTORIAL DE CAMBIOS
 
-Mientras trabajas, protege explícitamente:
+Primera descripción:
 
-- aislamiento multidocumento;
-- targetDocId explícito;
-- persona autenticada != contexto activo;
-- firma DEMO temporal;
-- contraseña no persistida;
-- certificado no persistido;
-- firma docente única;
-- artefacto firmado inmutable;
-- formalVersion independiente de reviewRound;
-- revisores paralelos;
-- siguiente etapa bloqueada hasta que todos aprueben;
-- observaciones persistentes;
-- cada medio = exactamente 1 PDF vigente;
-- reemplazo de evidencia = nueva versión de evidencia;
-- fecha de elaboración congelada;
-- T1 dinámico;
-- T2 dinámico;
-- footer T1 una sola fila;
-- footer sin línea horizontal superior;
-- orientación por página;
-- pageCount = pages.length;
-- signatureSlots derivados de pages.
+“Elaboración del Plan de Trabajo”
 
-==================================================
-7. MEJORAS DE TESTABILIDAD PERMITIDAS
-==================================================
+---
 
-Puedes hacer cambios mínimos en UI si son necesarios para testabilidad o accesibilidad.
+# NO REGRESIONES CRÍTICAS
 
-Ejemplos permitidos:
+Después de los cambios deben seguir funcionando:
 
-aria-label
-aria-describedby
-title
-role
-data-testid
-mensajes de motivo de bloqueo
-labels accesibles
+1. Unicidad del Plan.
+2. Duplicate modal.
+3. Continuar corrección.
+4. Otro recurso.
+5. Otro medio.
+6. Responsables parciales.
+7. Responsables totales.
+8. Feriados.
+9. 23:59.
+10. Permisos.
+11. Identidad/contexto separados.
+12. Sesión real de revisor.
+13. Revisores paralelos.
+14. Coordinación secuencial.
+15. Validación final.
+16. Devolución.
+17. Ronda 2 sin versión formal 2.0.
+18. artifactHistory.
+19. T2 derivado.
+20. aislamiento Plan/Informe.
+21. Evidencias.
+22. reemplazo de evidencia.
+23. evidencia v2.0.
+24. cierre DEMO.
+25. histórico solo lectura.
+26. reset.
+27. notificaciones.
+28. reportes.
+29. flujo incompleto.
+30. snapshots T1.
+31. snapshots T2.
 
-NO usar la tarea como excusa para rediseñar componentes.
+---
 
-==================================================
-8. ARCHIVOS E2E ESPERADOS
-==================================================
+# NO HACER
 
-Puedes reorganizar si existe una estructura mejor, pero idealmente crear o extender algo similar a:
+NO introducir backend.
 
-tests/e2e/plan-uniqueness.spec.ts
-tests/e2e/matrix-validation.spec.ts
-tests/e2e/permissions.spec.ts
-tests/e2e/admin-flow.spec.ts
-tests/e2e/history-close.spec.ts
-tests/e2e/notifications-reports.spec.ts
-tests/e2e/t2-visual-regression.spec.ts
+NO introducir API.
 
-Reutiliza:
-tests/e2e/helpers.ts
+NO introducir PostgreSQL.
 
-No copies grandes bloques de interacción entre specs.
+NO introducir Firebase.
 
-==================================================
-9. TESTS UNITARIOS / MOTOR
-==================================================
+NO introducir Supabase.
 
-Si durante la auditoría detectas lógica de dominio que sea mejor probar sin navegador, agrega también pruebas a:
+NO introducir firma criptográfica real.
 
-tests/document-engine.test.mjs
+NO introducir almacenamiento cloud.
 
-Especialmente para:
+NO crear QR falsos.
 
-- uniqueness key;
-- review permissions;
-- stage activation;
-- holiday validation;
-- round/version separation;
-- evidence authorization;
-- observation identity.
+NO crear hashes falsos.
 
-No dupliques innecesariamente el mismo nivel de comprobación.
+NO inventar procedimiento QIPOC.
 
-El test E2E debe demostrar el comportamiento visible.
-El test del motor debe proteger la regla de dominio.
+NO inventar decisión del Consejo Directivo.
 
-==================================================
-10. EJECUCIÓN FINAL OBLIGATORIA
-==================================================
+NO inventar cargos o revisores.
 
-Al terminar ejecuta, EN ESTE ORDEN:
+NO modificar formatos institucionales sin evidencia.
+
+NO migrar a otro framework.
+
+NO cambiar la paleta institucional.
+
+NO eliminar datos DEMO necesarios para pruebas.
+
+NO convertir el mockup en un producto de producción.
+
+NO reescribir componentes completos que ya están estables.
+
+---
+
+# PRUEBAS OBLIGATORIAS
+
+Al finalizar ejecuta:
 
 npx tsc --noEmit
 
@@ -758,162 +876,232 @@ node --test tests/document-engine.test.mjs
 
 npm run test:e2e
 
-Si existe una suite secundaria separada:
-ejecútala también explícitamente.
+Además ejecutar individualmente las nuevas pruebas antes de la suite completa.
 
-Después ejecuta nuevamente TODA la suite E2E completa para asegurar que los nuevos cambios no rompieron los seis escenarios anteriores.
+La suite actual parte aproximadamente de:
 
-El resultado aceptable es:
+17 E2E PASS
++
+1 Node PASS
 
-- TypeScript PASS
-- Build PASS
-- tests de motor PASS
-- tests E2E anteriores PASS
-- tests E2E nuevos PASS
+El resultado final NO puede tener menos cobertura.
 
-No declares completado si existe un fallo real.
+Si actualizas una prueba porque un requisito confirmado cambió:
 
-==================================================
-11. SI PLAYWRIGHT ENCUENTRA UN BUG
-==================================================
+documenta explícitamente:
 
-No ocultarlo.
+ANTES:
+comportamiento esperado anterior
 
-Para cada bug encontrado durante los tests:
+AHORA:
+comportamiento confirmado por reunión
 
-1. explica la causa raíz;
-2. corrige la aplicación;
-3. agrega regresión;
-4. vuelve a ejecutar la suite afectada;
-5. vuelve a ejecutar toda la suite.
+FUENTE:
+decisión de reunión
 
-Si un comportamiento depende de una decisión institucional pendiente:
-NO inventes la regla.
+No “arregles” un test solamente para hacerlo pasar.
 
-Marca el escenario como:
-PENDIENTE DE VALIDACIÓN INSTITUCIONAL
+---
 
-y comprueba únicamente que el mockup no inventa comportamiento.
+# SNAPSHOTS
 
-==================================================
-12. REPORTE FINAL
-==================================================
+Solo actualizar snapshots si existe un cambio visual legítimo derivado de estos requerimientos.
 
-Genera o actualiza un archivo:
+NO regenerar snapshots masivamente.
 
-reporte-e2e-secundario.md
+Si cambia la matriz únicamente porque:
 
-Debe contener:
+“Integrantes de la Unidad”
 
-# Reporte E2E — Cobertura secundaria
+pasa a:
 
-## 1. Escenarios auditados
+“Responsable de la unidad”
 
-## 2. Bugs reales encontrados
+entonces actualizar exclusivamente los snapshots afectados.
 
-Para cada bug:
-- comportamiento observado;
-- causa raíz;
-- requisito afectado;
+Conservar cualquier otro snapshot sin modificaciones.
+
+---
+
+# DOCUMENTACIÓN
+
+Actualizar:
+
+implementation-status.md
+
+y crear o actualizar:
+
+reporte-correcciones-post-reunion.md
+
+El reporte debe incluir:
+
+# Reporte de correcciones post-reunión
+
+## 1. Fuentes revisadas
+
+## 2. Responsable colectivo
+- comportamiento anterior;
+- requerimiento confirmado;
+- implementación;
+- persistencia de IDs;
+- consumidores corregidos;
+- pruebas.
+
+## 3. Historial inicial
+- texto anterior;
+- texto final;
+- alcance.
+
+## 4. Firmar y finalizar
+- transcripción/requisito encontrado;
+- comportamiento anterior;
+- decisión final;
+- si cambió o no;
+- justificación;
+- pruebas actualizadas.
+
+## 5. Resaltar y observar
+- estado previo;
+- componentes reutilizados;
+- funcionamiento;
+- coordenadas;
+- zoom;
+- navegación;
 - corrección;
-- test de regresión.
+- historial.
 
-## 3. Nuevas pruebas implementadas
+## 6. Archivos modificados
 
-Indicar por escenario:
-- archivo;
-- qué comprueba;
-- estado.
+## 7. Nuevas pruebas
 
-## 4. Cambios en la aplicación
+## 8. Resultados completos
 
-Separar:
-- cambios funcionales;
-- cambios de accesibilidad/testabilidad;
-- cambios documentales;
-- cambios DEMO.
+## 9. Bugs reales encontrados
 
-## 5. Regresión visual
+## 10. Pendientes institucionales
 
-Indicar:
-- snapshots nuevos;
-- snapshots modificados;
-- razón de cada modificación.
+## 11. Riesgos restantes
 
-## 6. Cobertura E2E total
+---
 
-Indicar:
+# CRITERIOS DE ACEPTACIÓN
 
-- cantidad anterior de tests;
-- cantidad nueva;
-- total final;
-- PASS/FAIL.
+No declares completado el trabajo hasta comprobar:
 
-## 7. Pruebas de motor
+### RESPONSABLES
 
-Indicar nuevos casos añadidos.
+[ ] Seleccionar una persona muestra una persona.
 
-## 8. Pendientes institucionales
+[ ] Seleccionar varias, pero no todas, muestra esas personas.
 
-Solo los reales.
+[ ] Seleccionar todos usa denominación colectiva.
 
-## 9. Riesgos que todavía no tienen cobertura automática
+[ ] IDs individuales permanecen guardados.
 
-No ocultarlos.
+[ ] Desmarcar uno revierte a nombres individuales.
 
-## 10. Resultado de comandos
+[ ] PDF usa la misma lógica.
 
-Mostrar:
+[ ] T2/ejecución/evidencias no pierden permisos.
 
-npx tsc --noEmit
-npm run build
-node --test tests/document-engine.test.mjs
-npm run test:e2e
+### HISTORIAL
 
-con resultado final.
+[ ] Primera entrada usa “Elaboración del Plan de Trabajo”.
 
-==================================================
-13. CRITERIO DE TERMINACIÓN
-==================================================
+[ ] Versión y ronda no cambian por esta corrección.
 
-No termines después de escribir los tests.
+### FIRMA
 
-Debes:
+[ ] Se investigó la última decisión real.
 
-AUDITAR
-→ IMPLEMENTAR TESTS
-→ EJECUTARLOS
-→ DETECTAR BUGS
-→ CORREGIR BUGS REALES
-→ VOLVER A EJECUTAR
-→ VALIDAR REGRESIONES
-→ GENERAR REPORTE.
+[ ] Comportamiento implementado coincide con la decisión más reciente.
 
-No modifiques funcionalidades sin motivo comprobable.
+[ ] Flujo incompleto no inventa actores.
 
-No hagas refactors cosméticos grandes.
+[ ] No hay doble firma.
 
-No conviertas el mockup en producción.
+[ ] No hay doble envío.
 
-Prioriza:
+### RESALTADO
 
-1. consistencia funcional;
-2. reglas de dominio;
-3. permisos;
-4. persistencia;
-5. trazabilidad;
-6. ausencia de regresiones;
-7. fidelidad documental;
-8. accesibilidad/testabilidad;
-9. estabilidad de los tests.
+[ ] Existe Resaltar y observar.
 
-Por el chat responde de forma breve mientras trabajas.
-No necesito narración paso a paso.
-Solo interrúmpeme si existe una decisión institucional que realmente impida continuar.
+[ ] Mouse drag funciona.
 
-Al finalizar, entrégame únicamente:
-- resumen breve;
-- número total de pruebas PASS;
-- bugs encontrados y corregidos;
-- pendientes reales;
-- ruta del reporte-e2e-secundario.md.
+[ ] Observación queda vinculada.
+
+[ ] Página correcta.
+
+[ ] Coordenadas normalizadas.
+
+[ ] Persiste tras recarga.
+
+[ ] Ir al resaltado funciona.
+
+[ ] Zoom no desalineó significativamente la marca.
+
+[ ] Docente ve el resaltado durante corrección.
+
+[ ] Observación resuelta queda histórica.
+
+[ ] Artefacto firmado no se modifica.
+
+### REGRESIÓN
+
+[ ] TypeScript PASS.
+
+[ ] Build PASS.
+
+[ ] Motor PASS.
+
+[ ] E2E completo PASS.
+
+[ ] Ninguna funcionalidad institucional previamente estable se degradó.
+
+---
+
+# PRIORIDAD
+
+Prioridad de decisión:
+
+1. Última decisión explícita del cliente/reunión.
+2. Documento institucional oficial.
+3. requirements.md actualizado con evidencia real.
+4. Arquitectura documental ya estabilizada.
+5. UX.
+6. Conveniencia técnica.
+
+No uses una solución técnicamente cómoda si contradice lo solicitado por el cliente.
+
+---
+
+# FORMA DE TRABAJO
+
+Quiero que trabajes directamente sobre el proyecto.
+
+NO me devuelvas únicamente recomendaciones.
+
+Inspecciona.
+Reproduce.
+Corrige.
+Prueba.
+Vuelve a probar.
+Documenta.
+
+Si encuentras un defecto adicional directamente relacionado con estos cuatro puntos, corrígelo si la solución es segura y agrega una regresión.
+
+Si encuentras algo no relacionado:
+NO amplíes el alcance.
+Regístralo como hallazgo pendiente.
+
+Al terminar, entrégame el reporte técnico completo junto con:
+
+- cantidad final de E2E;
+- PASS/FAIL;
+- archivos modificados;
+- bugs encontrados;
+- decisión final sobre Firmar y finalizar;
+- evidencia de la denominación colectiva;
+- estado real de Resaltar y observar;
+- si hubo actualización de snapshots;
+- cualquier discrepancia aún pendiente con la última reunión.

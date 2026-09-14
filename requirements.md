@@ -677,7 +677,7 @@ Versión:
 
 Descripción:
 
-`Elaboración inicial del Plan de Trabajo`
+`Elaboración del Plan de Trabajo`
 
 Fecha:
 

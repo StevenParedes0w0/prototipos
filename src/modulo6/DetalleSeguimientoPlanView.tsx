@@ -1,5 +1,6 @@
 import React from "react";
 import { ItemSeguimientoPlan } from "./types";
+import { getActivityResponsibleDisplayLabel } from "../documentEngine/responsibleDisplay";
 
 interface DetalleSeguimientoPlanViewProps {
   planItem: ItemSeguimientoPlan;
@@ -193,7 +194,7 @@ export default function DetalleSeguimientoPlanView({
 
                   {/* Responsables */}
                   <td style={{ fontSize: 12, color: "#334155" }}>
-                    {act.responsables.join(", ")}
+                    {getActivityResponsibleDisplayLabel(act)}
                   </td>
 
                   {/* Medios Requeridos */}

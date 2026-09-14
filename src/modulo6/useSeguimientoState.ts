@@ -43,7 +43,7 @@ export function sincronizarActividades(documents: DocumentMasterState[], anterio
         id, planId: doc.id, planVersion: doc.formalVersion, docenteElaborador: doc.currentArtifact.elaborador.nombre,
         sourceActivityId: matriz.id, nombre: matriz.nombre, categoria: previa?.categoria ?? "Otra", tipo: previa?.tipo ?? "opcional",
         planNombre: doc.nombre, grupo: doc.grupo, periodo: doc.periodo, desde: matriz.desde, hasta: matriz.hasta,
-        fechaLimiteExacta: `${matriz.hasta} — 23:59`, responsables: [...matriz.responsables], responsableIds: [...(matriz.responsableIds || [])], recursos: [...matriz.recursos], medios,
+        fechaLimiteExacta: `${matriz.hasta} — 23:59`, responsables: [...matriz.responsables], responsableIds: [...(matriz.responsableIds || [])], responsablesEtiqueta: matriz.responsablesEtiqueta, recursos: [...matriz.recursos], medios,
         soloLectura: closed.includes(doc.periodo) || doc.operationalState === "FINALIZADO", estado: "PENDIENTE",
       };
       return { ...actividad, estado: estadoActividadDesdeMedios(actividad) };

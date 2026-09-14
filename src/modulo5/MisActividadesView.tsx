@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ActividadEjecucion } from "./types";
 import { DOCENTE_ACTUAL, getDiasRestantes } from "./useActividadesState";
+import { getActivityResponsibleDisplayLabel } from "../documentEngine/responsibleDisplay";
 
 interface MisActividadesViewProps {
   currentUserName?: string;
@@ -376,7 +377,7 @@ export default function MisActividadesView({
                           <>
                             <span style={{ fontSize: 11, color: "#94a3b8" }}>•</span>
                             <span style={{ fontSize: 11, color: "#b45309", fontWeight: 500 }}>
-                              Resp: {act.responsables.join(", ")}
+                              Resp: {getActivityResponsibleDisplayLabel(act)}
                             </span>
                           </>
                         )}

@@ -168,7 +168,7 @@ export const INITIAL_ARTIFACT: DocumentArtifact = {
   historialCambios: [
     {
       version: "1.0",
-      descripcion: "Emisión inicial del Plan de Trabajo",
+      descripcion: "Elaboración del Plan de Trabajo",
       fecha: "05/09/2026",
     },
   ],
@@ -490,7 +490,7 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
     historialCambios: [
       {
         version: "1.0",
-        descripcion: "Emisión inicial de Plan de Trabajo validado",
+        descripcion: "Elaboración del Plan de Trabajo",
         fecha: "06/09/2026",
       },
     ],

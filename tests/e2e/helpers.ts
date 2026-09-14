@@ -92,7 +92,6 @@ export async function checklist(page: Page) {
 }
 export async function planToReview(page: Page) {
  const id=await createPlan(page); await completeMatrix(page); await next(page); await sign(page);
- await page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true}).click();
  return id;
 }
 export async function validatePlan(page: Page,id:string) {

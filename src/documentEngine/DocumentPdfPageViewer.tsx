@@ -4,6 +4,7 @@ import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowS
 import logoUta from "../img/Logo UTA-Azul.png";
 import { T1_FOOTER_TEXT, T1_FORMAT_TEXT, t1CoverMainBlockStyle, t1CoverStyle, t1FooterStyle } from "./t1Layout";
 import { canonicalDemoActorId } from "./workflow";
+import { getActivityResponsibleDisplayLabel } from "./responsibleDisplay";
 
 interface DocumentPdfPageViewerProps {
   artifact: DocumentArtifact;
@@ -70,6 +71,31 @@ export default function DocumentPdfPageViewer({
   const [obsTexto, setObsTexto] = useState("");
   const [editingObsId, setEditingObsId] = useState<number | null>(null);
   const [editingObsText, setEditingObsText] = useState("");
+
+  useEffect(() => {
+    if (!highlightMode && !showAddObsDrawer) return;
+    const cancelHighlight = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      dragStart.current = null;
+      setAnchor(undefined);
+      setHighlightMode(false);
+      setShowAddObsDrawer(false);
+    };
+    window.addEventListener("keydown", cancelHighlight);
+    return () => window.removeEventListener("keydown", cancelHighlight);
+  }, [highlightMode, showAddObsDrawer]);
+
+  useEffect(() => {
+    if (focusedObservation == null) return;
+    const observation = observations.find(item => item.id === focusedObservation);
+    if (!observation?.anchor || observation.anchor.pageNumber !== currentPage) return;
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById(`highlight-${focusedObservation}`);
+      target?.scrollIntoView({block:"center",behavior:"smooth"});
+      target?.focus({preventScroll:true});
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [currentPage, focusedObservation, observations]);
 
   // Checklist state
   const initialChecklist: Record<string, boolean> = isPlan
@@ -601,7 +627,7 @@ export default function DocumentPdfPageViewer({
             </div>
           </div>
 
-          {canHighlight && <button className="btn btn-secondary" aria-pressed={highlightMode} onClick={() => {setHighlightMode(!highlightMode); setAnchor(undefined);}}>{highlightMode ? "Cancelar resaltado" : "RESALTAR Y OBSERVAR"}</button>}
+          {canHighlight && <button className="btn btn-secondary" aria-label="Resaltar y observar" aria-pressed={highlightMode} onClick={() => {setHighlightMode(!highlightMode); setAnchor(undefined);}}>{highlightMode ? "Cancelar resaltado" : "RESALTAR Y OBSERVAR"}</button>}
           {/* PDF Page Canvas Scrollable Viewport */}
           <div
             ref={containerRef}
@@ -638,12 +664,12 @@ export default function DocumentPdfPageViewer({
                 transition: "max-width 0.2s ease, min-height 0.2s ease",
               }}
             >
-              <div className="review-overlay" style={{position: "absolute", inset: 0, zIndex: 10, pointerEvents: highlightMode ? "auto" : "none", cursor: highlightMode ? "crosshair" : "default", touchAction: "none"}}
+              <div className="review-overlay" data-testid="review-overlay" style={{position: "absolute", inset: 0, zIndex: 10, pointerEvents: highlightMode ? "auto" : "none", cursor: highlightMode ? "crosshair" : "default", touchAction: "none"}}
                 onPointerDown={e => { if (!highlightMode) return; const r=e.currentTarget.getBoundingClientRect(); dragStart.current={x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}; e.currentTarget.setPointerCapture(e.pointerId); }}
                 onPointerMove={e => {if (!dragStart.current) return; const r=e.currentTarget.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const start=dragStart.current; setAnchor({pageNumber:currentPage,x:Math.min(start.x,x),y:Math.min(start.y,y),width:Math.abs(start.x-x),height:Math.abs(start.y-y)});}}
-                onPointerUp={() => {dragStart.current=null; if(anchor && anchor.width > .005 && anchor.height > .005) {setObsTipo("seccion");setShowAddObsDrawer(true);} }}
+                onPointerUp={e => {const start=dragStart.current;dragStart.current=null;if(!start)return;const r=e.currentTarget.getBoundingClientRect();const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));const completed={pageNumber:currentPage,x:Math.min(start.x,x),y:Math.min(start.y,y),width:Math.abs(start.x-x),height:Math.abs(start.y-y)};setAnchor(completed);if(completed.width > .005 && completed.height > .005){setObsTipo("seccion");setShowAddObsDrawer(true);}}}
                 onPointerCancel={() => {dragStart.current=null;setAnchor(undefined);}}>
-                {observations.filter(o => o.anchor && o.ronda === reviewRound && o.anchor.pageNumber === currentPage).map(o => <div key={o.id} id={`highlight-${o.id}`} style={{position:"absolute",left:`${o.anchor!.x*100}%`,top:`${o.anchor!.y*100}%`,width:`${o.anchor!.width*100}%`,height:`${o.anchor!.height*100}%`,background:"rgba(250,204,21,.3)",border:focusedObservation===o.id ? "3px solid #2563eb" : "1px solid #ca8a04"}}><span style={{background:"#854d0e",color:"white",padding:"1px 4px",fontSize:11}}>{observations.indexOf(o)+1}</span></div>)}
+                {observations.filter(o => o.anchor && o.ronda === reviewRound && o.anchor.pageNumber === currentPage).map(o => <div key={o.id} id={`highlight-${o.id}`} data-testid={`observation-highlight-${o.id}`} data-page-number={o.anchor!.pageNumber} data-anchor-x={o.anchor!.x} data-anchor-y={o.anchor!.y} data-anchor-width={o.anchor!.width} data-anchor-height={o.anchor!.height} role="note" tabIndex={-1} aria-label={`Observación ${observations.indexOf(o)+1} resaltada en página ${o.anchor!.pageNumber}`} style={{position:"absolute",left:`${o.anchor!.x*100}%`,top:`${o.anchor!.y*100}%`,width:`${o.anchor!.width*100}%`,height:`${o.anchor!.height*100}%`,background:"rgba(250,204,21,.3)",border:focusedObservation===o.id ? "3px solid #2563eb" : "1px solid #ca8a04"}}><span style={{background:"#854d0e",color:"white",padding:"1px 4px",fontSize:11}}>{observations.indexOf(o)+1}</span></div>)}
                 {anchor && anchor.pageNumber===currentPage && <div style={{position:"absolute",left:`${anchor.x*100}%`,top:`${anchor.y*100}%`,width:`${anchor.width*100}%`,height:`${anchor.height*100}%`,background:"rgba(250,204,21,.3)",border:"1px solid #ca8a04"}} />}
               </div>
               {/* Watermark if not validated */}
@@ -971,7 +997,7 @@ export default function DocumentPdfPageViewer({
                                   {act.hasta ? act.hasta.split("-").reverse().join("/") : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155" }}>
-                                  {act.responsablesEtiqueta || act.responsables?.join(", ") || "Docente Responsable"}
+                                  {getActivityResponsibleDisplayLabel(act) || "Docente Responsable"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155", fontSize: 8 }}>
                                   {act.recursos && act.recursos.length > 0 ? (
@@ -1819,7 +1845,7 @@ export default function DocumentPdfPageViewer({
                       <span style={{ fontSize: 10.5, color: "#64748b" }}>Ronda {obs.ronda}</span>
                     </div>
 
-                    {obs.anchor && obs.ronda === reviewRound && <button className="btn btn-ghost btn-xs" onClick={() => {setCurrentPage(obs.anchor!.pageNumber);setFocusedObservation(obs.id);requestAnimationFrame(() => document.getElementById(`highlight-${obs.id}`)?.scrollIntoView({block:"center",behavior:"smooth"}));}}>IR AL RESALTADO</button>}
+                    {obs.anchor && obs.ronda === reviewRound && <button className="btn btn-ghost btn-xs" aria-label={`Ir al resaltado de observación ${observations.indexOf(obs)+1}`} onClick={() => {setCurrentPage(obs.anchor!.pageNumber);setFocusedObservation(obs.id);}}>IR AL RESALTADO</button>}
                     {isDocente && obs.estado === "activa" && onResolveObservacion && <button className="btn btn-ghost btn-xs" onClick={() => onResolveObservacion(obs.id)}>Marcar como resuelta</button>}
                     {editingObsId === obs.id ? (
                       <div style={{ marginTop: 4 }}>

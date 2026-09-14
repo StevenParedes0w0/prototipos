@@ -6,6 +6,7 @@ import ModalCargaEvidencia from "./ModalCargaEvidencia";
 import ModalReemplazarEvidencia from "./ModalReemplazarEvidencia";
 import VisorPdfModal from "./VisorPdfModal";
 import ModalAuditoria from "./ModalAuditoria";
+import { getActivityResponsibleDisplayLabel } from "../documentEngine/responsibleDisplay";
 import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
 
 interface DetalleActividadViewProps {
@@ -307,7 +308,7 @@ export default function DetalleActividadView({
               Solo lectura — usted no es responsable de esta actividad.
             </div>
             <p style={{ fontSize: 12.5, color: "#64748b", margin: 0, lineHeight: 1.45 }}>
-              Responsable único configurado: <strong>{actividad.responsables.join(", ")}</strong>. Solo los docentes responsables pueden cargar o reemplazar evidencias.
+              Responsabilidad configurada: <strong>{getActivityResponsibleDisplayLabel(actividad)}</strong>. Solo los docentes responsables pueden cargar o reemplazar evidencias.
             </p>
           </div>
         </div>
@@ -355,8 +356,7 @@ export default function DetalleActividadView({
             <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", margin: 0 }}>Responsables</h3>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {actividad.responsables.map((resp, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 26,
                   height: 26,
@@ -370,11 +370,10 @@ export default function DetalleActividadView({
                   fontWeight: 700,
                   flexShrink: 0,
                 }}>
-                  {resp.replace("Ing. ", "").replace("Dr. ", "").replace("MSc. ", "").slice(0, 2).toUpperCase()}
+                  RG
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{resp}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{getActivityResponsibleDisplayLabel(actividad)}</span>
               </div>
-            ))}
           </div>
         </div>
 

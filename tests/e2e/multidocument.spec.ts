@@ -17,7 +17,6 @@ test('crear y firmar un Informe derivado no modifica su Plan base',async({page})
  expect(report).toBeDefined();expect(report!.documentType).toBe('INFORME');
  expect(report!.documentoRelacionadoId).toBe(planId);
  expect(report!.currentArtifact.informeData?.relatedPlanId).toBe(planId);
- await page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true}).click();
  expect(await document(page,planId)).toEqual(planBefore);
  expect((await document(page,report!.id)).documentState).toBe('EN REVISIÓN');
 });

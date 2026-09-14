@@ -44,7 +44,7 @@ export default function WizardInformeView({
   onFinish,
   onCancel,
 }: WizardInformeViewProps) {
-  const { documents, crearNuevoDocumento, generarArtefactoInforme, firmarComoElaborador, enviarARevision } = docEngine;
+  const { documents, crearNuevoDocumento, generarArtefactoInforme, firmarComoElaborador } = docEngine;
 
   const [step, setStep] = useState<number>(1);
   const [createdDocId, setCreatedDocId] = useState<string | null>(null);
@@ -296,12 +296,8 @@ export default function WizardInformeView({
     if (!firmarComoElaborador(targetId, certFile, ubicacion, mode)) return false;
     setIsSigned(true);
     setShowFirmaModal(false);
-    return true;
-  };
-
-  const handleEnviarARevision = () => {
-    if (!createdDocId || !enviarARevision(createdDocId)) return;
     onFinish();
+    return true;
   };
 
   const stepLabels = [
@@ -1174,7 +1170,7 @@ export default function WizardInformeView({
                   Firma y Finalización
                 </h1>
                 <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
-                  Estampe su firma electrónica de responsabilidad y despache el informe a la bandeja del revisor técnico.
+                  Estampe su firma de responsabilidad para finalizar la elaboración y enviar automáticamente el informe a revisión.
                 </p>
               </div>
 
@@ -1214,16 +1210,9 @@ export default function WizardInformeView({
                         Firma registrada exitosamente por Ing. Andrea Pérez, Mg.
                       </div>
                       <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
-                        El documento puede ser remitido formalmente a la etapa de Revisión Técnica.
+                        El documento fue remitido automáticamente a la etapa de Revisión Técnica.
                       </div>
                     </div>
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleEnviarARevision}
-                      style={{ background: "#16a34a", border: "none", padding: "10px 20px", fontSize: 13.5, fontWeight: 800 }}
-                    >
-                      ENVIAR A REVISIÓN
-                    </button>
                   </div>
                 )}
               </div>

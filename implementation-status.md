@@ -171,23 +171,13 @@ Debe alinearse exactamente con la decisión institucional y formato final.
 
 ✅ Seleccionar todos.
 
-🔴 FALTA:
+✅ Denominación colectiva cuando se seleccionan todos los integrantes aplicables.
 
-Cuando se seleccionan todos los integrantes aplicables:
+✅ Etiquetas por tipo: `Responsable de la comisión`, `Responsable de la unidad`, `Responsable del club` y `Responsable del grupo`.
 
-la representación del documento debería utilizar denominación colectiva.
+✅ Los nombres e IDs individuales permanecen almacenados para trazabilidad y permisos.
 
-Actualmente puede terminar mostrando:
-
-`Andrea Pérez, Carlos López, Patricia Salazar`
-
-Debe soportarse:
-
-`Responsable de la comisión`
-
-o denominación configurada.
-
-Internamente conservar miembros individuales.
+✅ Al desmarcar un integrante, la presentación vuelve a los nombres individuales.
 
 ---
 
@@ -326,6 +316,12 @@ Debe modelarse mediante condición explícita.
 
 ✅ ocultamiento del botón si el usuario ya firmó.
 
+✅ `Firmar y finalizar` firma una sola vez y activa automáticamente la siguiente etapa configurada.
+
+✅ No existe una segunda acción `Enviar a revisión`.
+
+✅ Un flujo incompleto continúa bloqueando la firma y no inventa revisores.
+
 ---
 
 # 15. AISLAMIENTO MULTIDOCUMENTO
@@ -446,18 +442,17 @@ Realizar revisión visual completa de cada página.
 
 # 22. RESALTADO DE OBSERVACIONES
 
-🔴 NO IMPLEMENTADO COMPLETAMENTE.
+✅ Selección rectangular sobre la página y observación asociada.
 
-La reunión pidió:
+✅ Coordenadas normalizadas, página automática y persistencia DEMO.
 
-- seleccionar/resaltar una parte del documento;
-- asociarle una observación.
+✅ Navegación `Ir al resaltado`, feedback visual numerado y estabilidad al cambiar zoom.
 
-No hace falta editor complejo.
+✅ El docente visualiza y resuelve la observación durante corrección; la ronda anterior queda histórica.
 
-Prioridad:
+✅ Los resaltados no modifican las páginas del artefacto firmado.
 
-resaltado sencillo.
+✅ Acción accesible y cancelación con Escape.
 
 ---
 
@@ -742,29 +737,21 @@ Fidelidad documental T1.
 
 ## PRIORIDAD 2
 
-Responsables colectivos cuando Seleccionar todos.
+Flujos por grupo/órgano colegiado.
 
 ## PRIORIDAD 3
 
-Flujos por grupo/órgano colegiado.
+Revisión completa T2 contra formato oficial.
 
 ## PRIORIDAD 4
 
-Resaltado de observaciones.
+Normalización de nomenclatura `Gestión Documental`.
 
 ## PRIORIDAD 5
 
-Revisión completa T2 contra formato oficial.
-
-## PRIORIDAD 6
-
-Normalización de nomenclatura `Gestión Documental`.
-
-## PRIORIDAD 7
-
 Acciones mediante iconos.
 
-## PRIORIDAD 8
+## PRIORIDAD 6
 
 Pruebas end-to-end.
 

@@ -10,4 +10,4 @@ npm run test:e2e:headed
 
 Los artefactos de diagnóstico se guardan en `test-results/` cuando una prueba falla: captura, vídeo y traza. El reporte HTML se genera en `playwright-report/`.
 
-Las pruebas cubren el flujo documental T1 de dos rondas, revisores paralelos, persistencia de firma, aislamiento Plan/Informe, evidencias PDF y regresión visual de portada, matriz y firmas.
+Las pruebas cubren el flujo documental T1 de dos rondas, revisores paralelos, firma con envío automático, persistencia, bloqueo del Club Académico con flujo incompleto, denominación colectiva de responsables, resaltados normalizados asociados a observaciones, aislamiento Plan/Informe, evidencias PDF y regresión visual de portada, matriz y firmas.

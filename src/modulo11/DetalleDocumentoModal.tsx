@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { DocumentMasterState } from "../documentEngine/types";
 import DocumentPdfPageViewer from "../documentEngine/DocumentPdfPageViewer";
+import { getActivityResponsibleDisplayLabel } from "../documentEngine/responsibleDisplay";
 
 interface DetalleDocumentoModalProps {
   documento: DocumentMasterState;
@@ -396,7 +397,7 @@ export default function DetalleDocumentoModal({
                         <td style={{ fontWeight: 600, color: "#1e2a3a" }}>{act.nombre}</td>
                         <td style={{ fontSize: 12, color: "#475569" }}>{act.desde}</td>
                         <td style={{ fontSize: 12, color: "#475569" }}>{act.hasta}</td>
-                        <td style={{ fontSize: 12, color: "#475569" }}>{act.responsables.join(", ")}</td>
+                        <td style={{ fontSize: 12, color: "#475569" }}>{getActivityResponsibleDisplayLabel(act)}</td>
                         <td style={{ fontSize: 11.5, color: "#64748b" }}>{act.medios.join(", ")}</td>
                       </tr>
                     ))}

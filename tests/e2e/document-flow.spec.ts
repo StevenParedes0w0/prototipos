@@ -14,12 +14,12 @@ test('Plan T1: elaboración, firma, observación persistente, devolución y rond
  await next(page);
  let d=await document(page,id);
  expect(d.currentArtifact.pageCount).toBe(d.currentArtifact.pages!.length);
- for(const a of d.currentArtifact.matriz!) {expect(a.responsableIds).toEqual(['usr-andrea-01','usr-carlos-02','usr-patricia-03']);expect(a.responsablesEtiqueta).toBe('Integrantes de la Unidad');}
+ for(const a of d.currentArtifact.matriz!) {expect(a.responsableIds).toEqual(['usr-andrea-01','usr-carlos-02','usr-patricia-03']);expect(a.responsableNames).toEqual([names.andrea,names.carlos,names.patricia]);expect(a.responsablesEtiqueta).toBe('Responsable de la unidad');}
  await sign(page);
  d=await document(page,id);
- expect(d.documentState).toBe('FIRMADO POR ELABORADOR'); expect(d.currentArtifact.signatures).toHaveLength(1);
+ expect(d.documentState).toBe('EN REVISIÓN'); expect(d.currentArtifact.signatures).toHaveLength(1);
  const signed=structuredClone(d.currentArtifact);
- await page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true}).click();
+ await expect(page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true})).toHaveCount(0);
  d=await document(page,id);expect(d.documentState).toBe('EN REVISIÓN');expect(d.currentArtifact).toEqual(signed);
  await session(page,names.carlos);
  await expect(row(page,id)).toContainText('EN REVISIÓN');
@@ -72,7 +72,7 @@ test('Plan T1: elaboración, firma, observación persistente, devolución y rond
  await next(page);await next(page);await next(page);
  await page.getByRole('button',{name:'Continuar a Anexos →',exact:true}).click();await next(page);await next(page);
  d=await document(page,id);expect(d).toMatchObject({reviewRound:2,formalVersion:'1.0'});expect(d.currentArtifact.signatures).toHaveLength(0);expect(d.artifactHistory[0]).toEqual(signed);expect(d.observations[0].status).toBe('HISTORICAL');
- await sign(page);await page.getByRole('button',{name:'ENVIAR A REVISIÓN',exact:true}).click();
+ await sign(page);
  d=await document(page,id);expect(d).toMatchObject({documentState:'EN REVISIÓN',reviewRound:2});expect(d.currentArtifact.signatures).toHaveLength(1);
  expect((await documents(page)).filter(d=>d.id!==id)).toEqual(others);
 });

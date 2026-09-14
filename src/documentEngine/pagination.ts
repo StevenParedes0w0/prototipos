@@ -1,4 +1,5 @@
 import { DocumentArtifact, DocumentPage, DocumentPageBlock, DocumentType, FlowStageNode } from "./types";
+import { getActivityResponsibleDisplayLabel } from "./responsibleDisplay";
 
 export const MATRIX_ROWS_PER_PAGE = 6;
 export const DOCUMENT_PAGE_WIDTH = 794;
@@ -59,7 +60,7 @@ export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowSta
     text("justificacion", "1. JUSTIFICACIÓN", artifact.justificacion);
     text("objetivo", "2. OBJETIVO", artifact.objetivo);
     current = undefined;
-    table("matrix", "matriz", "3. MATRIZ DE ACTIVIDADES", (artifact.matriz || []).map(row => [row.nombre, row.desde, row.hasta, row.responsablesEtiqueta || row.responsables.join("\n"), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
+    table("matrix", "matriz", "3. MATRIZ DE ACTIVIDADES", (artifact.matriz || []).map(row => [row.nombre, row.desde, row.hasta, getActivityResponsibleDisplayLabel(row), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
     add({ type: "text", section: "fuente", text: "Fuente: " + (artifact.fuente || "—") + "\nElaborado por: " + artifact.grupo }, 42, "landscape");
     if (artifact.collectsPersonalData) add({ type: "text", section: "proteccion-datos", text: "Nota: Los datos proporcionados serán tratados conforme a la Ley Orgánica de Protección de Datos Personales, garantizando su confidencialidad, seguridad y uso responsable, y serán utilizados exclusivamente para fines institucionales." }, 64, "landscape");
   } else {
@@ -88,7 +89,7 @@ export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowSta
     current!.signatureSlots ||= [];
     current!.signatureSlots.push({ stageId: stage.id, userId: stage.actorId, role: stage.actorRole, action: stage.actionLabel || (stage.actorRole === "docente" ? "ELABORADO_POR" : stage.actorRole === "revisor" ? "REVISADO_POR" : "VALIDADO_POR"), label: signatureActionLabel(stage), actorName: stage.actorName, actorCargo: stage.actorCargo, actionMode: stage.actionMode, destinationName: stage.destinationName });
   }
-  const history = artifact.historialCambios?.length ? artifact.historialCambios : [{ version: artifact.formalVersion, descripcion: "Elaboración inicial del " + (artifact.documentType === "PLAN_TRABAJO" ? "Plan de Trabajo" : "Informe"), fecha: artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0] }];
+  const history = artifact.historialCambios?.length ? artifact.historialCambios : [{ version: artifact.formalVersion, descripcion: artifact.documentType === "PLAN_TRABAJO" ? "Elaboración del Plan de Trabajo" : "Elaboración inicial del Informe", fecha: artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0] }];
   table("history", "historial", "CONTROL DE HISTORIAL DE CAMBIOS", history.map(row => ["v" + row.version.replace(/^v/i, ""), row.descripcion, row.fecha]), [14, 65, 22], "portrait");
   return pages;
 }

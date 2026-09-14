@@ -1,5 +1,6 @@
 import { canonicalDemoActorId, flowFromConfiguration, hasConfiguredNextStage } from "./documentEngine/workflow";
 import { buildDocumentPages, getSignatureSlots } from "./documentEngine/pagination";
+import { getResponsibleDisplayLabel } from "./documentEngine/responsibleDisplay";
 import { useState, useRef, useEffect } from "react";
 import logoUta from "./img/Logo UTA-Azul.png";
 import MisActividadesView from "./modulo5/MisActividadesView";
@@ -1475,6 +1476,8 @@ interface ActividadMatriz {
   desde: string;
   hasta: string;
   responsables: string[];
+  responsableIds?: string[];
+  responsableNames?: string[];
   responsablesEtiqueta?: string;
   recursos: string[];
   medios: string[];
@@ -2362,13 +2365,13 @@ function isCompleta(a: ActividadMatriz) {
 
 function Step3Matriz({
   onPrev, onNext, maxReached = 3,
-  matriz, setMatriz, saving, onSave, initialEditId = null, responsablesGrupo, recursosCatalogo, mediosCatalogo, periodo, feriados,
+  matriz, setMatriz, saving, onSave, initialEditId = null, responsablesGrupo, responsablesGrupoIds, groupType, recursosCatalogo, mediosCatalogo, periodo, feriados,
 }: {
   onPrev: () => void; onNext: () => void; maxReached?: number;
   matriz: ActividadMatriz[]; setMatriz: (m: ActividadMatriz[]) => void;
   saving: boolean; onSave: (m: ActividadMatriz[]) => void;
   initialEditId?: number | null;
-  responsablesGrupo: string[]; recursosCatalogo: string[]; mediosCatalogo: string[]; periodo?: PeriodoAcademico; feriados: FeriadoItem[];
+  responsablesGrupo: string[]; responsablesGrupoIds: string[]; groupType?: string; recursosCatalogo: string[]; mediosCatalogo: string[]; periodo?: PeriodoAcademico; feriados: FeriadoItem[];
 }) {
   const [editId, setEditId] = useState<number | null>(initialEditId);
   const [dateError, setDateError] = useState("");
@@ -2379,6 +2382,11 @@ function Step3Matriz({
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
   const recursoOtroInputRef = useRef<HTMLInputElement>(null);
   const medioOtroInputRef = useRef<HTMLInputElement>(null);
+  const responsibleSelection = (names: string[]) => {
+    const responsableNames = [...new Set(names)];
+    const responsableIds = responsablesGrupo.flatMap((name, index) => responsableNames.includes(name) && responsablesGrupoIds[index] ? [responsablesGrupoIds[index]] : []);
+    return {responsables:responsableNames,responsableNames,responsableIds};
+  };
 
   function handleOpenEdit(id: number | null) {
     setEditId(id);
@@ -2579,7 +2587,7 @@ function Step3Matriz({
                       {a.hasta ? a.hasta.split("-").reverse().join("/") : "—"}
                     </td>
                     <td style={{ fontSize: 12.5, color: a.responsables.length ? "#334155" : "#94a3b8", paddingLeft: 14 }}>
-                      {a.responsables.length ? `${a.responsables.length} persona${a.responsables.length > 1 ? "s" : ""}` : "—"}
+                      {a.responsables.length ? getResponsibleDisplayLabel({groupType,selectedResponsibleIds:a.responsableIds || a.responsables,allGroupMemberIds:a.responsableIds ? responsablesGrupoIds : responsablesGrupo,selectedResponsibleNames:a.responsableNames || a.responsables}) : "—"}
                     </td>
                     <td style={{ fontSize: 12.5, color: recursosValidos.length ? "#334155" : "#94a3b8", paddingLeft: 14 }}>
                       {recursosValidos.length ? `${recursosValidos.length} recurso${recursosValidos.length > 1 ? "s" : ""}` : "—"}
@@ -2738,7 +2746,7 @@ function Step3Matriz({
                   <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#1a4f8a", fontWeight: 600, cursor: "pointer", marginBottom: 4 }}>
                     <input type="checkbox"
                       checked={responsablesGrupo.length > 0 && responsablesGrupo.every(r => editAct.responsables.includes(r))}
-                      onChange={e => updateAct({ ...editAct, responsables: e.target.checked ? [...responsablesGrupo] : [] })}
+                      onChange={e => updateAct({ ...editAct, ...responsibleSelection(e.target.checked ? responsablesGrupo : []) })}
                       style={{ accentColor: "#1a4f8a" }}
                     />
                     Seleccionar todos
@@ -2747,7 +2755,7 @@ function Step3Matriz({
                     <label key={r} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#334155", cursor: "pointer" }}>
                       <input type="checkbox"
                         checked={editAct.responsables.includes(r)}
-                        onChange={e => updateAct({ ...editAct, responsables: e.target.checked ? [...editAct.responsables, r] : editAct.responsables.filter(x => x !== r) })}
+                        onChange={e => updateAct({ ...editAct, ...responsibleSelection(e.target.checked ? [...editAct.responsables, r] : editAct.responsables.filter(x => x !== r)) })}
                         style={{ accentColor: "#1a4f8a" }}
                       />
                       {r}
@@ -2756,11 +2764,9 @@ function Step3Matriz({
                 </div>
                 {editAct.responsables.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
-                    {editAct.responsables.map(r => (
-                      <span key={r} style={{ fontSize: 11.5, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 99, fontWeight: 500 }}>
-                        {r.split(" ").slice(0, 3).join(" ")}
-                      </span>
-                    ))}
+                    <span style={{ fontSize: 11.5, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 99, fontWeight: 500 }}>
+                      {getResponsibleDisplayLabel({groupType,selectedResponsibleIds:editAct.responsableIds || editAct.responsables,allGroupMemberIds:editAct.responsableIds ? responsablesGrupoIds : responsablesGrupo,selectedResponsibleNames:editAct.responsableNames || editAct.responsables})}
+                    </span>
                   </div>
                 )}
               </div>
@@ -2951,8 +2957,9 @@ function Step3Matriz({
 
 // ─── 05 — Revisión de la Matriz ───────────────────────────────────────────────
 
-function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, saving = false }: {
-  onPrev: () => void; onNext: () => void; maxReached?: number; onGoToMatrix?: () => void;
+function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, onEditActivity, matriz, groupType, responsablesGrupo, responsablesGrupoIds, saving = false }: {
+  onPrev: () => void; onNext: () => void; maxReached?: number; onGoToMatrix?: () => void; onEditActivity?: (id: number) => void;
+  groupType?: string; responsablesGrupo: string[]; responsablesGrupoIds: string[];
   matriz: ActividadMatriz[]; saving?: boolean;
 }) {
   const total = matriz.length;
@@ -3030,7 +3037,7 @@ function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, s
                     {!completa && (
                       <span style={{ fontSize: 11, fontWeight: 700, background: "#fef3c7", color: "#92400e", padding: "2px 8px", borderRadius: 99 }}>PENDIENTE</span>
                     )}
-                    <button className="btn btn-ghost btn-xs">
+                    <button className="btn btn-ghost btn-xs" onClick={() => onEditActivity?.(a.id)} aria-label={`Editar actividad ${a.nombre}`}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       Editar
                     </button>
@@ -3042,7 +3049,7 @@ function Step3Revision({ onPrev, onNext, maxReached = 3, onGoToMatrix, matriz, s
                   {[
                     { label: "Desde", val: a.desde ? a.desde.split("-").reverse().join("/") : "—" },
                     { label: "Hasta", val: a.hasta ? a.hasta.split("-").reverse().join("/") : "—" },
-                    { label: "Responsables", val: a.responsables.length ? a.responsables.join(", ") : "—" },
+                    { label: "Responsables", val: a.responsables.length ? getResponsibleDisplayLabel({groupType,selectedResponsibleIds:a.responsableIds || a.responsables,allGroupMemberIds:a.responsableIds ? responsablesGrupoIds : responsablesGrupo,selectedResponsibleNames:a.responsableNames || a.responsables}) : "—" },
                     { label: "Recursos", val: a.recursos.filter(r => r.trim()).length ? a.recursos.filter(r => r.trim()).join(", ") : "—" },
                     { label: "Medios de verificación", val: a.medios.filter(m => m.trim()).length ? a.medios.filter(m => m.trim()).join(", ") : "—" },
                   ].map((col, j) => (
@@ -3670,9 +3677,9 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, artifact, docEngine }: {
 
 // ─── Step 7 — Firma y Finalización ───────────────────────────────────────────────────
 
-function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngine }: {
+function Step7Firma({ onPrev, onNext, maxReached = 7, docEngine }: {
   onPrev: () => void; onNext: () => void; maxReached?: number;
-  onEnviarRevision: () => void; docEngine?: ReturnType<typeof useDocumentEngine>;
+  docEngine?: ReturnType<typeof useDocumentEngine>;
 }) {
   const [open, setOpen] = useState(false);
   const doc = docEngine?.docMaster;
@@ -3682,13 +3689,12 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, onEnviarRevision, docEngin
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <Stepper current={7} maxReached={maxReached} />
     <div style={{padding:28}}><h1 style={{fontSize:22,fontWeight:700,color:"#0f2f56"}}>Firma y Finalización</h1>
-      <p style={{margin:"16px 0"}}>La firma finaliza la elaboración. Después podrá enviar el documento a la siguiente etapa configurada.</p>
+      <p style={{margin:"16px 0"}}>La firma finaliza la elaboración y envía automáticamente el documento a la siguiente etapa configurada.</p>
       {!flowConfigured && <div role="alert" style={{marginBottom:16,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#92400e"}}><strong>El flujo de aprobación de este grupo aún no está completamente configurado.</strong><br/>Solicite al administrador completar la configuración del flujo.</div>}
       {doc?.documentState === "LISTO PARA FIRMA" && <button className="btn btn-primary" disabled={!slot || !actorEligible || !flowConfigured} onClick={() => setOpen(true)}>FIRMAR Y FINALIZAR ELABORACIÓN</button>}
-      {doc?.documentState === "FIRMADO POR ELABORADOR" && <button className="btn btn-primary" disabled={!flowConfigured} onClick={() => {onEnviarRevision();}}>ENVIAR A REVISIÓN</button>}
       <button className="btn btn-ghost" onClick={onPrev}>Volver a previsualización</button>
     </div>
-    {doc && <ModalFirmaDocumental isOpen={open} onClose={() => setOpen(false)} tituloDocumento={doc.nombre} grupo={doc.grupo} formalVersion={doc.formalVersion} reviewRound={doc.reviewRound} actorNombre={doc.currentArtifact.elaborador.nombre} actorCargo={doc.currentArtifact.elaborador.cargo} ubicacionSugerida={slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible"} accionTexto="FIRMAR Y FINALIZAR ELABORACIÓN" actorEligible={actorEligible} hasValidSignatureSlot={Boolean(slot)} onFirmar={(file, location, mode) => docEngine!.firmarComoElaborador(doc.id,file,location,mode)} />}
+    {doc && <ModalFirmaDocumental isOpen={open} onClose={() => setOpen(false)} tituloDocumento={doc.nombre} grupo={doc.grupo} formalVersion={doc.formalVersion} reviewRound={doc.reviewRound} actorNombre={doc.currentArtifact.elaborador.nombre} actorCargo={doc.currentArtifact.elaborador.cargo} ubicacionSugerida={slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible"} accionTexto="FIRMAR Y FINALIZAR ELABORACIÓN" actorEligible={actorEligible} hasValidSignatureSlot={Boolean(slot)} onFirmar={(file, location, mode) => {const signed=docEngine!.firmarComoElaborador(doc.id,file,location,mode);if(signed) onNext();return signed;}} />}
   </div>;
 }
 
@@ -3872,9 +3878,18 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
 
   const grupoActual = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).find(g => g.nombre === draft.grupo);
   const periodoActual = adminState?.periodos.find(p => p.nombre === draft.periodo);
-  const responsablesGrupo = grupoActual?.miembros.filter(m => !adminState || adminState.usuarios.some(u => u.id === m.usuarioId && u.estado === "ACTIVO")).map(m => m.nombreCompleto) || [];
+  const miembrosAplicables = (grupoActual?.miembros || []).filter(m => !adminState || adminState.usuarios.some(u => u.id === m.usuarioId && u.estado === "ACTIVO"));
+  const responsablesGrupo = miembrosAplicables.map(m => m.nombreCompleto);
+  const responsablesGrupoIds = miembrosAplicables.map(m => canonicalDemoActorId(m.usuarioId));
   const gruposDisponibles = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).filter(g => g.estado === "ACTIVO" && g.miembros.some(m => canonicalDemoActorId(m.usuarioId) === docEngine?.currentUser.id));
-  const matrizDocumental = draft.matriz.map(a => ({...a, responsableIds: grupoActual?.miembros.filter(member => a.responsables.includes(member.nombreCompleto)).map(member => canonicalDemoActorId(member.usuarioId)) || [], responsablesEtiqueta: responsablesGrupo.length > 0 && responsablesGrupo.every(r => a.responsables.includes(r)) ? `Integrantes ${grupoActual?.tipo === "Comisión" ? "de la Comisión" : grupoActual?.tipo === "Unidad" ? "de la Unidad" : grupoActual?.tipo === "Club" ? "del Club" : "del Grupo"}` : undefined}));
+  const matrizDocumental = draft.matriz.map(a => {
+    const members = miembrosAplicables;
+    const responsableIds = members.filter(member => a.responsables.includes(member.nombreCompleto)).map(member => canonicalDemoActorId(member.usuarioId));
+    const allGroupMemberIds = members.map(member => canonicalDemoActorId(member.usuarioId));
+    const responsableNames = [...new Set(a.responsables)];
+    const display = getResponsibleDisplayLabel({groupType:grupoActual?.tipo,selectedResponsibleIds:responsableIds,allGroupMemberIds,selectedResponsibleNames:responsableNames});
+    return {...a,responsables:responsableNames,responsableNames,responsableIds,responsablesEtiqueta:display !== responsableNames.join(", ") ? display : undefined};
+  });
 
   function cargarPlan(docId: string) {
     const doc = docEngine?.documents.find(d => d.id === docId);
@@ -3901,13 +3916,6 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
     const first = draft.matriz.find(a => !isCompleta(a));
     setInitialEditId(first?.id ?? null);
     setSub("step3edit");
-  }
-
-  function handleEnviarRevision() {
-    if (docEngine) {
-      if (!docEngine.enviarARevision(docEngine.docMaster.id)) return;
-    }
-    setSub("step8");
   }
 
   function handleCorregir(targetDocId = docEngine?.docMaster.id) {
@@ -3976,6 +3984,8 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <><label style={{padding:"12px 28px",fontSize:13}}><input type="checkbox" checked={draft.collectsPersonalData} onChange={e => saveDraft({collectsPersonalData:e.target.checked})} /> Esta planificación recopila datos personales. Incluir nota de protección de datos.</label><label className="form-label" style={{padding:"12px 28px"}}>Fuente de la matriz<input className="form-input" value={draft.fuente} onChange={e => saveDraft({fuente:e.target.value})} placeholder="Documento, grupo u otra fuente" /></label><Step3Matriz
           maxReached={maxReached}
           responsablesGrupo={responsablesGrupo}
+          responsablesGrupoIds={responsablesGrupoIds}
+          groupType={grupoActual?.tipo}
           recursosCatalogo={(adminState?.recursos || RECURSOS_CATALOGO_INICIALES).filter(r => r.estado === "ACTIVO").map(r => r.nombre)}
           mediosCatalogo={(adminState?.medios || MEDIOS_CATALOGO_INICIALES).filter(r => r.estado === "ACTIVO").map(r => r.nombre)}
           periodo={periodoActual} feriados={adminState?.feriados || []}
@@ -3992,10 +4002,14 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <Step3Revision
           maxReached={maxReached}
           matriz={draft.matriz}
+          groupType={grupoActual?.tipo}
+          responsablesGrupo={responsablesGrupo}
+          responsablesGrupoIds={responsablesGrupoIds}
           saving={saving}
           onPrev={() => { setInitialEditId(null); setSub("step3edit"); }}
           onNext={() => { setMaxReached(m => Math.max(m, 5)); setSub("step5"); }}
           onGoToMatrix={goToMatrizCompletarPendientes}
+          onEditActivity={id => {setInitialEditId(id);setSub("step3edit");}}
         />
       )}
       {sub === "step4" && (
@@ -4054,7 +4068,6 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <Step7Firma
           maxReached={maxReached}
           docEngine={docEngine}
-          onEnviarRevision={handleEnviarRevision}
           onPrev={() => setSub("step6")}
           onNext={() => setSub("step8")}
         />

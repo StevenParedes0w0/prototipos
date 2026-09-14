@@ -7,6 +7,7 @@ export interface ActividadMatrizDoc {
   hasta: string;
   responsables: string[];
   responsableIds?: string[];
+  responsableNames?: string[];
   responsablesEtiqueta?: string;
   recursos: string[];
   medios: string[];
