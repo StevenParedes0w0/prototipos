@@ -293,7 +293,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
               fontSize: 30, fontWeight: 800, color: "#e8f0fa", lineHeight: 1.2,
               fontFamily: "'DM Sans',sans-serif", marginBottom: 10,
             }}>
-              Gestión de<br />Planes de Trabajo
+              Gestión<br />Documental
             </h1>
             <p style={{ fontSize: 14.5, color: "#7aaed0", lineHeight: 1.65, marginBottom: 32, maxWidth: 340 }}>
               Planificación, seguimiento y evidencias docentes.
