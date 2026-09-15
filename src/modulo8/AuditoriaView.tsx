@@ -1,4 +1,4 @@
-import { Eye } from "../components/icons";
+import { Eye, History, Search } from "../components/icons";
 import { TableActionButton } from "../components/TableActionButton";
 import React, { useState } from "react";
 import { AuditoriaEvento } from "./types";
@@ -125,7 +125,7 @@ export default function AuditoriaView({
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}
           >
-            <span>⏱</span> CONSULTAR TRAZABILIDAD POR OBJETO
+            <History aria-hidden="true" style={{width:15,height:15}}/> CONSULTAR TRAZABILIDAD POR OBJETO
           </button>
         </div>
       </div>
@@ -535,7 +535,7 @@ export default function AuditoriaView({
                 /* Pantalla 05 — Estado Vacío */
                 <tr>
                   <td colSpan={8} style={{ padding: "48px 24px", textAlign: "center" }}>
-                    <div style={{ fontSize: 32, color: "#94a3b8", marginBottom: 8 }}>🔍</div>
+                    <Search aria-hidden="true" style={{width:32,height:32,color:"#94a3b8",margin:"0 auto 8px"}}/>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
                       No se encontraron eventos con los filtros seleccionados
                     </div>

@@ -219,7 +219,7 @@ export const CierrePeriodosView: React.FC<CierrePeriodosViewProps> = ({
           </p>
 
           <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900">
-            ℹ <strong>Restablecimiento de Demostración:</strong> El botón <em>RESTABLECER DEMO</em> sirve exclusivamente para reiniciar el escenario interactivo a su estado inicial en curso. No representa una reapertura institucional, dado que dicho procedimiento no forma parte de los requerimientos confirmados.
+            <Info aria-hidden="true" className="w-3 h-3 inline mr-1"/> <strong>Restablecimiento de Demostración:</strong> El botón <em>RESTABLECER DEMO</em> sirve exclusivamente para reiniciar el escenario interactivo a su estado inicial en curso. No representa una reapertura institucional, dado que dicho procedimiento no forma parte de los requerimientos confirmados.
           </div>
         </div>
       )}
@@ -348,7 +348,7 @@ export const CierrePeriodosView: React.FC<CierrePeriodosViewProps> = ({
                     fontWeight: 800,
                   }}
                 >
-                  ℹ
+                  <Info aria-hidden="true" className="w-4 h-4"/>
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 800, color: "#92400e", margin: 0 }}>
                   Aviso de Simulación de Cierre

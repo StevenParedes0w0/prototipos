@@ -8,6 +8,7 @@ import VisorPdfModal from "./VisorPdfModal";
 import ModalAuditoria from "./ModalAuditoria";
 import { getActivityResponsibleDisplayLabel } from "../documentEngine/responsibleDisplay";
 import ModalVerObservacionDocente from "../modulo6/ModalVerObservacionDocente";
+import { AlertTriangle, Clock } from "../components/icons";
 
 interface DetalleActividadViewProps {
   currentUserName?: string;
@@ -276,7 +277,7 @@ export default function DetalleActividadView({
           </svg>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "#991b1b", marginBottom: 3, letterSpacing: "0.02em" }}>
-              ⚠ PLAZO VENCIDO
+              <AlertTriangle aria-hidden="true" style={{width:15,height:15,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/> PLAZO VENCIDO
             </div>
             <p style={{ fontSize: 13, color: "#7f1d1d", margin: "0 0 6px", lineHeight: 1.45 }}>
               El plazo ordinario para cargar o reemplazar evidencias finalizó el {actividad.hasta} a las 23:59.
@@ -516,7 +517,7 @@ export default function DetalleActividadView({
                             borderRadius: 99,
                             border: "1px solid #fca5a5",
                           }}>
-                            ⚠ OBSERVADA
+                            <AlertTriangle aria-hidden="true" style={{width:13,height:13,display:"inline",verticalAlign:"text-bottom",marginRight:4}}/> OBSERVADA
                           </span>
                         )}
                         {(medio.estadoValidacion === "PENDIENTE DE VALIDACIÓN" || (!medio.estadoValidacion && medio.estado === "CARGADA")) && (
@@ -529,7 +530,7 @@ export default function DetalleActividadView({
                             borderRadius: 99,
                             border: "1px solid #fde68a",
                           }}>
-                            ⏳ PENDIENTE DE VALIDACIÓN
+                            <Clock aria-hidden="true" style={{width:13,height:13,display:"inline",verticalAlign:"text-bottom",marginRight:4}}/> PENDIENTE DE VALIDACIÓN
                           </span>
                         )}
                       </div>

@@ -534,6 +534,44 @@ export const INITIAL_PLAN_TITULACION_MASTER: DocumentMasterState = {
   fechaUltimaActualizacion: "06/09/2026 15:00",
 };
 
+export const INITIAL_PLAN_ANDREA_VINCULACION_MASTER: DocumentMasterState = {
+  ...INITIAL_PLAN_TITULACION_MASTER,
+  id: "doc-plan-andrea-vinculacion-2026",
+  teacherId: "usr-andrea-01",
+  groupId: "grp-4",
+  periodId: "per-1",
+  codigo: "DEMO-PT-VINCULACION-ANDREA",
+  nombre: "Plan de Trabajo: Comisión de Vinculación con la Sociedad",
+  grupo: "Comisión de Vinculación con la Sociedad",
+  currentArtifact: {
+    ...INITIAL_PLAN_TITULACION_MASTER.currentArtifact,
+    id: "art-plan-andrea-vinculacion-v1",
+    titulo: "Plan de Trabajo: Comisión de Vinculación con la Sociedad",
+    grupo: "Comisión de Vinculación con la Sociedad",
+    generatedBy: "Ing. Andrea Pérez, Mg.",
+    elaborador: { id: "usr-andrea-01", nombre: "Ing. Andrea Pérez, Mg.", cargo: "Docente elaborador", email: "andrea.perez@uta.edu.ec" },
+    justificacion: "La Comisión de Vinculación con la Sociedad articula actividades académicas con actores externos para fortalecer la transferencia de conocimiento y el seguimiento de compromisos institucionales.",
+    objetivo: "Coordinar y documentar las actividades de vinculación con la sociedad previstas para el período Julio – Diciembre 2026.",
+    matriz: [
+      { id: 1, nombre: "Seguimiento técnico de proyectos de vinculación activos", desde: "08/09/2026", hasta: "30/10/2026", responsables: ["Ing. Andrea Pérez, Mg."], responsableIds: ["usr-andrea-01"], responsableNames: ["Ing. Andrea Pérez, Mg."], recursos: ["Matriz de seguimiento", "Sala de reuniones"], medios: ["Informe", "Acta"] },
+      { id: 2, nombre: "Socialización de resultados con las entidades participantes", desde: "03/11/2026", hasta: "11/12/2026", responsables: ["Ing. Andrea Pérez, Mg."], responsableIds: ["usr-andrea-01"], responsableNames: ["Ing. Andrea Pérez, Mg."], recursos: ["Equipos de cómputo"], medios: ["Informe", "Registro fotográfico"] },
+    ],
+    pages: undefined,
+    pageCount: 0,
+    signatureSlots: undefined,
+    signatures: [
+      { stageId: "andrea-vinc-stage-1", actorId: "usr-andrea-01", actor: "Ing. Andrea Pérez, Mg.", cargo: "Docente elaborador", role: "docente", fecha: "05/09/2026", hora: "09:00", ubicacion: "Firmas de Responsabilidad: Elaborado por", credentialMode: "demo", isDemo: true },
+      { stageId: "andrea-vinc-stage-2", actorId: "usr-carlos-02", actor: "Ing. Carlos López, Mg.", cargo: "Responsable de revisión técnica", role: "revisor", fecha: "06/09/2026", hora: "10:30", ubicacion: "Firmas de Responsabilidad: Revisado por", credentialMode: "demo", isDemo: true },
+      { stageId: "andrea-vinc-stage-3", actorId: "usr-patricia-03", actor: "Ing. Patricia Salazar, Mg.", cargo: "Validadora institucional", role: "validador", fecha: "06/09/2026", hora: "15:00", ubicacion: "Firmas de Responsabilidad: Validado por", credentialMode: "demo", isDemo: true },
+    ],
+  },
+  flowStages: [
+    { id: "andrea-vinc-stage-1", actorId: "usr-andrea-01", stageName: "ETAPA 1 — Elaboración", actorName: "Ing. Andrea Pérez, Mg.", actorCargo: "Docente elaborador", actorRole: "docente", estado: "FIRMADO", actionLabel: "ELABORADO_POR" },
+    { id: "andrea-vinc-stage-2", actorId: "usr-carlos-02", stageName: "ETAPA 2 — Revisión", actorName: "Ing. Carlos López, Mg.", actorCargo: "Responsable de revisión técnica", actorRole: "revisor", estado: "APROBADO", actionLabel: "REVISADO_POR" },
+    { id: "andrea-vinc-stage-3", actorId: "usr-patricia-03", stageName: "ETAPA 3 — Validación final", actorName: "Ing. Patricia Salazar, Mg.", actorCargo: "Validadora institucional", actorRole: "validador", estado: "FIRMADO", actionLabel: "VALIDADO_POR" },
+  ],
+};
+
 export const INITIAL_PLAN_CLUB_DRAFT_MASTER: DocumentMasterState = {
   ...INITIAL_DOCUMENT_MASTER,
   id: "doc-plan-club-2026-1",
@@ -595,6 +633,7 @@ export const INITIAL_PLAN_VINCULACION_REVISION_MASTER: DocumentMasterState = {
 
 export const INITIAL_DOCUMENTS_LIST: DocumentMasterState[] = [
   INITIAL_PLAN_TITULACION_MASTER,
+  INITIAL_PLAN_ANDREA_VINCULACION_MASTER,
   INITIAL_DOCUMENT_MASTER,
   INITIAL_INFORME_MASTER,
   INITIAL_PLAN_CLUB_DRAFT_MASTER,

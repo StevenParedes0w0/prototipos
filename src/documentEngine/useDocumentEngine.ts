@@ -109,7 +109,7 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       institutionalUnitType: relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || "ACADEMIC",
       institutionalUnitId: relatedPlan?.currentArtifact.institutionalUnitId || datos.institutionalUnitId || "unit-fisei",
       careerId: relatedPlan?.currentArtifact.careerId || datos.careerId,
-      templateConfiguration: template ? { sectionOrder: template.configuracion.map(s=>s.id), activeSectionIds: template.configuracion.filter(s=>s.activa).map(s=>s.id), capturedAt: timestamp() } : undefined,
+      templateConfiguration: template ? { templateId: template.id, configVersion: template.version, sectionOrder: template.configuracion.map(s=>s.id), activeSectionIds: template.configuracion.filter(s=>s.activa).map(s=>s.id), capturedAt: timestamp() } : undefined,
       elaborador,
       justificacion: tipo === "PLAN_TRABAJO" ? JUSTIFICACION_INICIAL : undefined, objetivo: tipo === "PLAN_TRABAJO" ? OBJETIVO_INICIAL : undefined, matriz: tipo === "PLAN_TRABAJO" ? [] : undefined,
       informeData: tipo === "INFORME" ? { informeOrigen: datos.informeOrigen || "DERIVADO_PLAN", relatedPlanId: relatedPlan?.id, relatedPlanTitulo: relatedPlan?.nombre, antecedentes: datos.antecedentes || "", actividadesInforme: activities, conclusiones: "", oportunidadesMejora: "", aplicaRegistroContactos: false, contactosDelegacion: [] } : undefined,

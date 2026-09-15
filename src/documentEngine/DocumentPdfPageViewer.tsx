@@ -1,6 +1,6 @@
-import { MATRIX_ROWS_PER_PAGE } from "./pagination";
+import { MATRIX_ROWS_PER_PAGE, PAGE_SIZE_A4 } from "./pagination";
 import React, { useEffect, useState, useRef } from "react";
-import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, FlowStageNode } from "./types";
+import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, DocumentPage, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
 import { T1_FOOTER_TEXT, T1_FORMAT_TEXT, t1CoverMainBlockStyle, t1CoverStyle, t1FooterStyle } from "./t1Layout";
 
@@ -10,6 +10,45 @@ const formatInstitutionalDate = (value: string) => {
   const months = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   return `${Number(match[1]).toString().padStart(2,"0")} de ${months[Number(match[2])-1]} de ${match[3]}`;
 };
+
+const configuredSectionLabels: Record<string, string> = {
+  general: "INFORMACIÓN GENERAL", justification: "JUSTIFICACIÓN", objective: "OBJETIVO",
+  matrix: "MATRIZ DE ACTIVIDADES", background: "ANTECEDENTES", development: "DESARROLLO DE ACTIVIDADES",
+  conclusions: "CONCLUSIONES", opportunities: "OPORTUNIDADES DE MEJORA", contacts: "REGISTRO DE CONTACTOS",
+  annexes: "ANEXOS", signatures: "FIRMAS DE RESPONSABILIDAD", history: "CONTROL DE HISTORIAL DE CAMBIOS",
+};
+
+function ConfiguredDocumentPage({ artifact, page, pages, flowStages }: { artifact: DocumentArtifact; page: DocumentPage; pages: DocumentPage[]; flowStages: FlowStageNode[] }) {
+  const activeOrder = (artifact.templateConfiguration?.sectionOrder || []).filter(id => artifact.templateConfiguration?.activeSectionIds.includes(id) && configuredSectionLabels[id]);
+  if (page.type === "cover") return <div data-rendered-section="general" style={{...t1CoverStyle,flex:1}}>
+    <div style={{textAlign:"center",marginTop:44,marginBottom:58,fontSize:34,fontWeight:800,lineHeight:1.15}}>UNIVERSIDAD TÉCNICA<br/>DE AMBATO</div>
+    <div style={t1CoverMainBlockStyle}>
+      <div><b>UNIDAD ACADÉMICA / ADMINISTRATIVA: </b>{artifact.unidadAcademica}</div>
+      {artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{marginTop:8}}><b>CARRERA: </b>{artifact.carrera.toUpperCase()}</div>}
+      <div style={{marginTop:8}}><b>{artifact.documentType === "PLAN_TRABAJO" ? "PLAN DE TRABAJO DE: " : "INFORME DE: "}</b>{artifact.documentType === "PLAN_TRABAJO" ? artifact.grupo.toUpperCase() : artifact.titulo}</div>
+      <div style={{marginTop:8}}><b>PERÍODO: </b>{artifact.periodo}</div>
+    </div>
+  </div>;
+  if (page.type === "index") return <div data-testid="dynamic-document-index" style={{flex:1,padding:"8px 0"}}>
+    <h3 style={{fontSize:14,color:"#323E4F"}}>ÍNDICE DE CONTENIDO</h3>
+    {activeOrder.map((id,index)=>{const pageIndex=pages.findIndex(candidate=>candidate.contentSections?.includes(id));return <div key={id} data-index-section={id} style={{display:"flex",alignItems:"baseline",gap:8,fontSize:10.5,padding:"5px 0"}}><b>{index+1}. {configuredSectionLabels[id]}</b><span style={{flex:1,borderBottom:"1px dotted #94a3b8"}}/><span>Pág. {pageIndex+1}</span></div>;})}
+  </div>;
+  const renderTable = (rows: string[][], headers: string[]) => <table style={{width:"100%",borderCollapse:"collapse",fontSize:8.5}}><thead><tr>{headers.map(h=><th key={h} style={{border:"1px solid #475569",padding:6,background:"#f1f5f9"}}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j} style={{border:"1px solid #64748b",padding:6,whiteSpace:"pre-line"}}>{cell}</td>)}</tr>)}</tbody></table>;
+  return <div data-testid="dynamic-document-content" data-section-order={activeOrder.join(",")} style={{flex:1,padding:"4px 0"}}>
+    {(page.blocks || []).map((block,index)=><section key={`${block.section}-${index}`} data-rendered-section={block.section} style={{marginBottom:18}}>
+      {block.title && <h3 style={{fontSize:13.5,color:"#323E4F",margin:"0 0 8px",textTransform:"uppercase"}}>{block.title}</h3>}
+      {block.type === "text" && <p style={{fontSize:10.5,lineHeight:1.7,textAlign:"justify",whiteSpace:"pre-line",margin:0}}>{block.text}</p>}
+      {block.type === "matrix" && renderTable(block.rows || [],["Actividades","Desde","Hasta","Responsable","Recursos","Medios de verificación"])}
+      {block.type === "report-matrix" && renderTable(block.rows || [],["Actividades","Medios de verificación","Porcentaje de ejecución","Observaciones"])}
+      {block.type === "contacts" && (block.rows?.length ? renderTable(block.rows,["Delegación","Ciudad/País","Contacto","Datos","Propósito","Acuerdos"]) : <p style={{fontSize:10}}>No aplica.</p>)}
+      {block.type === "annexes" && <p style={{fontSize:10.5,whiteSpace:"pre-line"}}>{block.text}</p>}
+      {block.type === "signatures" && renderTable(flowStages.slice(block.start || 0,block.end || 0).map(stage=>{
+        const signature=artifact.signatures.find(item=>item.stageId===stage.id);return [stage.actionLabel?.replace(/_/g," ") || stage.stageName,stage.actorName,stage.actorCargo,signature ? `${signature.actor}\n${signature.fecha} ${signature.hora}` : "Pendiente de firma"];
+      }),["ACCIONES","NOMBRE","CARGO","FIRMA"])}
+      {block.type === "history" && renderTable(block.rows || [],["Versión","Descripción del Cambio","Fecha de Actualización"])}
+    </section>)}
+  </div>;
+}
 import { canonicalDemoActorId } from "./workflow";
 import { getActivityResponsibleDisplayLabel } from "./responsibleDisplay";
 
@@ -178,6 +217,8 @@ export default function DocumentPdfPageViewer({
 
   // Dynamic orientation per page: Page 4 of Plan is Landscape
   const isLandscape = artifact.pages?.[currentPage - 1]?.orientation === "landscape";
+  const currentPageData = artifact.pages?.[currentPage - 1];
+  const currentA4 = isLandscape ? PAGE_SIZE_A4.landscape : PAGE_SIZE_A4.portrait;
 
   const handleCreateObs = () => {
     if (!obsTexto.trim()) return;
@@ -632,11 +673,12 @@ export default function DocumentPdfPageViewer({
             }}
           >
             <div
-              data-testid="document-page" data-artifact-id={artifact.id} data-page-number={currentPage} data-page-count={totalPages}
+              data-testid="document-page" data-artifact-id={artifact.id} data-page-number={currentPage} data-page-count={totalPages} data-page-format="A4" data-page-width-mm={currentA4.widthMm} data-page-height-mm={currentA4.heightMm} data-page-orientation={isLandscape ? "landscape" : "portrait"}
               style={{
                 width: `${zoom}%`,
                 maxWidth: isLandscape ? Math.round(1040 * (zoom / 100)) : Math.round(780 * (zoom / 100)),
                 minHeight: isLandscape ? 680 : 960,
+                aspectRatio: isLandscape ? "297 / 210" : "210 / 297",
                 background: "#fff",
                 borderRadius: 2,
                 boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
@@ -690,7 +732,9 @@ export default function DocumentPdfPageViewer({
                 {/* ─────────────────────────────────────────────────────────────
                     PLAN DE TRABAJO (T1) — COMPOSICIÓN DINÁMICA
                    ───────────────────────────────────────────────────────────── */}
-                {isPlan ? (
+                {artifact.templateConfiguration?.sectionOrder?.length && currentPageData && artifact.pages ? (
+                  <ConfiguredDocumentPage artifact={artifact} page={currentPageData} pages={artifact.pages} flowStages={flowStages} />
+                ) : isPlan ? (
                   <>
                     {/* PÁGINA 1: PORTADA */}
                     {currentPage === 1 && (

@@ -207,13 +207,17 @@ const freeUnit=identityEngine.crearNuevoDocumento('PLAN_TRABAJO',{teacherId:'usr
 assert.equal(freeUnit.groupId,'grp-1','permite Unidad + Jul–Dic cuando está libre');
 const freeHistorical=identityEngine.crearNuevoDocumento('PLAN_TRABAJO',{teacherId:'usr-andrea-01',groupId:'grp-1',periodId:'per-2',grupo:'Unidad de Titulación',periodo:'Enero – Junio 2026'});
 assert.equal(freeHistorical.periodId,'per-2','permite Unidad + Ene–Jun cuando está libre');
-const reportOnly=identityEngine.crearNuevoDocumento('INFORME',{teacherId:'usr-andrea-01',groupId:'grp-4',periodId:'per-1',grupo:'Comisión de Vinculación con la Sociedad',periodo:'Julio – Diciembre 2026'});
-const planAfterReport=identityEngine.crearNuevoDocumento('PLAN_TRABAJO',{teacherId:'usr-andrea-01',groupId:'grp-4',periodId:'per-1',grupo:'Comisión de Vinculación con la Sociedad',periodo:'Julio – Diciembre 2026'});
+const reportOnly=identityEngine.crearNuevoDocumento('INFORME',{teacherId:'usr-andrea-01',groupId:'free-report-group',periodId:'free-report-period',grupo:'Grupo DEMO libre',periodo:'Período DEMO libre'});
+const planAfterReport=identityEngine.crearNuevoDocumento('PLAN_TRABAJO',{teacherId:'usr-andrea-01',groupId:'free-report-group',periodId:'free-report-period',grupo:'Grupo DEMO libre',periodo:'Período DEMO libre'});
 assert.notEqual(reportOnly.id,planAfterReport.id,'un Informe T2 no ocupa la identidad de un Plan T1');
 assert.ok(findPlanByIdentity(engine().documents,{teacherId:'usr-andrea-01',groupId:'grp-1',periodId:'per-1'}),'la combinación creada queda ocupada');
 identityEngine.restablecerDemo();
 assert.equal(findPlanByIdentity(engine().documents,{teacherId:'usr-andrea-01',groupId:'grp-1',periodId:'per-1'}),undefined,'reset elimina Planes creados durante la sesión');
 assert.ok(!findPlanByIdentity(engine().documents,{teacherId:'usr-andrea-01',groupId:'grp-1',periodId:'per-1'}),'el dataset canónico conserva una combinación libre');
+const eligibleAndrea=engine().documents.find(d=>d.id==='doc-plan-andrea-vinculacion-2026');
+assert.equal(eligibleAndrea.teacherId,'usr-andrea-01');
+assert.ok(['VALIDADO','EN EJECUCIÓN'].includes(eligibleAndrea.documentState));
+assert.ok(eligibleAndrea.currentArtifact.matriz.length>0 && eligibleAndrea.currentArtifact.matriz.every(a=>a.recursos.length&&a.medios.length));
 
 assert.equal(T1_FOOTER_TEXT,'Documento de uso interno controlado por la Universidad Técnica de Ambato');
 assert.equal(T1_FORMAT_TEXT,'Formato Nº: UTA-SGC-A-2-1-P7-T1');

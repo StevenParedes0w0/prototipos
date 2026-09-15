@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ReportePlanItem, TipoReporteGenerar, FormatoReporte } from "./types";
+import { Download, FileText } from "./icons";
 
 interface ModalVistaPreviaReporteProps {
   isOpen: boolean;
@@ -77,7 +78,7 @@ export default function ModalVistaPreviaReporte({
             border: "1px solid #38bdf8",
           }}
         >
-          <span>📥</span>
+          <Download aria-hidden="true" className="w-4 h-4"/>
           {toastDescarga}
         </div>
       )}
@@ -109,7 +110,7 @@ export default function ModalVistaPreviaReporte({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 16 }}>📄</span>
+            <FileText aria-hidden="true" className="w-4 h-4"/>
             <span style={{ fontSize: 13, fontWeight: 700 }}>
               Vista previa de documento institucional A4 ({formato})
             </span>
@@ -145,7 +146,7 @@ export default function ModalVistaPreviaReporte({
                 gap: 5,
               }}
             >
-              <span>⬇ PDF — DEMO</span>
+              <span><Download aria-hidden="true" className="w-4 h-4 inline mr-1"/> PDF — DEMO</span>
             </button>
             <button
               onClick={() => triggerDownloadDemo("Excel")}
@@ -163,7 +164,7 @@ export default function ModalVistaPreviaReporte({
                 gap: 5,
               }}
             >
-              <span>⬇ Excel — DEMO</span>
+              <span><Download aria-hidden="true" className="w-4 h-4 inline mr-1"/> Excel — DEMO</span>
             </button>
             <button
               onClick={onClose}

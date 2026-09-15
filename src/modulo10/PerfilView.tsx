@@ -1,5 +1,6 @@
 import type { UsuarioAdmin } from "../modulo7/types";
 import React, { useState } from "react";
+import { Building2, Info } from "../components/icons";
 
 const USUARIOS = {
   docente: {
@@ -170,7 +171,7 @@ function ModalCambiarContrasena({ onClose }: { onClose: () => void }) {
               <PwdField id="pwd-nueva" label="Nueva contraseña" value={nueva} onChange={v => { setNueva(v); setErrors(e => ({...e, nueva: undefined})); }} error={errors.nueva} />
               <PwdField id="pwd-confirmar" label="Confirmar nueva contraseña" value={confirmar} onChange={v => { setConfirmar(v); setErrors(e => ({...e, confirmar: undefined})); }} error={errors.confirmar} />
               <div style={{ background: "#eff6ff", border: "1.5px solid #bfdbfe", borderRadius: 8, padding: "10px 13px", fontSize: 12, color: "#1e40af", lineHeight: 1.55 }}>
-                ℹ La nueva contraseña debe cumplir los requisitos de seguridad configurados por la institución.
+                <Info aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/>La nueva contraseña debe cumplir los requisitos de seguridad configurados por la institución.
               </div>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
                 <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -274,7 +275,7 @@ export default function PerfilView({ userRole, currentUser }: { userRole: "docen
             <div style={{ padding: "16px 20px" }}>
               {user.grupos.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "20px 0", color: "#94a3b8" }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>🏛️</div>
+                  <Building2 aria-hidden="true" style={{width:28,height:28,margin:"0 auto 8px"}}/>
                   <p style={{ fontSize: 13.5, fontWeight: 600, color: "#64748b", margin: "0 0 4px" }}>Rol administrativo del sistema</p>
                   <p style={{ fontSize: 12.5, color: "#94a3b8", margin: 0, lineHeight: 1.55 }}>
                     El Administrador gestiona el sistema institucional.<br />

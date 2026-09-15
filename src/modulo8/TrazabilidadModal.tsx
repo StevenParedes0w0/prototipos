@@ -5,6 +5,7 @@ import {
   TRAZABILIDAD_EVIDENCIA_ACTA,
   TRAZABILIDAD_USUARIO_ANDREA,
 } from "./mockDataAuditoria";
+import { ClipboardList, Info, Paperclip, User } from "../components/icons";
 
 interface TrazabilidadModalProps {
   objetoInicial: TrazabilidadObjeto | null;
@@ -142,7 +143,7 @@ export default function TrazabilidadModal({
               cursor: "pointer",
             }}
           >
-            📋 Plan de Trabajo (Caso I)
+            <ClipboardList aria-hidden="true" style={{width:15,height:15,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/> Plan de Trabajo (Caso I)
           </button>
           <button
             onClick={() => setActiveTab("evidencia")}
@@ -157,7 +158,7 @@ export default function TrazabilidadModal({
               cursor: "pointer",
             }}
           >
-            📎 Evidencia: Acta v1.0 → v2.0 (Caso J)
+            <Paperclip aria-hidden="true" style={{width:15,height:15,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/> Evidencia: Acta v1.0 → v2.0 (Caso J)
           </button>
           <button
             onClick={() => setActiveTab("usuario")}
@@ -172,7 +173,7 @@ export default function TrazabilidadModal({
               cursor: "pointer",
             }}
           >
-            👤 Historial Usuario (Andrea Pérez)
+            <User aria-hidden="true" style={{width:15,height:15,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/> Historial Usuario (Andrea Pérez)
           </button>
         </div>
 
@@ -191,7 +192,7 @@ export default function TrazabilidadModal({
                 marginBottom: 20,
               }}
             >
-              ℹ <strong>Regla institucional:</strong> La devolución con observaciones y la posterior subsanación NO incrementan automáticamente la versión formal (se mantiene v1.0).
+              <Info aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:4}}/> <strong>Regla institucional:</strong> La devolución con observaciones y la posterior subsanación NO incrementan automáticamente la versión formal (se mantiene v1.0).
             </div>
           )}
 
@@ -207,7 +208,7 @@ export default function TrazabilidadModal({
                 marginBottom: 20,
               }}
             >
-              ℹ <strong>Historial de versiones:</strong> La sustitución de una evidencia observada genera una nueva versión de la evidencia (v2.0), que deberá ser validada nuevamente.
+              <Info aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:4}}/> <strong>Historial de versiones:</strong> La sustitución de una evidencia observada genera una nueva versión de la evidencia (v2.0), que deberá ser validada nuevamente.
             </div>
           )}
 
@@ -223,7 +224,7 @@ export default function TrazabilidadModal({
                 marginBottom: 20,
               }}
             >
-              ℹ <strong>Consulta administrativa:</strong> Registro cronológico de acciones del usuario para propósitos de trazabilidad institucional. No representa métricas de productividad ni evaluación.
+              <Info aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:4}}/> <strong>Consulta administrativa:</strong> Registro cronológico de acciones del usuario para propósitos de trazabilidad institucional. No representa métricas de productividad ni evaluación.
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import { buildDocumentPages, getSignatureSlots } from "../documentEngine/pagination";
+import { composeArtifactPages, getSignatureSlots } from "../documentEngine/pagination";
 import React, { useEffect, useState } from "react";
 import { normalizeInformeTitle, useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import {
@@ -16,6 +16,7 @@ import ModalFirmaDocumental from "../documentEngine/ModalFirmaDocumental";
 import { SignatureCredentialMode } from "../documentEngine/signatureCredential";
 import { useAdminState } from "../modulo7/useAdminState";
 import { TipoUnidadInstitucional } from "../modulo7/types";
+import { CheckCircle2, Lock, Paperclip, Sparkles } from "../components/icons";
 
 interface WizardInformeViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
@@ -215,20 +216,19 @@ export default function WizardInformeView({
   const selectedPlanDoc = documents.find((d) => d.id === selectedPlanId);
   const relatedPlanTitulo = informeOrigen === "DERIVADO_PLAN" ? (selectedPlanDoc?.nombre || `Plan de Trabajo — ${grupo}`) : undefined;
   const previewFlow = selectedPlanDoc?.flowStages || docEngine.flowStages;
-  const previewPages = buildDocumentPages("INFORME", informeOrigen === "DERIVADO_PLAN" ? actividadesInforme.length : 0, previewFlow);
-  const previewPageCount = previewPages.length;
-  const previewSignatureSlots = getSignatureSlots(previewPages);
+  const previewTemplate = adminState.plantillas.find(item=>item.version==="UTA-SGC-A-2-1-P7-T2");
 
-  const previewArtifact: DocumentArtifact = {
+  const previewArtifactBase: DocumentArtifact = {
     id: "art-informe-preview",
     documentType: "INFORME",
     codigoFormatoOficial: "UTA-SGC-A-2-1-P7-T2",
     titulo: normalizeInformeTitle(titulo),
     formalVersion: "1.0",
     reviewRound: 1,
-    pageCount: previewPageCount,
-    pages: previewPages,
-    signatureSlots: previewSignatureSlots,
+    pageCount: 0,
+    pages: [],
+    signatureSlots: [],
+    templateConfiguration: previewTemplate ? {templateId:previewTemplate.id,configVersion:previewTemplate.version,sectionOrder:previewTemplate.configuracion.map(item=>item.id),activeSectionIds:previewTemplate.configuracion.filter(item=>item.activa).map(item=>item.id),capturedAt:`${fecha} 09:30`} : undefined,
     generatedAt: `${fecha} 09:30`,
     generatedBy: "Ing. Andrea Pérez, Mg.",
     grupo,
@@ -272,7 +272,7 @@ export default function WizardInformeView({
             role: "docente",
             fecha: FECHA_SISTEMA,
             hora: "10:30",
-            ubicacion: `Página ${previewSignatureSlots.find(s => s.role === "docente")?.pageNumber || "no disponible"} — Firmas de Responsabilidad: Elaborado por`,
+            ubicacion: "Firmas de Responsabilidad: Elaborado por",
           },
         ]
       : [],
@@ -337,6 +337,9 @@ export default function WizardInformeView({
     onFinish();
     return true;
   };
+  const previewPages = composeArtifactPages(previewArtifactBase, previewFlow);
+  const previewSignatureSlots = getSignatureSlots(previewPages);
+  const previewArtifact: DocumentArtifact = {...previewArtifactBase,pages:previewPages,pageCount:previewPages.length,signatureSlots:previewSignatureSlots};
 
   const stepLabels = [
     { num: 1, label: "Información General" },
@@ -395,7 +398,7 @@ export default function WizardInformeView({
           >
             <div style={{ padding: "18px 22px", borderBottom: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 18 }}>✨</span>
+                <Sparkles aria-hidden="true" style={{width:20,height:20,color:"#1a4f8a"}} />
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", margin: 0, fontFamily: "'DM Sans', sans-serif" }}>
                   Sugerencia de Redacción Asistida
                 </h3>
@@ -432,38 +435,35 @@ export default function WizardInformeView({
       )}
 
       {/* New Header & Stepper */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "24px 24px" }}>
+      <div data-testid="t2-compact-stepper" style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "12px 20px" }}>
         <div style={{ maxWidth: 1150, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 }}>
-            <div>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1e2a3a", margin: "0 0 4px", fontFamily: "'DM Sans', sans-serif" }}>Crear Informe</h1>
-              <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>Formato UTA-SGC-A-2-1-P7-T2</div>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a4f8a" }}>
-              Paso {step} de 8
-            </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap:12, marginBottom: 8 }}>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", margin: 0, fontFamily: "'DM Sans', sans-serif" }}>Crear Informe</h1>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1a4f8a",whiteSpace:"nowrap" }}>Paso {step} de 8 — {stepLabels.find(s => s.num === step)?.label}</div>
           </div>
           
           {/* Progress bar */}
-          <div style={{ width: "100%", height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
+          <div style={{ width: "100%", height: 4, background: "#e2e8f0", borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
             <div style={{ width: `${(step / 8) * 100}%`, height: "100%", background: "#1a4f8a", transition: "width 0.3s ease" }} />
           </div>
-          
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 28 }}>
-            {stepLabels.find(s => s.num === step)?.label}
-          </div>
 
-          {/* Stepper Grid */}
-          <div className="stepper-grid" style={{ display: "grid", gap: "16px 24px" }}>
+          <div className="stepper-row" style={{ display: "flex", gap: 8, overflowX:"auto", paddingBottom:2 }}>
             {stepLabels.map((s) => (
-              <div
+              <button
                 key={s.num}
+                type="button"
+                data-step-number={s.num}
+                title={s.label}
+                aria-label={`Navegar al paso ${s.num}${s.num > maxReached ? ", bloqueado" : s.num === step ? ", actual" : s.num < step ? ", completado" : ", pendiente"}`}
+                aria-current={step === s.num ? "step" : undefined}
+                disabled={s.num > maxReached}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 6,
                   cursor: s.num <= maxReached ? "pointer" : "default",
                   opacity: s.num <= maxReached ? 1 : 0.45,
+                  border:step===s.num?"1px solid #93c5fd":"1px solid transparent",background:step===s.num?"#eff6ff":"transparent",borderRadius:6,padding:"4px 7px",minWidth:"max-content",
                 }}
                 onClick={() => {
                   if (s.num <= maxReached) setStep(s.num);
@@ -484,17 +484,17 @@ export default function WizardInformeView({
                     flexShrink: 0
                   }}
                 >
-                  {s.num < step ? "✓" : s.num}
+                  {s.num < step ? <CheckCircle2 aria-hidden="true" style={{width:14,height:14}}/> : s.num > maxReached ? <Lock aria-hidden="true" style={{width:12,height:12}}/> : s.num}
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#1a4f8a" : "#475569", lineHeight: 1.3 }}>
+                <div style={{ fontSize: 11.5, fontWeight: step === s.num ? 700 : 500, color: step === s.num ? "#1a4f8a" : "#475569", lineHeight: 1.2 }}>
                   {s.label}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
           <style>{`
-            .stepper-grid { grid-template-columns: repeat(4, 1fr); }
-            @media (max-width: 999px) { .stepper-grid { grid-template-columns: repeat(2, 1fr); } }
+            .stepper-row::-webkit-scrollbar { height: 4px; }
+            .stepper-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
           `}</style>
         </div>
       </div>
@@ -631,8 +631,9 @@ export default function WizardInformeView({
                           </option>
                         ))}
                       </select>
+                      {planesDisponibles.length === 0 && <p role="status" style={{fontSize:12,color:"#92400e",margin:"8px 0 0"}}>No dispone de Planes de Trabajo validados o en ejecución que puedan utilizarse como origen de un Informe.</p>}
                       {selectedPlanId && <span style={{ fontSize: 11.5, color: "#1a4f8a", marginTop: 4, display: "block", fontWeight: 600 }}>
-                        ✓ Las actividades y medios de verificación se sincronizarán desde este Plan.
+                        Las actividades y medios de verificación se sincronizarán desde este Plan.
                       </span>}
                     </div>
                   )}
@@ -668,7 +669,7 @@ export default function WizardInformeView({
                       style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                       onClick={() => setAiMenuField(aiMenuField === "antecedentes" ? null : "antecedentes")}
                     >
-                      ✨ Mejorar redacción
+                      <Sparkles aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/>Mejorar redacción
                     </button>
                     {aiMenuField === "antecedentes" && (
                       <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
@@ -817,7 +818,7 @@ export default function WizardInformeView({
                         style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                         onClick={() => setAiMenuField(aiMenuField === "conclusiones" ? null : "conclusiones")}
                       >
-                        ✨ Mejorar redacción
+                        <Sparkles aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/>Mejorar redacción
                       </button>
                       {aiMenuField === "conclusiones" && (
                         <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
@@ -855,7 +856,7 @@ export default function WizardInformeView({
                         style={{ color: "#1a4f8a", background: "#eff6ff", border: "1px solid #bfdbfe" }}
                         onClick={() => setAiMenuField(aiMenuField === "oportunidades" ? null : "oportunidades")}
                       >
-                        ✨ Mejorar redacción
+                        <Sparkles aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/>Mejorar redacción
                       </button>
                       {aiMenuField === "oportunidades" && (
                         <div style={{ position: "absolute", right: 0, top: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0", zIndex: 10, width: 260, marginTop: 4 }}>
@@ -1116,7 +1117,7 @@ export default function WizardInformeView({
                         {anexos.map((anexo, idx) => (
                           <div key={anexo.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: "8px 12px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 16 }}>📎</span>
+                              <Paperclip aria-hidden="true" style={{width:16,height:16,color:"#1a4f8a"}} />
                               <div>
                                 <input
                                   className="form-input"
@@ -1217,7 +1218,7 @@ export default function WizardInformeView({
 
                   {isSigned ? (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0", padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 800 }}>
-                      ✓ FIRMADO ELECTRÓNICAMENTE
+                      <CheckCircle2 aria-hidden="true" style={{width:15,height:15}}/> FIRMADO ELECTRÓNICAMENTE
                     </span>
                   ) : (
                     <button

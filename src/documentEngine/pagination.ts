@@ -2,8 +2,12 @@ import { DocumentArtifact, DocumentPage, DocumentPageBlock, DocumentType, FlowSt
 import { getActivityResponsibleDisplayLabel } from "./responsibleDisplay";
 
 export const MATRIX_ROWS_PER_PAGE = 6;
-export const DOCUMENT_PAGE_WIDTH = 794;
-export const DOCUMENT_PAGE_HEIGHT = 1123;
+export const PAGE_SIZE_A4 = {
+  portrait: { widthMm: 210, heightMm: 297, widthPx: 794, heightPx: 1123 },
+  landscape: { widthMm: 297, heightMm: 210, widthPx: 1123, heightPx: 794 },
+} as const;
+export const DOCUMENT_PAGE_WIDTH = PAGE_SIZE_A4.portrait.widthPx;
+export const DOCUMENT_PAGE_HEIGHT = PAGE_SIZE_A4.portrait.heightPx;
 export const signatureActionLabel = (stage: Pick<FlowStageNode, "actionLabel" | "actorRole">) =>
   stage.actionLabel === "APROBADO_POR" ? "Aprobado por" : stage.actionLabel === "VALIDADO_POR" || stage.actorRole === "validador" ? "Validado por" : stage.actionLabel === "REVISADO_POR" || stage.actorRole === "revisor" ? "Revisado por" : "Elaborado por";
 export const normalizeInformeTitle = (value: string) => value.replace(/^(?:\s*informe\s+de\s*:\s*)+/i, "").trim();
@@ -16,7 +20,7 @@ export function annexLabel(index: number): string {
 // Conservative line budgets keep the DEMO deterministic without a PDF backend.
 // The composed blocks belong to the artifact and are never recomposed after signing.
 export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowStageNode[]): DocumentPage[] {
-  const pages: DocumentPage[] = [{ id: "page-1", type: "cover", orientation: "portrait" }, { id: "page-2", type: "index", orientation: "portrait" }];
+  const pages: DocumentPage[] = [];
   let current: DocumentPage | undefined;
   let remaining = 0;
   const newPage = (orientation: "portrait" | "landscape" = "portrait") => {
@@ -56,41 +60,63 @@ export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowSta
     }
     if (!rows.length) add({ type, section, title, rows: [], start: 0, end: 0 }, 95, orientation);
   };
-  if (artifact.documentType === "PLAN_TRABAJO") {
-    text("justificacion", "1. JUSTIFICACIÓN", artifact.justificacion);
-    text("objetivo", "2. OBJETIVO", artifact.objetivo);
-    current = undefined;
-    table("matrix", "matriz", "3. MATRIZ DE ACTIVIDADES", (artifact.matriz || []).map(row => [row.nombre, row.desde, row.hasta, getActivityResponsibleDisplayLabel(row), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
-    add({ type: "text", section: "fuente", text: "Fuente: " + (artifact.fuente || "—") + "\nElaborado por: " + artifact.grupo }, 42, "landscape");
-    if (artifact.collectsPersonalData) add({ type: "text", section: "proteccion-datos", text: "Nota: Los datos proporcionados serán tratados conforme a la Ley Orgánica de Protección de Datos Personales, garantizando su confidencialidad, seguridad y uso responsable, y serán utilizados exclusivamente para fines institucionales." }, 64, "landscape");
-  } else {
-    const data = artifact.informeData;
-    text("antecedentes", "1. ANTECEDENTES", data?.antecedentes || data?.introduccion);
-    if (data?.informeOrigen === "DERIVADO_PLAN") table("report-matrix", "desarrollo", "2. DESARROLLO DE ACTIVIDADES", (data.actividadesInforme || []).map(row => [row.actividad, row.mediosVerificacion, row.porcentajeEjecucion + "%", row.observaciones || "—"]), [29, 26, 17, 24], "portrait");
-    else text("desarrollo", "2. DESARROLLO DE ACTIVIDADES", data?.desarrolloTextoLibre || data?.desarrollo);
-    text("conclusiones", "3. CONCLUSIONES", data?.conclusiones || data?.resultados);
-    text("oportunidades", "4. OPORTUNIDADES DE MEJORA", data?.oportunidadesMejora || data?.observaciones);
-    if (data?.aplicaRegistroContactos) {
-      current = undefined;
-      table("contacts", "contactos", "5. REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN", (data.contactosDelegacion || []).map(row => [row.nombreDelegacion, row.ciudadPaisInstitucion, [row.institucion || row.entidadPersonaContacto, row.nombreCargo].filter(Boolean).join("\n"), row.datosContacto, row.temaTratado || row.temaProposito || "—", row.compromisoResponsablePlazo || row.acuerdoSeguimiento || "—"]), [90, 90, 26, 20, 25, 25], "portrait", 10);
+  const defaults = artifact.documentType === "PLAN_TRABAJO"
+    ? ["general", "justification", "objective", "matrix", "annexes", "signatures", "history"]
+    : ["general", "background", "development", "conclusions", "opportunities", "contacts", "annexes", "signatures", "history"];
+  const configured = artifact.templateConfiguration;
+  const ordered = (configured?.sectionOrder || defaults).filter(id => id !== "header" && id !== "footer" && defaults.includes(id) && (!configured || configured.activeSectionIds.includes(id)));
+  const number = (id: string) => ordered.indexOf(id) + 1;
+  const title = (id: string, label: string) => `${number(id)}. ${label}`;
+  const resetSection = () => { current = undefined; remaining = 0; };
+  const addGeneral = () => {
+    pages.push({ id: `page-${pages.length + 1}`, type: "cover", orientation: "portrait", contentSections: ["general"] });
+    pages.push({ id: `page-${pages.length + 1}`, type: "index", orientation: "portrait", contentSections: ["index"] });
+    resetSection();
+  };
+  const addAnnexes = () => {
+    const annexes = artifact.tieneAnexos === "si" ? artifact.anexos : [];
+    if (annexes.length) annexes.forEach((annex, i) => add({ type: "annexes", section: "annexes", title: i ? undefined : title("annexes", "ANEXOS"), start: i, end: i + 1, text: "Anexo " + annexLabel(i) + ": " + annex.nombre + "\n" + annex.archivo + " · " + annex.tamano }, 72 + Math.ceil((annex.nombre.length + annex.archivo.length) / 75) * 17));
+    else add({ type: "annexes", section: "annexes", title: title("annexes", "ANEXOS"), text: "No aplica." }, 82);
+  };
+  const addSignatures = () => {
+    for (let index = 0; index < stages.length; index++) {
+      const stage = stages[index];
+      const activePage = current as DocumentPage | undefined;
+      const previousSignatureBlock = activePage?.blocks?.at(-1);
+      const canAppend = previousSignatureBlock?.type === "signatures" && remaining >= 105;
+      if (canAppend) { previousSignatureBlock.end = index + 1; remaining -= 105; }
+      else add({ type: "signatures", section: "signatures", title: title("signatures", "FIRMAS DE RESPONSABILIDAD"), start: index, end: index + 1 }, 150);
+      current!.signatureSlots ||= [];
+      current!.signatureSlots.push({ stageId: stage.id, userId: stage.actorId, role: stage.actorRole, action: stage.actionLabel || (stage.actorRole === "docente" ? "ELABORADO_POR" : stage.actorRole === "revisor" ? "REVISADO_POR" : "VALIDADO_POR"), label: signatureActionLabel(stage), actorName: stage.actorName, actorCargo: stage.actorCargo, actionMode: stage.actionMode, destinationName: stage.destinationName });
     }
+  };
+  const addHistory = () => {
+    const history = artifact.historialCambios?.length ? artifact.historialCambios : [{ version: artifact.formalVersion, descripcion: artifact.documentType === "PLAN_TRABAJO" ? "Elaboración del Plan de Trabajo" : "Elaboración inicial del Informe", fecha: artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0] }];
+    table("history", "history", title("history", "CONTROL DE HISTORIAL DE CAMBIOS"), history.map(row => ["v" + row.version.replace(/^v/i, ""), row.descripcion, row.fecha]), [14, 65, 22], "portrait");
+  };
+  for (const section of ordered) {
+    resetSection();
+    if (section === "general") addGeneral();
+    else if (section === "justification") text(section, title(section, "JUSTIFICACIÓN"), artifact.justificacion);
+    else if (section === "objective") text(section, title(section, "OBJETIVO"), artifact.objetivo);
+    else if (section === "matrix") {
+      table("matrix", section, title(section, "MATRIZ DE ACTIVIDADES"), (artifact.matriz || []).map(row => [row.nombre, row.desde, row.hasta, getActivityResponsibleDisplayLabel(row), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
+      add({ type: "text", section, text: "Fuente: " + (artifact.fuente || "—") + "\nElaborado por: " + artifact.grupo }, 42, "landscape");
+      if (artifact.collectsPersonalData) add({ type: "text", section, text: "Nota: Los datos proporcionados serán tratados conforme a la Ley Orgánica de Protección de Datos Personales, garantizando su confidencialidad, seguridad y uso responsable, y serán utilizados exclusivamente para fines institucionales." }, 64, "landscape");
+    } else if (section === "background") text(section, title(section, "ANTECEDENTES"), artifact.informeData?.antecedentes || artifact.informeData?.introduccion);
+    else if (section === "development") {
+      const data = artifact.informeData;
+      if (data?.informeOrigen === "DERIVADO_PLAN") table("report-matrix", section, title(section, "DESARROLLO DE ACTIVIDADES"), (data.actividadesInforme || []).map(row => [row.actividad, row.mediosVerificacion, row.porcentajeEjecucion + "%", row.observaciones || "—"]), [29, 26, 17, 24], "portrait");
+      else text(section, title(section, "DESARROLLO DE ACTIVIDADES"), data?.desarrolloTextoLibre || data?.desarrollo);
+    } else if (section === "conclusions") text(section, title(section, "CONCLUSIONES"), artifact.informeData?.conclusiones || artifact.informeData?.resultados);
+    else if (section === "opportunities") text(section, title(section, "OPORTUNIDADES DE MEJORA"), artifact.informeData?.oportunidadesMejora || artifact.informeData?.observaciones);
+    else if (section === "contacts") {
+      const contacts = artifact.informeData?.aplicaRegistroContactos ? artifact.informeData.contactosDelegacion || [] : [];
+      table("contacts", section, title(section, "REGISTRO DE CONTACTOS Y GESTIONES DE LA DELEGACIÓN"), contacts.map(row => [row.nombreDelegacion, row.ciudadPaisInstitucion, [row.institucion || row.entidadPersonaContacto, row.nombreCargo].filter(Boolean).join("\n"), row.datosContacto, row.temaTratado || row.temaProposito || "—", row.compromisoResponsablePlazo || row.acuerdoSeguimiento || "—"]), [90, 90, 26, 20, 25, 25], "portrait", 10);
+    } else if (section === "annexes") addAnnexes();
+    else if (section === "signatures") addSignatures();
+    else if (section === "history") addHistory();
   }
-  current = undefined;
-  const annexes = artifact.tieneAnexos === "si" ? artifact.anexos : [];
-  if (annexes.length) annexes.forEach((annex, i) => add({ type: "annexes", section: "anexos", title: i ? undefined : (artifact.documentType === "PLAN_TRABAJO" ? "4" : "6") + ". ANEXOS", start: i, end: i + 1, text: "Anexo " + annexLabel(i) + ": " + annex.nombre + "\n" + annex.archivo + " · " + annex.tamano }, 72 + Math.ceil((annex.nombre.length + annex.archivo.length) / 75) * 17));
-  else add({ type: "annexes", section: "anexos", title: (artifact.documentType === "PLAN_TRABAJO" ? "4" : "6") + ". ANEXOS", text: "No aplica." }, 82);
-  for (let index = 0; index < stages.length; index++) {
-    const stage = stages[index];
-    const activePage = current as DocumentPage | undefined;
-    const previousSignatureBlock = activePage?.blocks?.at(-1);
-    const canAppend = previousSignatureBlock?.type === "signatures" && remaining >= 105;
-    if (canAppend) { previousSignatureBlock.end = index + 1; remaining -= 105; }
-    else add({ type: "signatures", section: "firmas", title: "FIRMAS DE RESPONSABILIDAD", start: index, end: index + 1 }, 150);
-    current!.signatureSlots ||= [];
-    current!.signatureSlots.push({ stageId: stage.id, userId: stage.actorId, role: stage.actorRole, action: stage.actionLabel || (stage.actorRole === "docente" ? "ELABORADO_POR" : stage.actorRole === "revisor" ? "REVISADO_POR" : "VALIDADO_POR"), label: signatureActionLabel(stage), actorName: stage.actorName, actorCargo: stage.actorCargo, actionMode: stage.actionMode, destinationName: stage.destinationName });
-  }
-  const history = artifact.historialCambios?.length ? artifact.historialCambios : [{ version: artifact.formalVersion, descripcion: artifact.documentType === "PLAN_TRABAJO" ? "Elaboración del Plan de Trabajo" : "Elaboración inicial del Informe", fecha: artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0] }];
-  table("history", "historial", "CONTROL DE HISTORIAL DE CAMBIOS", history.map(row => ["v" + row.version.replace(/^v/i, ""), row.descripcion, row.fecha]), [14, 65, 22], "portrait");
   return pages;
 }
 

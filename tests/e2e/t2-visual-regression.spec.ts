@@ -10,9 +10,9 @@ test('T2 mantiene estructura, paginación y firmas dinámicas',async({page})=>{
  const header=sheet.getByTestId('document-institutional-header');await expect(header.locator('tr')).toHaveCount(4);await expect(header).not.toContainText('Carrera:');
  await expect(sheet).toContainText('UTA-SGC-A-2-1-P7-T2');await expect(sheet).not.toContainText('INFORME DE: INFORME DE:');
  await expect(sheet).toHaveScreenshot('t2-portada.png');
- const content=Math.min(3,count);await page.getByRole('button',{name:String(content),exact:true}).click();await expect(sheet).toHaveScreenshot('t2-contenido.png');
- await page.getByRole('button',{name:String(count),exact:true}).click();await expect(sheet).toContainText('ACCIONES');await expect(sheet).toContainText('FIRMA');await expect(sheet).toHaveScreenshot('t2-firmas.png');
- for(let n=1;n<=count;n++){await page.getByRole('button',{name:String(n),exact:true}).click();const text=await sheet.innerText();expect(text).not.toMatch(/Nota1:|se debe utilizar en caso|nombre del documento que lo respalda/i);expect(text).toContain('UTA-SGC-A-2-1-P7-T2');}
+ for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if(await sheet.locator('[data-rendered-section="development"]').count())break;}await expect(sheet).toHaveScreenshot('t2-contenido.png');
+ for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if(await sheet.locator('[data-rendered-section="signatures"]').count())break;}await expect(sheet).toContainText('ACCIONES');await expect(sheet).toContainText('FIRMA');await expect(sheet).toHaveScreenshot('t2-firmas.png');
+ for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();const text=await sheet.innerText();expect(text).not.toMatch(/Nota1:|se debe utilizar en caso|nombre del documento que lo respalda/i);expect(text).toContain('UTA-SGC-A-2-1-P7-T2');}
  await page.getByRole('button',{name:'Siguiente →',exact:true}).click();await sign(page,'FIRMAR Y FINALIZAR','FIRMAR Y FINALIZAR');
  const report=(await documents(page)).find(d=>!ids.includes(d.id))!;const persisted=await document(page,report.id);
  expect(persisted.currentArtifact.pageCount).toBe(persisted.currentArtifact.pages!.length);

@@ -6,9 +6,9 @@ test('T1 mantiene portada, matriz y página de firmas',async({page})=>{
  const documentPage=page.getByTestId('document-page');
  const header=documentPage.getByTestId('document-institutional-header');await expect(header.locator('tr')).toHaveCount(4);await expect(header).not.toContainText('Carrera:');await expect(header).toContainText('Carrera de Ingeniería de Software');
  await expect(documentPage).toHaveScreenshot('t1-portada.png');
- await page.getByRole('button',{name:'3',exact:true}).click();
- await expect(documentPage).toHaveScreenshot('t1-matriz.png');
  const count=Number(await documentPage.getAttribute('data-page-count'));
- await page.getByRole('button',{name:String(count),exact:true}).click();
+ for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if(await documentPage.locator('[data-rendered-section="matrix"]').count())break;}
+ await expect(documentPage).toHaveScreenshot('t1-matriz.png');
+ for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if(await documentPage.locator('[data-rendered-section="signatures"]').count())break;}
  await expect(documentPage).toHaveScreenshot('t1-firmas-historial.png');
 });

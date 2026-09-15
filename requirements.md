@@ -1244,3 +1244,27 @@ Toda implementación debe preservar:
 * integridad del artefacto firmado.
 
 ````
+
+---
+
+# 61. DECISIONES CONFIRMADAS DE LA MICRO-PASADA FINAL
+
+## FR-DOC-A4-001
+
+Todos los documentos institucionales T1 y T2 se generan en tamaño A4. Las páginas verticales usan 210 × 297 mm y las horizontales 297 × 210 mm.
+
+## FR-TPL-001
+
+El administrador puede reordenar todas las secciones de contenido de T1 y T2. Una sección requerida no puede desactivarse, pero sí moverse. Encabezado y pie son el marco fijo de página.
+
+## FR-TPL-002
+
+Cada documento nuevo conserva un snapshot con plantilla, versión, orden y visibilidad. El renderer, el índice y la numeración siguen ese orden. Los cambios posteriores de Administración no modifican documentos existentes ni artefactos firmados.
+
+## FR-ARCH-AI-001
+
+La integración futura de asistencia de redacción usa una abstracción de proveedor en backend: GroqCloud para desarrollo y OpenAI API para producción. El mockup mantiene un proveedor simulado y no expone claves en React.
+
+## FR-ARCH-DB-001
+
+La base de datos productiva objetivo es PostgreSQL local o institucional on-premise, gratuita y relacional. El mockup no incorpora todavía backend ni sustituye `localStorage`.

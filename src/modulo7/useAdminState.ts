@@ -36,7 +36,19 @@ const ADMIN_DEMO_STORAGE_KEY = "fisei_admin_configuration_v2";
 function readDemoConfiguration(): { unidades: UnidadInstitucional[]; plantillas: PlantillaDocumental[] } {
   try {
     const parsed = JSON.parse(localStorage.getItem(ADMIN_DEMO_STORAGE_KEY) || "null");
-    if (parsed && Array.isArray(parsed.unidades) && Array.isArray(parsed.plantillas) && parsed.plantillas.every((p: PlantillaDocumental) => Array.isArray(p.configuracion))) return parsed;
+    if (parsed && Array.isArray(parsed.unidades) && Array.isArray(parsed.plantillas) && parsed.plantillas.every((p: PlantillaDocumental) => Array.isArray(p.configuracion))) {
+      return {
+        unidades: parsed.unidades,
+        plantillas: parsed.plantillas.map((plantilla: PlantillaDocumental) => ({
+          ...plantilla,
+          configuracion: plantilla.configuracion.map(section => ({
+            ...section,
+            bloqueada: section.id === "header" || section.id === "footer",
+            activa: section.estado === "REQUERIDA" ? true : section.activa,
+          })),
+        })),
+      };
+    }
   } catch { /* La configuración DEMO dañada se restablece con los fixtures. */ }
   return { unidades: structuredClone(UNIDADES_INSTITUCIONALES_INICIALES), plantillas: structuredClone(PLANTILLAS_INICIALES) };
 }

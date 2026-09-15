@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ReportePlanItem, TipoReporteGenerar, FormatoReporte } from "./types";
+import { FileSpreadsheet, FileText, Info } from "./icons";
 
 interface ModalGenerarReporteProps {
   isOpen: boolean;
@@ -177,7 +178,7 @@ export default function ModalGenerarReporte({
                     gap: 8,
                   }}
                 >
-                  <span>{f === "PDF" ? "📄" : "📊"}</span>
+                  {f === "PDF" ? <FileText aria-hidden="true" className="w-4 h-4"/> : <FileSpreadsheet aria-hidden="true" className="w-4 h-4"/>}
                   {f} {f === "PDF" ? "(Vista previa institucional)" : "(Hoja de cálculo DEMO)"}
                 </button>
               ))}
@@ -195,7 +196,7 @@ export default function ModalGenerarReporte({
               color: "#64748b",
             }}
           >
-            ℹ <strong>Demostración de prototipo:</strong> La generación presentará una vista previa institucional de alta fidelidad con opciones de descarga simuladas.
+            <Info aria-hidden="true" className="w-3 h-3 inline mr-1"/> <strong>Demostración de prototipo:</strong> La generación presentará una vista previa institucional de alta fidelidad con opciones de descarga simuladas.
           </div>
         </div>
 

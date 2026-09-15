@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { NotificacionItem } from "./types";
+import { Info } from "../components/icons";
 
 interface NotificacionesDropdownProps {
   isOpen: boolean;
@@ -114,7 +115,7 @@ export default function NotificacionesDropdown({
       <div style={{ maxHeight: 380, overflowY: "auto" }}>
         {ultimasNotificaciones.length === 0 ? (
           <div style={{ padding: "32px 20px", textAlign: "center", color: "#64748b" }}>
-            <div style={{ fontSize: 24, marginBottom: 8, color: "#94a3b8" }}>🔔</div>
+            <Info aria-hidden="true" style={{width:24,height:24,color:"#94a3b8",margin:"0 auto 8px"}}/>
             <div style={{ fontSize: 13, fontWeight: 600 }}>No tiene notificaciones pendientes</div>
             <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
               Las novedades institucionales se mostrarán aquí.

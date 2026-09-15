@@ -1,5 +1,6 @@
 import React from "react";
 import { AuditoriaEvento } from "./types";
+import { History, ShieldCheck } from "../components/icons";
 
 interface AuditoriaDetalleDrawerProps {
   evento: AuditoriaEvento | null;
@@ -233,7 +234,7 @@ export default function AuditoriaDetalleDrawer({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 18 }}>🔏</span>
+                <ShieldCheck aria-hidden="true" style={{width:18,height:18}}/>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#166534" }}>
                   Documento firmado electrónicamente
                 </span>
@@ -300,7 +301,7 @@ export default function AuditoriaDetalleDrawer({
               gap: 6,
             }}
           >
-            <span>⏱</span> VER TRAZABILIDAD DEL OBJETO
+            <History aria-hidden="true" style={{width:15,height:15}}/> VER TRAZABILIDAD DEL OBJETO
           </button>
 
           <button

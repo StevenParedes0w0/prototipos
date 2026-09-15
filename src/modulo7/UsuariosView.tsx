@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { UsuarioAdmin, GrupoInstitucional, RolSistema, RolEnGrupo } from "./types";
 import UsuarioDetalleModal from "./UsuarioDetalleModal";
-import { Eye, Pencil, Archive, CheckCircle2 } from "../components/icons";
+import { Eye, Pencil, Archive, CheckCircle2, Info } from "../components/icons";
 import { TableActionButton } from "../components/TableActionButton";
 
 interface UsuariosViewProps {
@@ -412,7 +412,7 @@ export default function UsuariosView({
                     lineHeight: 1.5,
                     marginBottom: 20,
                   }}>
-                    ℹ Los usuarios nuevos recibirán una contraseña temporal y deberán cambiarla en su primer inicio de sesión.
+                    <Info aria-hidden="true" style={{width:14,height:14,display:"inline",verticalAlign:"text-bottom",marginRight:5}}/> Los usuarios nuevos recibirán una contraseña temporal y deberán cambiarla en su primer inicio de sesión.
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>

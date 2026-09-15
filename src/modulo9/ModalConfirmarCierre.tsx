@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { PeriodoResumenCierre } from "./types";
+import { AlertTriangle, Info } from "./icons";
 
 interface ModalConfirmarCierreProps {
   isOpen: boolean;
@@ -71,7 +72,7 @@ export default function ModalConfirmarCierre({
                 fontWeight: 800,
               }}
             >
-              ⚠
+              <AlertTriangle aria-hidden="true" className="w-6 h-6"/>
             </div>
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "#9a3412", margin: 0 }}>
@@ -149,7 +150,7 @@ export default function ModalConfirmarCierre({
               lineHeight: 1.5,
             }}
           >
-            ℹ <strong>Nota institucional:</strong> La reapertura de períodos no se representa en este prototipo debido a que el procedimiento institucional correspondiente aún no ha sido definido dentro de los requerimientos confirmados.
+            <Info aria-hidden="true" className="w-3 h-3 inline mr-1"/> <strong>Nota institucional:</strong> La reapertura de períodos no se representa en este prototipo debido a que el procedimiento institucional correspondiente aún no ha sido definido dentro de los requerimientos confirmados.
           </div>
 
           {/* Checkbox de confirmación */}

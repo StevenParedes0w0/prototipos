@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { NotificacionItem, TipoNotificacion } from "./types";
+import { Info } from "../components/icons";
 
 interface NotificacionesViewProps {
   notificaciones: NotificacionItem[];
@@ -380,7 +381,7 @@ export default function NotificacionesView({
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 32, color: "#94a3b8", marginBottom: 12 }}>📭</div>
+            <Info aria-hidden="true" style={{width:32,height:32,color:"#94a3b8",margin:"0 auto 12px"}}/>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#334155", margin: "0 0 6px" }}>
               No hay notificaciones en esta categoría
             </h3>

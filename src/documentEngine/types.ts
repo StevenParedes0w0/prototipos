@@ -183,6 +183,8 @@ export interface DocumentArtifact {
   institutionalUnitId?: string;
   careerId?: string;
   templateConfiguration?: {
+    templateId?: string;
+    configVersion?: string;
     sectionOrder: string[];
     activeSectionIds: string[];
     capturedAt: string;

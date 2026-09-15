@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useDocumentEngine } from "../documentEngine/useDocumentEngine";
 import { DocumentMasterState, DocumentType } from "../documentEngine/types";
 import DetalleDocumentoModal from "./DetalleDocumentoModal";
-import { Eye, ClipboardList, FilePenLine, MessageSquare, RotateCcw, Download, BadgeCheck, PenLine } from "../components/icons";
+import { Eye, ClipboardList, FilePenLine, MessageSquare, RotateCcw, Download, BadgeCheck, PenLine, FileText } from "../components/icons";
 import { TableActionButton } from "../components/TableActionButton";
 import { findPlanByIdentity } from "../documentEngine/documentIdentity";
 
@@ -470,7 +470,7 @@ export default function MisDocumentosView({
               >
                 <div>
                   <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#1a4f8a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 12 }}>
-                    📋
+                    <ClipboardList aria-hidden="true" style={{width:22,height:22}}/>
                   </div>
                   <h3 style={{ fontSize: 15, fontWeight: 800, color: "#1e2a3a", margin: "0 0 6px" }}>
                     Plan de Trabajo
@@ -516,7 +516,7 @@ export default function MisDocumentosView({
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#1a4f8a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-                      📑
+                      <FileText aria-hidden="true" style={{width:22,height:22}}/>
                     </div>
                   </div>
                   <h3 style={{ fontSize: 15, fontWeight: 800, color: "#1e2a3a", margin: "0 0 6px" }}>

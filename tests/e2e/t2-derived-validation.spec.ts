@@ -13,7 +13,7 @@ test('T2 derivado exige Plan, importa la matriz y mantiene aislado el T1',async(
  for(let i=0;i<4;i++)await next.click();
  const sheet=page.getByTestId('document-page');await expect(sheet).not.toContainText(/INFORME DE:\s*INFORME DE/i);
  await expect(sheet.locator('table').first()).not.toContainText('Carrera:');
- await page.getByRole('button',{name:'3',exact:true}).click();await expect(sheet).toContainText('Seguimiento al avance de trabajos de titulación');
+ const count=Number(await sheet.getAttribute('data-page-count'));for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if((await sheet.innerText()).includes('Seguimiento al avance de trabajos de titulación'))break;}await expect(sheet).toContainText('Seguimiento al avance de trabajos de titulación');
  await page.getByRole('button',{name:'Siguiente →',exact:true}).click();await sign(page,'FIRMAR Y FINALIZAR','FIRMAR Y FINALIZAR');
  const report=(await documents(page)).find(d=>!ids.includes(d.id))!;expect(report.currentArtifact.informeData?.relatedPlanId).toBe(planId);expect(report.currentArtifact.informeData?.actividadesInforme?.length).toBeGreaterThan(0);expect(report.currentArtifact.informeData?.actividadesInforme?.every(a=>a.mediosVerificacion.trim().length>0)).toBe(true);expect(report.currentArtifact.pageCount).toBe(report.currentArtifact.pages!.length);
  expect(await document(page,planId)).toEqual(planBefore);

@@ -850,3 +850,13 @@ Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
 - Regresión visual: seis snapshots revisados y actualizados de forma selectiva después de contrastar T1 con el PDF firmado y T2 con el DOCX oficial.
 
 Pendiente institucional: confirmar el catálogo definitivo de unidades/carreras, autoridades, libertad permitida para ordenar secciones y la integración técnica real de firma/IA. Estas decisiones permanecen configurables o identificadas como DEMO.
+
+# 42. MICRO-PASADA FUNCIONAL FINAL — 14/09/2026
+
+- T2 canónico: Andrea dispone tras reset de un Plan validado y en ejecución de la Comisión de Vinculación con la Sociedad, con actividades, recursos y medios importables.
+- Stepper T2: cabecera compacta, ocho pasos en una fila con overflow horizontal, estados accesibles e iconos SVG.
+- Iconografía: se retiraron pictogramas emoji del código ejecutable y se añadió una regresión automática.
+- A4: tamaño centralizado para portrait y landscape; el visor expone metadata A4 y conserva la matriz T1 horizontal.
+- Plantillas: todas las secciones de contenido requeridas son reordenables; solo encabezado y pie permanecen como marco fijo. Guardar y restaurar requieren confirmación.
+- Renderer: nuevos T1/T2 componen páginas, numeración e índice desde el snapshot de plantilla. Documentos existentes conservan su snapshot.
+- Arquitectura futura documentada: Groq DEV / OpenAI PROD mediante backend y PostgreSQL local/on-premise. El mockup sigue sin conexiones reales.

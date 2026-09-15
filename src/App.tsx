@@ -1,5 +1,5 @@
 import { canonicalDemoActorId, flowFromConfiguration, hasConfiguredNextStage } from "./documentEngine/workflow";
-import { buildDocumentPages, getSignatureSlots } from "./documentEngine/pagination";
+import { composeArtifactPages, getSignatureSlots } from "./documentEngine/pagination";
 import { getResponsibleDisplayLabel } from "./documentEngine/responsibleDisplay";
 import { useState, useRef, useEffect } from "react";
 import logoUta from "./img/Logo UTA-Azul.png";
@@ -55,7 +55,7 @@ import ModalDevolverDocumental from "./documentEngine/ModalDevolverDocumental";
 import RevisorDocumentEngineView from "./documentEngine/RevisorDocumentEngineView";
 import MisDocumentosView from "./modulo11/MisDocumentosView";
 import WizardInformeView from "./modulo11/WizardInformeView";
-import { Eye, ClipboardList, Info, FilePenLine, MessageSquare, RotateCcw } from "./components/icons";
+import { Eye, ClipboardList, Info, FilePenLine, MessageSquare, RotateCcw, Settings, Sparkles } from "./components/icons";
 import { TableActionButton } from "./components/TableActionButton";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -1448,7 +1448,7 @@ function DashboardInicio({
 function PlaceholderView({ label }: { label: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
+      <Settings aria-hidden="true" style={{width:40,height:40,marginBottom:12}} />
       <div style={{ fontSize: 16, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 13 }}>Este módulo se desarrollará en la siguiente iteración.</div>
     </div>
@@ -3213,7 +3213,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
           <div style={{ background: "#fff", borderRadius: 12, width: 640, maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 16 }}>✨</span>
+                <Sparkles aria-hidden="true" style={{width:18,height:18,color:"#1a4f8a"}} />
                 <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Sugerencia de redacción</h2>
               </div>
               <p style={{ fontSize: 12, color: "#94a3b8" }}>{aiModal.option}</p>
@@ -3283,7 +3283,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                   <div style={{ position: "relative" }}>
                     <button className="btn btn-ghost btn-xs" aria-label="Mejorar redacción de Justificación" style={{ fontSize: 11.5, gap: 4, border: "1px solid #bfdbfe", color: "#1a4f8a", background: "#eff6ff" }}
                       onClick={e => { e.stopPropagation(); setAiMenu(aiMenu === "justificacion" ? null : "justificacion"); }}>
-                      ✨ MEJORAR REDACCIÓN
+                      <Sparkles aria-hidden="true" style={{width:14,height:14}}/> MEJORAR REDACCIÓN
                     </button>
                     {aiMenu === "justificacion" && (
                       <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, minWidth: 220 }}
@@ -3340,7 +3340,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                   <div style={{ position: "relative" }}>
                     <button className="btn btn-ghost btn-xs" aria-label="Mejorar redacción de Objetivo" style={{ fontSize: 11.5, gap: 4, border: "1px solid #bfdbfe", color: "#1a4f8a", background: "#eff6ff" }}
                       onClick={e => { e.stopPropagation(); setAiMenu(aiMenu === "objetivo" ? null : "objetivo"); }}>
-                      ✨ MEJORAR OBJETIVO
+                      <Sparkles aria-hidden="true" style={{width:14,height:14}}/> MEJORAR OBJETIVO
                     </button>
                     {aiMenu === "objetivo" && (
                       <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, minWidth: 220 }}
@@ -4072,8 +4072,9 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
             const base = docEngine?.currentArtifact;
             if (!base) throw new Error("Documento no seleccionado");
             const matriz = matrizDocumental;
-            const pages = buildDocumentPages("PLAN_TRABAJO",matriz.length,docEngine?.flowStages || []);
-            return {...base,grupo:draft.grupo,periodo:draft.periodo,unidadAcademica:unidadActual?.nombre||base.unidadAcademica,institutionalUnitType:draft.unitType,institutionalUnitId:draft.institutionalUnitId,careerId:draft.careerId,carrera:draft.unitType==="ACADEMIC"?(carreraActual?.nombre||base.carrera):"",fuente:draft.fuente,collectsPersonalData:draft.collectsPersonalData,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""})),pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
+            const draftArtifact = {...base,grupo:draft.grupo,periodo:draft.periodo,unidadAcademica:unidadActual?.nombre||base.unidadAcademica,institutionalUnitType:draft.unitType,institutionalUnitId:draft.institutionalUnitId,careerId:draft.careerId,carrera:draft.unitType==="ACADEMIC"?(carreraActual?.nombre||base.carrera):"",fuente:draft.fuente,collectsPersonalData:draft.collectsPersonalData,matriz,justificacion:draft.justificacion,objetivo:draft.objetivo,tieneAnexos:draft.tieneAnexos,anexos:draft.anexos.map(a => ({...a,tamano:""}))};
+            const pages = composeArtifactPages(draftArtifact,docEngine?.flowStages || []);
+            return {...draftArtifact,pages,pageCount:pages.length,signatureSlots:getSignatureSlots(pages)};
           })()}
           onPrev={() => setSub("step5")}
           onNext={() => {
@@ -4124,7 +4125,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const notifState = useNotificacionesState(userRole, docEngine.currentUser.id);
   const seguimientoState = useSeguimientoState({documents:docEngine.documents,currentUser:docEngine.currentUser,currentRole:userRole,reviewerGroupNames,closedPeriodNames:adminState.periodos.filter(p=>p.estado === "CERRADO").map(p=>p.nombre),onAuditLog:auditoriaState.registrarEvento,onNotification:notifState.agregarNotificacion});
   const reportesState = useReportesState(userRole,{documents:docEngine.documents,actividades:seguimientoState.actividades,currentUserName:docEngine.currentUser.nombre,reviewerGroupNames,periodosAdmin:adminState.periodos});
-  const prevDocumentEvents=useRef(new Set<string>());
+  const prevDocumentEvents=useRef(new Set<string>(["notification-doc-plan-andrea-vinculacion-2026-1-VALIDADO-usr-andrea-01"]));
   useEffect(() => {
     for (const doc of docEngine.documents) {
       const targets = doc.documentState === "DEVUELTO" || doc.documentState === "EN CORRECCIÓN" || doc.documentState === "VALIDADO"

@@ -1,5 +1,6 @@
 import React from "react";
 import { PlanHistorico } from "./types";
+import { Info } from "./icons";
 
 interface ModalCompararVersionesProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ export default function ModalCompararVersiones({
             lineHeight: 1.5,
           }}
         >
-          ℹ <strong>Principio de versionamiento institucional:</strong> La Versión 2.0 fue creada formalmente mediante <strong>Decisión institucional DEMO</strong> para la actualización formal del cronograma institucional. <em>La corrección por devolución de observaciones no genera una nueva versión formal.</em>
+          <Info aria-hidden="true" className="w-3 h-3 inline mr-1"/> <strong>Principio de versionamiento institucional:</strong> La Versión 2.0 fue creada formalmente mediante <strong>Decisión institucional DEMO</strong> para la actualización formal del cronograma institucional. <em>La corrección por devolución de observaciones no genera una nueva versión formal.</em>
         </div>
 
         {/* Body */}
