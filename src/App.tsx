@@ -3130,6 +3130,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
   const [aiMenu, setAiMenu] = useState<"justificacion" | "objetivo" | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModal, setAiModal] = useState<{ field: "justificacion" | "objetivo"; original: string; suggestion: string; option: string } | null>(null);
+  const [aiError, setAiError] = useState("");
 
   const AI_OPTIONS_JUST = ["Mejorar redacción", "Corregir ortografía y gramática", "Hacer más claro", "Dar tono más formal"];
   const AI_OPTIONS_OBJ  = ["Mejorar redacción", "Hacer más claro", "Dar tono institucional", "Corregir ortografía y gramática"];
@@ -3147,8 +3148,13 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
 
   function handleAiOption(field: "justificacion" | "objetivo", option: string) {
     setAiMenu(null);
-    setAiLoading(true);
     const original = field === "justificacion" ? justificacion : objetivo;
+    if (!original.trim()) {
+      setAiError("Ingrese un texto antes de solicitar una mejora.");
+      return;
+    }
+    setAiError("");
+    setAiLoading(true);
     setTimeout(() => {
       setAiLoading(false);
       setAiModal({ field, original, suggestion: simulateSuggestion(original, field, option), option });
@@ -3248,6 +3254,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
 
       <Stepper current={2} maxReached={maxReached} />
       <div style={{padding:"8px 28px"}}><button className="btn btn-ghost btn-sm" onClick={() => setJustificacion(textoBase || DEFAULT_JUSTIFICACION)}>Cargar texto base DEMO editable</button><span style={{fontSize:12,color:"#64748b"}}>Puede editarlo, reemplazarlo o eliminarlo.</span></div>
+      {aiError && <p role="alert" className="form-error" style={{margin:"0 28px"}}>{aiError}</p>}
 
       <div style={{ padding: "20px 28px 0" }}>
         <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>
@@ -3313,7 +3320,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                 style={{ minHeight: 130, fontSize: 13.5, lineHeight: 1.65, resize: "vertical" }}
                 value={justificacion}
                 aria-label="Justificación"
-                onChange={e => setJustificacion(e.target.value)}
+                onChange={e => { setAiError(""); setJustificacion(e.target.value); }}
                 placeholder="Describa la necesidad, contexto y fundamento..."
               />
               <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, textAlign: "right" }}>
@@ -3370,7 +3377,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                 style={{ minHeight: 90, fontSize: 13.5, lineHeight: 1.65, resize: "vertical" }}
                 value={objetivo}
                 aria-label="Objetivo"
-                onChange={e => setObjetivo(e.target.value)}
+                onChange={e => { setAiError(""); setObjetivo(e.target.value); }}
                 placeholder="Defina el objetivo general..."
               />
               <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, textAlign: "right" }}>
@@ -4267,7 +4274,17 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 20px",background:"#eff6ff",borderBottom:"1px solid #bfdbfe",fontSize:12}}>
           <label>Sesión DEMO: <select aria-label="Cambiar persona de la sesión DEMO" value={sessionAdmin?.id || ""} onChange={e => {const u=adminState.usuarios.find(u => u.id === e.target.value);if(u){docEngine.simularSesionDemo(u.id,u.nombreCompleto);setPlanesViewKey(k=>k+1);setRevisorInitialSub("bandeja");setView(u.rol === "Administrador" ? "adminInicio" : u.rol.includes("Revisor") ? "bandeja" : "planes");setUserRole(u.rol === "Administrador" ? "admin" : u.rol.includes("Revisor") ? "revisor" : "docente");}}}>{adminState.usuarios.filter(u => u.estado === "ACTIVO").map(u => <option key={u.id} value={u.id}>{u.nombreCompleto}</option>)}</select></label>
           <span>Cambiar contexto conserva esta identidad.</span>
-          <button className="btn btn-ghost btn-xs" onClick={() => {docEngine.restablecerDemo();adminState.restablecerDemo();seguimientoState.restablecerDemo();setPlanesViewKey(k=>k+1);setView("planes");}}>Restablecer documentos DEMO</button>
+          <button className="btn btn-ghost btn-xs" onClick={() => {
+            docEngine.restablecerDemo();
+            seguimientoState.restablecerDemo();
+            try {
+              Object.keys(localStorage)
+                .filter(key => key === DRAFT_KEY || key.startsWith(`${DRAFT_KEY}:`) || key === "fisei-informe-draft-v2")
+                .forEach(key => localStorage.removeItem(key));
+            } catch {}
+            setPlanesViewKey(k=>k+1);
+            setView("planes");
+          }}>Restablecer documentos DEMO</button>
         </div>
         <main style={{ flex: 1, overflowY: "auto", background: "#f0f4f8" }}>
           {view === "inicio" && (

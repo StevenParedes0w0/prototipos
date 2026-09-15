@@ -1,5 +1,5 @@
 import {test,expect,type Locator,type Page} from '@playwright/test';
-import {reset,session,names,documents,createPlan,completeMatrix,openDocuments} from './helpers';
+import {reset,login,session,names,documents,createPlan,completeMatrix,openDocuments} from './helpers';
 const order=async(list:Locator)=>list.locator(':scope > [data-section-id]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-section-id')!));
 const content=(ids:string[])=>ids.filter(id=>id!=='header'&&id!=='footer');
 
@@ -10,6 +10,7 @@ async function openTemplate(page:Page,name:'Plan de Trabajo'|'Informe'){
 
 test('T1 reordena todas las secciones, confirma, renderiza y preserva documentos previos',async({page})=>{
   await reset(page);await session(page,names.laura);await page.getByText('Plantillas Documentales',{exact:true}).click();
+  let reportDialog=await openTemplate(page,'Informe');const initialT2=await order(reportDialog.getByTestId('template-section-list'));await reportDialog.getByRole('button',{name:'Cancelar',exact:true}).click();
   let dialog=await openTemplate(page,'Plan de Trabajo');let list=dialog.getByTestId('template-section-list');const initial=await order(list);
   for(const id of ['general','objective','signatures','history'])await expect(dialog.getByTestId(`template-section-${id}`)).toHaveAttribute('draggable','true');
   await dialog.getByTestId('template-section-objective').dragTo(dialog.getByTestId('template-section-general'));
@@ -19,6 +20,9 @@ test('T1 reordena todas las secciones, confirma, renderiza y preserva documentos
   await dialog.getByRole('button',{name:'Guardar configuración',exact:true}).click();
   const confirm=page.getByRole('dialog',{name:'Confirmar cambio de estructura'});await expect(confirm).toBeVisible();await confirm.getByRole('button',{name:'Guardar nueva estructura'}).click();await expect(dialog.getByRole('status')).toContainText('guardada');
   await dialog.getByRole('button',{name:'Cancelar',exact:true}).click();
+  await page.reload();await login(page);await session(page,names.laura);await page.getByText('Plantillas Documentales',{exact:true}).click();
+  dialog=await openTemplate(page,'Plan de Trabajo');expect(await order(dialog.getByTestId('template-section-list'))).toEqual(changed);await dialog.getByRole('button',{name:'Cancelar',exact:true}).click();
+  reportDialog=await openTemplate(page,'Informe');expect(await order(reportDialog.getByTestId('template-section-list'))).toEqual(initialT2);await reportDialog.getByRole('button',{name:'Cancelar',exact:true}).click();
 
   await session(page,names.andrea);await openDocuments(page);const ids=(await documents(page)).map(item=>item.id);await createPlan(page);await completeMatrix(page);
   const created=(await documents(page)).find(item=>!ids.includes(item.id)&&item.documentType==='PLAN_TRABAJO')!;

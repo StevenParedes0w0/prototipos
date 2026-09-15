@@ -1,632 +1,1355 @@
-Sí. En este punto conviene darle al agente un **prompt quirúrgico**, porque el visor T1/T2, A4, fullscreen, scroll, encabezados y responsables colectivos ya pasaron la revisión visual. No queremos que una corrección pequeña provoque una regresión grande.
+# AUDITORÍA E2E Y CORRECCIÓN INTEGRAL
+# ASISTENTE IA + ADMINISTRACIÓN + PLANTILLAS + CATÁLOGOS + RESET DEMO
+# Gestión Documental Académica FISEI
 
-Puedes enviarle este prompt completo:
+Fecha de referencia: 15 de septiembre de 2026.
 
-````text
-# MICROCORRECCIÓN FINAL — FORMATO INSTITUCIONAL DE FECHAS EN T1/T2
-## Gestión Documental Académica FISEI — Mockup interactivo de alta fidelidad
-
-Quiero realizar una corrección MUY ACOTADA sobre el sistema actual.
+Proyecto:
+Mockup interactivo de alta fidelidad de Gestión Documental Académica FISEI.
 
 IMPORTANTE:
-La infraestructura documental T1/T2 que ya funciona se considera APROBADA visual y funcionalmente.
+Este NO es un proyecto productivo todavía.
 
-NO realices refactorizaciones generales.
-NO rediseñes el visor.
-NO cambies la estructura A4.
-NO alteres los flujos documentales.
-NO cambies datos DEMO salvo que sea estrictamente necesario para una prueba.
-NO modifiques reglas institucionales.
-NO aproveches esta tarea para “mejorar” otras partes del proyecto.
+No implementar en esta tarea:
+- backend real;
+- PostgreSQL;
+- APIs externas reales;
+- Groq;
+- OpenAI;
+- AWS;
+- S3;
+- DTIC;
+- autenticación institucional real;
+- criptografía real;
+- firma electrónica productiva;
+- correo real;
+- notificaciones push reales.
 
-El objetivo es corregir exclusivamente una inconsistencia visual detectada en las fechas impresas dentro de los documentos institucionales.
+Esta fase debe seguir siendo un mockup interactivo robusto, verificable y reproducible.
 
----
-
-# 1. PROBLEMA DETECTADO
-
-En la previsualización del Plan de Trabajo T1, específicamente en la tabla:
-
-`MATRIZ DE ACTIVIDADES`
-
-las fechas del cronograma actualmente pueden mostrarse directamente en formato ISO, por ejemplo:
-
-`2026-09-02`
-`2026-09-27`
-`2026-09-03`
-`2026-09-22`
-
-Eso es correcto como representación INTERNA del dato, pero no como presentación del documento institucional.
-
-La representación visual esperada en las celdas del documento debe ser:
-
-`02/09/2026`
-`27/09/2026`
-`03/09/2026`
-`22/09/2026`
-
-Es decir:
-
-`DD/MM/YYYY`
+La futura arquitectura de IA y base de datos se abordará en otra tarea.
 
 ---
 
-# 2. REGLA FUNDAMENTAL
+# 1. OBJETIVO
 
-Debemos separar estrictamente:
+Realiza una auditoría profunda de cinco áreas que todavía pueden esconder inconsistencias funcionales:
 
-## Representación interna
+1. Asistente IA de redacción.
+2. Configuración administrativa de plantillas T1/T2.
+3. Panel General / Dashboard de Administración.
+4. Catálogos institucionales consumidos por T1/T2.
+5. Persistencia y límites de los mecanismos de reset DEMO.
 
-Debe mantenerse preferentemente como fecha ISO:
+No te limites a leer código.
 
-`YYYY-MM-DD`
+Debes:
 
-Ejemplo:
+- inspeccionar la implementación;
+- ejecutar la aplicación;
+- probarla mediante Playwright;
+- reproducir comportamientos reales;
+- localizar causas raíz;
+- corregir bugs demostrados;
+- añadir regresiones automáticas;
+- volver a ejecutar la suite completa.
 
-`2026-09-02`
-
-Esto es correcto para:
-
-- estado interno;
-- formularios;
-- comparación de fechas;
-- persistencia;
-- validaciones;
-- localStorage;
-- lógica del motor;
-- reglas de feriados;
-- deadlines;
-- pruebas que requieran valores normalizados.
-
-NO cambies estas estructuras internas a strings `DD/MM/YYYY`.
-
-## Representación institucional visible
-
-Cuando una fecha de calendario almacenada como `YYYY-MM-DD` sea impresa dentro del documento formal T1/T2, debe mostrarse como:
-
-`DD/MM/YYYY`
-
-Ejemplo:
-
-`2026-09-02`
-
-debe renderizarse como:
-
-`02/09/2026`
-
-Por tanto, la corrección pertenece a la capa de PRESENTACIÓN / COMPOSICIÓN DEL ARTEFACTO, no al modelo de datos.
+No des por correcto un comportamiento solo porque TypeScript compile.
 
 ---
 
-# 3. MUY IMPORTANTE — EVITAR ERROR DE ZONA HORARIA
+# 2. FUENTES DE VERDAD
 
-No quiero que esta corrección introduzca el típico bug de JavaScript:
+Antes de modificar código, revisa obligatoriamente:
 
-```ts
-new Date("2026-09-02")
-````
+- AGENTS.md
+- requirements.md
+- implementation-status.md
+- package.json
+- playwright.config.ts
+- src/documentEngine/
+- src/modulo7/
+- src/modulo11/
+- cualquier módulo relacionado con IA, plantillas, unidades institucionales y administración;
+- tests/document-engine.test.mjs
+- tests/a4-page-size.test.mjs
+- tests/institutional-date-format.test.mjs
+- tests/no-visible-emojis.test.mjs
+- tests/e2e/
+- Documentos_guia/
 
-seguido de una conversión a hora local.
+Revisa también los reportes recientes existentes en el repositorio si están disponibles.
 
-El proyecto usa Ecuador / `America/Guayaquil`, GMT-5.
+NO modifiques requirements.md para que coincida con el código.
 
-Una fecha `YYYY-MM-DD` representa aquí una fecha CIVIL, no un instante UTC.
-
-No debe existir ninguna posibilidad de que:
-
-`2026-09-02`
-
-termine mostrándose como:
-
-`01/09/2026`
-
-por un desplazamiento de zona horaria.
-
-Para fechas ISO puras `YYYY-MM-DD`, utiliza una transformación timezone-safe.
-
-Una solución válida sería conceptualmente:
-
-```ts
-const [year, month, day] = isoDate.split("-");
-return `${day}/${month}/${year}`;
-```
-
-o una utilidad equivalente robusta.
-
-No es obligatorio utilizar exactamente ese código, pero la solución debe evitar conversiones UTC/local innecesarias.
+Si existe una contradicción:
+primero identifica cuál es el comportamiento requerido y luego corrige la implementación.
 
 ---
 
-# 4. ALCANCE DE LA AUDITORÍA
+# 3. ÁREAS QUE YA ESTÁN ESTABLES
 
-Primero localiza todos los consumidores relevantes de fechas dentro de la generación/renderizado documental.
+La aplicación acaba de superar pruebas sobre:
 
-Revisa al menos:
+- T1;
+- T2;
+- A4;
+- fullscreen;
+- scroll del visor;
+- encabezados académico/administrativo;
+- carrera académica;
+- ausencia de carrera administrativa;
+- formato DD/MM/YYYY en matrices institucionales;
+- fechas largas de elaboración;
+- paginación;
+- footer;
+- firma DEMO;
+- revisión;
+- rondas;
+- artefactos firmados inmutables;
+- evidencia;
+- responsables colectivos;
+- aislamiento Plan/Informe;
+- flujo incompleto;
+- permisos;
+- cierre DEMO;
+- snapshots visuales.
 
-* composición T1;
-* matriz de actividades T1;
-* composición T2;
-* tablas T2 que puedan utilizar fechas de actividades;
-* artefactos derivados de Planes;
-* índices o bloques documentales si imprimen fechas;
-* cualquier helper de fechas utilizado por `DocumentPdfPageViewer`;
-* funciones de composición dentro del motor documental.
+NO reestructures estas áreas innecesariamente.
 
-Busca explícitamente lugares donde se imprima directamente algo similar a:
+No hagas refactors cosméticos amplios.
 
-```ts
-activity.startDate
-activity.endDate
-actividad.desde
-actividad.hasta
-date
-```
-
-sin pasar por un formatter institucional.
-
-No quiero que arregles solamente una celda concreta si existe el mismo escape ISO en otro punto del documento.
-
-PERO:
-
-la auditoría debe estar limitada a las fechas que aparecen DENTRO DEL ARTEFACTO DOCUMENTAL T1/T2.
-
-No cambies arbitrariamente el formato de fechas en:
-
-* administración;
-* auditoría;
-* listas;
-* formularios;
-* historial técnico;
-* estado interno;
-* pruebas;
-* datos DEMO;
-
-salvo que exista una razón directamente vinculada al artefacto institucional.
+Si debes tocar una de ellas por dependencia directa, realiza el cambio mínimo y demuestra que no produjo regresiones.
 
 ---
 
-# 5. CREAR UNA ÚNICA UTILIDAD DE PRESENTACIÓN
+# 4. REGLAS INNEGOCIABLES DEL PROYECTO
 
-Si actualmente no existe una función central adecuada, crea una utilidad pequeña y reutilizable, por ejemplo conceptualmente:
+Conservar:
 
-```ts
-formatInstitutionalDate(...)
-```
-
-El nombre exacto puede seguir las convenciones existentes del proyecto.
-
-Debe cumplir al menos:
-
-```text
-2026-09-02 -> 02/09/2026
-2026-12-31 -> 31/12/2026
-2026-01-05 -> 05/01/2026
-```
-
-No debe romper:
-
-* strings vacíos;
-* `undefined`;
-* valores ya preparados específicamente para otro tipo de presentación;
-* fechas que no tengan el patrón exacto `YYYY-MM-DD`.
-
-No conviertas indiscriminadamente cualquier string que contenga guiones.
-
-Preferiblemente detectar explícitamente:
-
-```regex
-^\d{4}-\d{2}-\d{2}$
-```
-
-Si un valor no coincide, debe preservarse o tratarse de manera segura según la arquitectura existente.
+- React + TypeScript + Vite.
+- Mockup de alta fidelidad.
+- Tema institucional azul.
+- Interfaz clara.
+- Sin predominio morado.
+- Sin emojis visibles.
+- Utilizar iconos SVG/componentes de iconos.
+- Documentos institucionales en A4.
+- currentUser separado de activeContext.
+- Identidad real del usuario separada del rol/contexto.
+- Plan identificado por teacherId + groupId + periodId.
+- T1 e Informe aislados entre sí.
+- Artefactos firmados inmutables.
+- Formal version distinta de review round.
+- Firma y envío como acciones diferentes.
+- No inventar reglas institucionales.
+- No inventar actores institucionales.
+- No introducir scores/rankings de docentes.
+- No convertir reportes en evaluación de desempeño.
+- No usar porcentajes como principal indicador cuando un conteo sea más claro.
+- No introducir API keys ni secretos.
+- No guardar certificados ni contraseñas.
+- No modificar artefactos históricos firmados.
 
 ---
 
-# 6. NO CAMBIAR “FECHA DE ELABORACIÓN”
+# 5. FRENTE A — ASISTENTE IA DE REDACCIÓN
 
-ATENCIÓN:
+Este frente es PRIORITARIO.
 
-En las capturas ya aprobadas, el encabezado institucional muestra correctamente fechas como:
+Anteriormente existió un bug real:
 
-`15 de septiembre de 2026`
+el sistema podía producir una sugerencia, pero al presionar “Aplicar” el texto sugerido no terminaba correctamente en el campo correspondiente.
 
-Esto se considera CORRECTO.
+Debes auditar todas las funciones similares existentes en la aplicación.
 
-NO conviertas esa fecha a:
+Busca acciones como:
 
-`15/09/2026`
+- Mejorar redacción
+- Mejorar objetivo
+- Mejorar antecedentes
+- Mejorar conclusiones
+- Mejorar oportunidades
+- cualquier otra asistencia textual implementada.
 
-La corrección de `DD/MM/YYYY` aplica principalmente a fechas tabulares/campos de cronograma donde actualmente se está filtrando el valor ISO sin formatear.
+No asumas que solamente T1 utiliza el asistente.
 
-Debemos conservar la diferencia semántica:
+Revisa T1 y T2.
 
-## Fecha de elaboración institucional
+## A.1 Comportamiento requerido
 
-Puede seguir mostrándose como:
+La asistencia de IA del mockup debe funcionar así:
 
-`15 de septiembre de 2026`
+TEXTO ACTUAL
+→ solicitar sugerencia
+→ mostrar sugerencia
+→ usuario decide
+→ APLICAR o DESCARTAR.
 
-## Cronograma / Desde / Hasta
+La sugerencia NUNCA debe sobrescribir automáticamente el texto del usuario.
 
-Debe verse como:
+### APLICAR
 
-`02/09/2026`
+Al presionar Aplicar:
 
-`27/09/2026`
+- el campo correcto debe recibir exactamente la sugerencia;
+- React debe reflejar inmediatamente el nuevo valor;
+- el estado documental correspondiente debe actualizarse;
+- el autosave/draft debe quedar actualizado;
+- cambiar de paso y regresar debe conservarlo;
+- recargar el navegador debe conservarlo si ese borrador es persistente;
+- la sugerencia no debe terminar aplicada en otro campo.
 
-Por tanto, no crees una regla global que reemplace todas las fechas visibles del sistema.
+### DESCARTAR
 
----
+Al presionar Descartar:
 
-# 7. T1 — COMPORTAMIENTO ESPERADO
+- el texto original debe permanecer exactamente igual;
+- el estado documental no debe mutar;
+- la sugerencia temporal debe cerrarse/limpiarse.
 
-En:
+### CANCELAR/CERRAR
 
-`MATRIZ DE ACTIVIDADES`
+Cerrar un diálogo o panel de sugerencia tampoco debe modificar el documento.
 
-las columnas:
+## A.2 Evitar estado cruzado
 
-`Desde`
-`Hasta`
+Prueba expresamente:
 
-deben utilizar `DD/MM/YYYY`.
+- sugerencia para Justificación;
+- cerrar;
+- sugerencia para Objetivo;
+- aplicar.
 
-Ejemplo esperado:
+El sistema NO debe aplicar por accidente la sugerencia anterior de Justificación al Objetivo.
 
-| Actividades                                     | Desde      | Hasta      |
-| ----------------------------------------------- | ---------- | ---------- |
-| Seguimiento al avance de trabajos de titulación | 02/09/2026 | 27/09/2026 |
-| Difusión de normativa interna de titulación     | 03/09/2026 | 22/09/2026 |
+Haz la prueba equivalente en T2.
 
-NO debe aparecer:
+## A.3 Campos vacíos
 
-`2026-09-02`
+Investiga el comportamiento actual.
 
-en el artefacto visual.
+Si la función se denomina “Mejorar redacción”, no inventes silenciosamente contenido cuando no haya texto a mejorar salvo que requirements.md lo permita.
 
----
+Si el campo está vacío y no existe una función explícita de generación:
 
-# 8. T2 — AUDITORÍA PREVENTIVA
+mostrar un mensaje claro como:
 
-El T2 ya fue corregido y visualmente aprobado.
+“Ingrese un texto antes de solicitar una mejora.”
 
-No quiero modificar su estructura.
+No inventes contenido institucional.
 
-Únicamente verifica si alguna tabla o sección del Informe puede imprimir directamente fechas ISO provenientes del Plan relacionado o de actividades.
+## A.4 Naturaleza DEMO
 
-Si existe, aplica la misma utilidad de presentación.
+En esta tarea NO conectar Groq ni OpenAI.
 
-Si T2 no contiene actualmente campos de este tipo o ya están correctamente formateados, NO cambies nada.
+La función puede continuar siendo simulada.
 
-No inventes campos adicionales.
+Si es necesario, centraliza la lógica en un servicio/proveedor DEMO limpio para evitar lógica duplicada.
 
----
+Pero no sobrearquitectures.
 
-# 9. NO REGRESIONAR LO YA APROBADO
+No agregues claves ni variables de API.
 
-Estas características están APROBADAS y deben permanecer EXACTAMENTE funcionales:
+## A.5 Seguridad conceptual
 
-## T1
+La funcionalidad de IA nunca debe recibir conceptualmente:
 
-* A4.
-* Portada.
-* Encabezado institucional.
-* `Unidad académica` o `Unidad administrativa` según procedencia.
-* Facultad + Carrera dentro de la celda institucional cuando corresponda.
-* portada centrada.
-* índice dinámico.
-* matriz landscape cuando corresponda.
-* `Responsable de la unidad` cuando se seleccionan todos los responsables.
-* IDs individuales preservados internamente.
-* firmas.
-* control de historial de cambios.
-* footer:
+- certificado .p12/.pfx;
+- contraseña de certificado;
+- firma;
+- credenciales;
+- datos internos ajenos al campo textual objetivo.
 
-  * izquierda: `Documento de uso interno controlado por la Universidad Técnica de Ambato`
-  * centro: `Formato Nº: UTA-SGC-A-2-1-P7-T1`
-  * derecha: página dinámica.
-* sin línea horizontal superior en footer.
-* A4 portrait/landscape según metadata.
-* `pageCount = artifact.pages.length`.
-* `signatureSlots` dinámicos.
-* fullscreen real.
-* scroll vertical/horizontal.
-* conservación de página y zoom al entrar/salir del fullscreen.
+## A.6 E2E obligatoria
 
-## T2
+Añade cobertura Playwright que pruebe como mínimo:
 
-* A4.
-* encabezado académico correcto.
-* encabezado administrativo correcto.
-* Carrera visible solo para procedencia académica.
-* Carrera eliminada de metadata para procedencia administrativa.
-* `Unidad académica` / `Unidad administrativa`, nunca literal combinado.
-* visor expandido real.
-* scroll.
-* toolbar.
-* panel documental.
-* páginas dinámicas.
-* firmas.
-* historial.
-* footer T2.
-* aislamiento absoluto respecto al Plan fuente.
+T1:
+- sugerir;
+- aplicar;
+- comprobar textarea;
+- cambiar de paso;
+- regresar;
+- comprobar persistencia.
 
-No quiero una regresión en ninguna de estas áreas.
+T1:
+- sugerir;
+- descartar;
+- comprobar texto original.
 
----
+T2:
+- mejorar Conclusiones;
+- aplicar;
+- comprobar persistencia.
 
-# 10. RESPONSABLES — NO TOCAR
+T2:
+- mejorar Oportunidades de Mejora;
+- descartar;
+- comprobar que no muta.
 
-Ya está aprobado este comportamiento:
-
-Si TODOS los integrantes válidos de la unidad/grupo son responsables:
-
-se imprime una etiqueta colectiva como:
-
-`Responsable de la unidad`
-
-o la etiqueta colectiva vigente según el tipo de grupo.
-
-Internamente deben seguir existiendo todos los IDs/nombres.
-
-Si solo se seleccionan algunos:
-
-se muestran responsables individuales.
-
-NO modifiques esta lógica durante esta microcorrección.
+También prueba que dos solicitudes consecutivas a campos diferentes no compartan accidentalmente estado.
 
 ---
 
-# 11. PRUEBA UNITARIA / MOTOR PARA EL FORMATTER
+# 6. FRENTE B — CONFIGURACIÓN ADMINISTRATIVA DE PLANTILLAS
 
-Añade una prueba específica para el formatter si la arquitectura lo permite.
+Ruta esperada:
 
-Debe comprobar mínimo:
+Administración
+→ Plantillas Documentales.
 
-```text
-2026-09-02 -> 02/09/2026
-2026-12-31 -> 31/12/2026
-2026-01-05 -> 05/01/2026
-```
+Actualmente existe una configuración visual de estructura para T1 y T2.
 
-Y también:
-
-* no timezone shift;
-* valor vacío no provoca excepción;
-* `undefined` no provoca excepción;
-* un string que no es `YYYY-MM-DD` no se corrompe.
-
-No hace falta sobreingeniería.
+Debes auditar si la funcionalidad es REAL dentro del mockup o solamente decorativa.
 
 ---
 
-# 12. PRUEBA E2E DE REGRESIÓN
+# 7. PRINCIPIO DE REORDENAMIENTO
 
-Añade o amplía una prueba Playwright focalizada.
+El administrador debe poder reordenar libremente las SECCIONES DE CONTENIDO del documento.
 
-Puede formar parte de la prueba visual T1 existente o de una regresión funcional específica.
+No establecer restricciones artificiales como:
+
+“Firmas siempre debe estar después de matriz”
+o
+“Historial siempre debe estar al final”
+
+si no existe una regla institucional confirmada que lo exija.
+
+Ejemplo válido:
+
+Objetivo
+→ Firmas
+→ Información general
+→ Matriz
+→ Justificación
+→ Historial
+→ Anexos
+
+La aplicación ya ha mostrado este tipo de configuración.
+
+Debe funcionar realmente.
+
+## Excepción
+
+El marco técnico de página puede mantenerse fijo únicamente cuando no sea conceptualmente una sección documental reordenable:
+
+- encabezado institucional de página;
+- pie institucional.
+
+Estos elementos son marco de página repetido, no contenido narrativo.
+
+No confundas:
+
+“Encabezado institucional”
+
+con una sección de contenido.
+
+---
+
+# 8. SECCIONES REQUERIDAS Y OPCIONALES
+
+Las secciones obligatorias:
+
+- deben permanecer activas;
+- NO necesariamente deben permanecer en una posición fija;
+- sí pueden reordenarse.
+
+Las opcionales pueden:
+
+- activarse/desactivarse;
+- reordenarse.
+
+Si Anexos está desactivado:
+
+- no debe generar una página vacía innecesaria;
+- el índice debe adaptarse;
+- pageCount debe adaptarse;
+- numeración debe adaptarse.
+
+No elimines datos anteriores de documentos históricos por cambiar una plantilla.
+
+---
+
+# 9. GUARDAR NUEVA ESTRUCTURA
+
+Cuando el administrador modifica el orden:
+
+mostrar confirmación explícita antes de aplicar.
+
+La confirmación debe indicar algo equivalente a:
+
+“La nueva estructura se aplicará a los documentos creados a partir de este momento. Los documentos existentes y los artefactos firmados no serán modificados.”
+
+Eso es importante.
+
+Después de guardar:
+
+- la estructura debe persistir;
+- recargar la aplicación debe conservarla;
+- Vista previa de estructura debe coincidir;
+- un NUEVO documento debe usar el orden guardado.
+
+---
+
+# 10. NO MUTAR DOCUMENTOS ANTERIORES
+
+Prueba expresamente este escenario:
+
+1. Crear documento A con estructura predeterminada.
+2. Guardarlo.
+3. Cambiar plantilla desde Administración.
+4. Crear documento B.
+5. Comparar.
+
+Resultado esperado:
+
+Documento A:
+permanece con su estructura original.
+
+Documento B:
+usa la nueva estructura.
+
+Si A está firmado:
+bajo ninguna circunstancia debe regenerarse usando la plantilla nueva.
+
+Este requisito es CRÍTICO.
+
+---
+
+# 11. T1 Y T2 DEBEN SER CONFIGURACIONES INDEPENDIENTES
+
+No permitas que cambiar T1 modifique T2 accidentalmente.
+
+Prueba:
+
+- cambiar orden T1;
+- guardar;
+- inspeccionar T2;
+- comprobar que sigue intacto.
+
+Luego hacer lo contrario.
+
+---
+
+# 12. COMPOSICIÓN DINÁMICA
+
+Después de cambiar el orden, comprueba que siguen funcionando:
+
+- índice;
+- numeración de secciones;
+- índice de tablas;
+- pageCount;
+- navegación entre páginas;
+- orientation;
+- signatureSlots;
+- ubicación real de firma;
+- historial;
+- footer;
+- número de página;
+- A4;
+- fullscreen;
+- scroll.
+
+NO deben existir números hardcodeados de página.
+
+NO usar:
+
+“Firma siempre está en página 5”.
+
+Debe derivarse del artefacto real.
+
+---
+
+# 13. RESTAURAR PREDETERMINADO
+
+Audita “Restaurar predeterminado”.
 
 Debe:
 
-1. restaurar DEMO;
-2. abrir/crear un T1 con matriz;
-3. llegar a previsualización;
-4. navegar a la matriz;
-5. comprobar que aparecen fechas `DD/MM/YYYY`;
-6. comprobar que los valores ISO correspondientes NO aparecen visibles en la tabla.
+- recuperar exactamente la estructura institucional DEMO base;
+- actualizar la vista previa;
+- persistir al guardar;
+- no modificar documentos anteriores.
 
-Ejemplo conceptual:
-
-Debe encontrar:
-
-`02/09/2026`
-
-y NO:
-
-`2026-09-02`
-
-No acoples la prueba innecesariamente a fechas DEMO que puedan variar si existe una estrategia mejor con el contenido de la actividad creada durante el test.
+Si ya funciona, añade solamente regresión.
 
 ---
 
-# 13. REGRESIÓN VISUAL
+# 14. FRENTE C — PANEL GENERAL DEL ADMINISTRADOR
 
-Inspecciona los snapshots ANTES de modificarlos.
+Existe o debe existir:
 
-Si el único cambio esperado en:
+Administración
+→ Panel General.
 
-`t1-matriz-...png`
+Audita su estado actual.
 
-es:
+No quiero un dashboard decorativo con valores escritos a mano.
 
-```text
-2026-09-02
-```
+Los valores deben derivarse del estado DEMO real.
 
-→
+Como mínimo analiza si tiene sentido mostrar:
 
-```text
-02/09/2026
-```
+- usuarios;
+- grupos institucionales;
+- períodos;
+- documentos;
+- documentos que requieren atención;
+- revisiones pendientes;
+- evidencias pendientes de validación;
+- flujos pendientes de configurar;
+- período activo.
 
-ese cambio es legítimo.
+No es obligatorio usar exactamente estas tarjetas si la implementación actual tiene una estructura mejor.
 
-Actualiza únicamente snapshots realmente afectados.
+Pero los valores deben ser coherentes con el dataset.
 
-NO regeneres todos los snapshots indiscriminadamente.
+## Prohibido
 
-En el reporte indica exactamente cuáles cambiaron y por qué.
+No agregar:
+
+- ranking de docentes;
+- desempeño individual;
+- puntuaciones;
+- semáforos de productividad;
+- predicciones;
+- sanciones;
+- score institucional.
+
+Este sistema gestiona documentos.
+
+No evalúa personal.
+
+## Consistencia
+
+Si la aplicación crea un nuevo Plan, el dashboard debe reflejarlo.
+
+Si se restablece el dataset documental DEMO, los conteos deben regresar al estado base.
+
+No hardcodear conteos independientes del estado.
 
 ---
 
-# 14. NO USAR EMOJIS
+# 15. FRENTE D — CATÁLOGOS INSTITUCIONALES
 
-Mantener la regla vigente:
+Audita:
 
-NO añadir emojis visibles en la interfaz.
+Administración
+→ Unidades Institucionales
 
-Si fuese necesario un indicador visual, usar iconos SVG/Lucide o el sistema de iconos existente.
+y cualquier catálogo relacionado.
 
-Esta tarea probablemente no requiere añadir ninguno.
+Los datos administrados deben alimentar realmente los formularios documentales.
 
-El test existente:
+Especialmente:
 
-`tests/no-visible-emojis.test.mjs`
+T1:
+- Tipo de unidad;
+- Unidad;
+- Carrera.
 
-debe continuar pasando.
+T2:
+- Tipo de unidad;
+- Unidad;
+- Carrera.
 
 ---
 
-# 15. VALIDACIONES OBLIGATORIAS
+# 16. UNIDAD ACADÉMICA
 
-Al finalizar ejecuta:
+Cuando sea:
 
-```bash
-npx tsc --noEmit
-npm run build
-node --test tests/document-engine.test.mjs
-node --test tests/a4-page-size.test.mjs
+Unidad académica
+
+el formulario debe permitir seleccionar:
+
+Unidad
++
+Carrera.
+
+Ejemplo DEMO actual:
+
+Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+
+Carrera de Ingeniería de Software.
+
+El artefacto debe mostrar ambos dentro del encabezado institucional correspondiente.
+
+---
+
+# 17. UNIDAD ADMINISTRATIVA
+
+Cuando sea:
+
+Unidad administrativa
+
+debe:
+
+- cambiar las opciones disponibles;
+- ocultar Carrera;
+- limpiar careerId;
+- limpiar carrera;
+- impedir que reaparezca una carrera antigua por estado residual;
+- guardar correctamente la procedencia administrativa.
+
+Ejemplo DEMO:
+
+Dirección de Planificación y Evaluación.
+
+El artefacto NO debe mostrar Carrera.
+
+Esto ya fue corregido anteriormente.
+
+NO REGRESIONAR.
+
+---
+
+# 18. ADMINISTRACIÓN → FORMULARIO
+
+Comprueba que el catálogo administrativo no sea decorativo.
+
+Escenario:
+
+1. Administrador modifica/agrega/desactiva una opción DEMO permitida.
+2. Guardar.
+3. Cambiar sesión a docente.
+4. Crear un documento nuevo.
+5. Abrir selector correspondiente.
+
+El selector debe reflejar la configuración administrativa.
+
+No es obligatorio construir CRUD productivo si el mockup ya dispone de mecanismos suficientes.
+
+Implementa solamente lo necesario para que el flujo DEMO sea coherente y demostrable.
+
+---
+
+# 19. NO MUTAR DOCUMENTOS EXISTENTES
+
+Modificar un catálogo no debe cambiar retroactivamente el nombre almacenado en artefactos históricos.
+
+Si un documento firmado guardó:
+
+“Facultad X”
+
+debe seguir mostrando ese valor aunque posteriormente el catálogo cambie a:
+
+“Facultad Y”.
+
+El documento debe conservar su snapshot documental.
+
+---
+
+# 20. FRENTE E — PERSISTENCIA Y RESET DEMO
+
+Esta parte requiere mucho cuidado.
+
+Hay diferentes conceptos:
+
+A. Reset de documentos DEMO.
+B. Restaurar plantilla predeterminada.
+C. Datos administrativos/configuraciones.
+D. Sesión/contexto.
+
+No mezclar responsabilidades.
+
+---
+
+# 21. RESTABLECER DOCUMENTOS DEMO
+
+El botón:
+
+“Restablecer documentos DEMO”
+
+debe hacer exactamente lo que su nombre indica.
+
+No debería borrar indiscriminadamente configuraciones administrativas no relacionadas, salvo que requirements.md diga expresamente lo contrario.
+
+Audita el comportamiento actual.
+
+Comprueba que no resetee accidentalmente:
+
+- configuración de plantilla;
+- catálogos administrativos;
+- preferencias no documentales;
+- estructuras recién configuradas;
+
+si el propósito del botón es únicamente restablecer documentos.
+
+Si actualmente funciona como un reset global oculto:
+corrígelo o renómbralo solo si requirements.md respalda esa semántica.
+
+No cambies texto de UX sin justificación.
+
+---
+
+# 22. RESTAURAR PLANTILLA
+
+“Restaurar predeterminado” dentro de Plantillas Documentales debe afectar esa plantilla/configuración.
+
+No debe comportarse como reset general del sistema.
+
+---
+
+# 23. RECARGA NORMAL
+
+F5 / page.reload() NO es un reset.
+
+Después de recargar deben permanecer los elementos que el mockup documenta como persistentes:
+
+- borradores;
+- estado documental;
+- firma DEMO aplicada;
+- observaciones;
+- configuración administrativa guardada;
+- estructura de plantillas guardada.
+
+Comprueba individualmente.
+
+---
+
+# 24. NUEVAS PRUEBAS E2E
+
+No te limites a reutilizar tests actuales.
+
+Añade regresiones focalizadas.
+
+Nombres sugeridos, adapta si ya existe una organización mejor:
+
+tests/e2e/ai-assistant.spec.ts
+
+tests/e2e/admin-template-runtime.spec.ts
+
+tests/e2e/admin-dashboard.spec.ts
+
+tests/e2e/institutional-catalogs.spec.ts
+
+tests/e2e/demo-reset-boundaries.spec.ts
+
+No dupliques helpers existentes innecesariamente.
+
+Amplía helpers.ts cuando tenga sentido.
+
+---
+
+# 25. ESCENARIOS AUTOMÁTICOS MÍNIMOS
+
+## ESCENARIO A — IA T1
+
+1. Reset documental DEMO.
+2. Andrea.
+3. Crear/abrir borrador T1.
+4. Escribir Justificación original.
+5. Solicitar mejora.
+6. Capturar texto sugerido.
+7. Aplicar.
+8. Verificar que textarea contiene sugerencia.
+9. Cambiar paso.
+10. Volver.
+11. Verificar persistencia.
+12. Recargar.
+13. Verificar persistencia.
+
+Después:
+
+14. escribir Objetivo.
+15. solicitar mejora.
+16. descartar.
+17. comprobar Objetivo original intacto.
+
+---
+
+## ESCENARIO B — IA T2
+
+Usar un Informe que permita llegar a campos asistidos.
+
+Probar:
+
+Conclusiones:
+- sugerir;
+- aplicar.
+
+Oportunidades:
+- sugerir;
+- descartar.
+
+Comprobar que las sugerencias no se cruzan entre campos.
+
+---
+
+## ESCENARIO C — PLANTILLA T1
+
+1. Crear T1 A.
+2. Recordar orden.
+3. Administrador.
+4. Reordenar secciones T1.
+5. Confirmar.
+6. Guardar.
+7. Recargar.
+8. Comprobar persistencia.
+9. Crear T1 B.
+10. Verificar orden nuevo.
+11. Abrir T1 A.
+12. Verificar orden antiguo.
+
+Además:
+
+- índice de B coincide con estructura;
+- páginas dinámicas;
+- firmas y signatureSlots correctos.
+
+---
+
+## ESCENARIO D — INDEPENDENCIA T1/T2
+
+1. Guardar cambio T1.
+2. Comprobar configuración T2.
+3. Debe permanecer intacta.
+
+Luego:
+
+4. cambiar T2.
+5. T1 no debe modificarse.
+
+---
+
+## ESCENARIO E — RESTAURAR PLANTILLA
+
+1. Modificar plantilla.
+2. Guardar.
+3. Restaurar predeterminado.
+4. Confirmar.
+5. Guardar.
+6. Recargar.
+7. Debe coincidir exactamente con configuración DEMO base.
+
+---
+
+## ESCENARIO F — CATÁLOGO
+
+1. Administrador.
+2. modificar configuración DEMO de unidad permitida.
+3. guardar.
+4. docente.
+5. crear documento.
+6. comprobar selector.
+
+Probar académico y administrativo.
+
+Administrativo:
+careerId y carrera deben quedar vacíos.
+
+---
+
+## ESCENARIO G — SNAPSHOT HISTÓRICO
+
+1. Crear documento usando valor de catálogo X.
+2. Guardarlo.
+3. Cambiar catálogo X → Y.
+4. Crear documento nuevo.
+5. El antiguo conserva X.
+6. El nuevo puede usar Y.
+
+---
+
+## ESCENARIO H — RESET
+
+1. Cambiar una plantilla.
+2. Guardar.
+3. Crear un documento.
+4. “Restablecer documentos DEMO”.
+5. Documento vuelve al dataset canónico.
+6. Comprobar si plantilla debe conservarse según semántica de requirements.md.
+7. No debe existir borrado incidental.
+
+Documenta la decisión exacta.
+
+---
+
+## ESCENARIO I — DASHBOARD
+
+Registrar conteos iniciales.
+
+Crear/modificar un documento que altere uno de los indicadores.
+
+Volver a Panel General.
+
+Comprobar que el conteo corresponde al estado real.
+
+Reset documental.
+
+Comprobar retorno al valor base.
+
+---
+
+# 26. ACCESIBILIDAD Y TESTABILIDAD
+
+Cuando una acción use solamente un icono:
+
+debe incluir:
+
+- aria-label;
+- title cuando corresponda.
+
+No introducir texto artificial visible únicamente para tests.
+
+Preferir:
+
+getByRole()
+getByLabel()
+getByText()
+
+antes que selectores CSS frágiles.
+
+Añadir data-testid solamente cuando no exista una alternativa semántica razonable.
+
+---
+
+# 27. EMOJIS
+
+Regla global:
+
+NO utilizar emojis como iconos.
+
+No introducir caracteres como:
+
+✨
+⚠️
+🔒
+📄
+etc.
+
+Usar componentes SVG/icon library.
+
+Debe seguir pasando:
+
 node --test tests/no-visible-emojis.test.mjs
-```
 
-Ejecuta además la prueba focalizada que hayas creado/modificado.
+Si encuentras emojis existentes visibles que la prueba no cubre:
+corrige la causa y amplía la prueba si corresponde.
 
-Después ejecuta:
+---
 
-```bash
+# 28. NO HACER SNAPSHOT DRIVEN DEVELOPMENT
+
+No actualices un snapshot únicamente porque falla.
+
+Ante un cambio visual:
+
+1. inspecciona la diferencia;
+2. determina por qué cambió;
+3. comprueba requirements.md;
+4. confirma que el cambio es legítimo;
+5. solo entonces actualiza snapshot.
+
+En el reporte final debes explicar individualmente cualquier snapshot modificado.
+
+---
+
+# 29. NO FALSEAR PRUEBAS
+
+Prohibido:
+
+- introducir sleeps largos para hacer pasar E2E;
+- desactivar tests;
+- usar skip;
+- relajar aserciones importantes;
+- cambiar requirements para acomodar el código;
+- mockear internamente el resultado que la prueba pretende comprobar;
+- usar force:true salvo causa excepcional explicada;
+- reemplazar validaciones funcionales por snapshots.
+
+Las E2E deben recorrer la UI como un usuario.
+
+---
+
+# 30. AUDITORÍA DE ESTADO REACT
+
+Presta atención especialmente a:
+
+- stale closures;
+- estados temporales compartidos;
+- targetDocId equivocado;
+- mutación de objetos compartidos;
+- objetos shallow copied;
+- índices como identidad;
+- autosave contra documento incorrecto;
+- estados derivados inconsistentes;
+- localStorage versionado;
+- setters que muten Plan al trabajar con Informe;
+- sugerencia IA almacenada globalmente en lugar de por campo.
+
+Si encuentras uno:
+corrige la causa raíz.
+
+---
+
+# 31. NO SOBREARQUITECTURAR
+
+No conviertas el mockup en una arquitectura enterprise.
+
+Si basta con:
+
+- un store DEMO;
+- un helper;
+- un hook;
+- una pequeña abstracción;
+
+úsalo.
+
+No introducir:
+
+- Redux;
+- Zustand;
+- nuevas bases de datos;
+- nuevos servidores;
+- colas;
+- buses de eventos;
+- microservicios.
+
+---
+
+# 32. SOBRE IA FUTURA
+
+La decisión arquitectónica futura actualmente considerada es:
+
+Desarrollo:
+GroqCloud Free Tier + GPT-OSS 120B.
+
+Producción:
+OpenAI API, con GPT-5.6 Luna como posible proveedor/modelo oficial.
+
+PERO:
+
+NO IMPLEMENTAR ESO EN ESTA TAREA.
+
+La actual funcionalidad asistida debe seguir siendo DEMO.
+
+Si refactorizas el servicio de sugerencias, puedes dejar una interfaz suficientemente limpia para reemplazar posteriormente el proveedor, pero sin realizar integración externa.
+
+---
+
+# 33. SOBRE BASE DE DATOS FUTURA
+
+Nuevo requisito de proyecto:
+
+la base de datos futura será:
+
+- local;
+- gratuita.
+
+La alternativa actualmente prevista es PostgreSQL local.
+
+PERO:
+
+NO integrar PostgreSQL durante esta tarea.
+
+No modificar el mockup para fingir que ya existe backend.
+
+La persistencia DEMO actual continúa siendo válida para esta fase.
+
+---
+
+# 34. PRUEBAS DE REGRESIÓN EXISTENTES
+
+Antes de terminar ejecuta, como mínimo:
+
+npx tsc --noEmit
+
+npm run build
+
+node --test tests/document-engine.test.mjs
+
+node --test tests/a4-page-size.test.mjs
+
+node --test tests/institutional-date-format.test.mjs
+
+node --test tests/no-visible-emojis.test.mjs
+
+npx playwright test <nuevas pruebas focalizadas>
+
 npm run test:e2e
-```
 
-Resultado requerido:
+Si package.json define un comando equivalente más correcto:
+usa el oficial y documenta cuál utilizaste.
 
-* TypeScript PASS
-* Build PASS
-* Motor PASS
-* A4 PASS
-* No visible emojis PASS
-* prueba focalizada PASS
-* suite E2E completa PASS
+Actualmente la suite completa existente estaba en:
 
-No aceptes actualizar snapshots simplemente para conseguir PASS sin inspeccionar visualmente la diferencia.
+31 E2E PASS / 0 FAIL
 
----
+antes de esta auditoría.
 
-# 16. INSPECCIÓN VISUAL OBLIGATORIA
+Por tanto, al finalizar:
 
-Además de los tests, inspecciona visualmente como mínimo:
+todos los 31 escenarios existentes
++
+los nuevos
 
-### T1 matriz
-
-* Desde.
-* Hasta.
-* formato DD/MM/YYYY.
-* tabla sin desbordamiento.
-* página landscape intacta.
-* footer intacto.
-* responsable colectivo intacto.
-
-### T1 portada
-
-Confirmar que no cambió.
-
-### T1 firmas/historial
-
-Confirmar que no cambió.
-
-### T2 portada
-
-Confirmar que no cambió.
-
-Si T2 tiene una tabla con fechas derivadas:
-confirmar también formato correcto.
+deben pasar.
 
 ---
 
-# 17. CRITERIO DE ACEPTACIÓN
+# 35. REGRESIONES QUE NO PUEDEN APARECER
 
-La tarea solo se considera terminada cuando:
+Comprueba expresamente que siguen funcionando:
 
-1. Los datos internos continúan en ISO `YYYY-MM-DD`.
-2. Las fechas de cronograma del documento T1 se muestran `DD/MM/YYYY`.
-3. No existe desfase de día por timezone.
-4. `Fecha de elaboración` conserva el formato institucional largo actualmente aprobado.
-5. T2 no presenta fugas ISO equivalentes.
-6. No se rompe A4.
-7. No se rompe landscape.
-8. No se altera la composición institucional.
-9. No se altera fullscreen.
-10. No se altera scroll.
-11. No se altera zoom.
-12. No se altera el estado de página.
-13. No se altera la lógica de responsables.
-14. No se altera el flujo de firma/revisión.
-15. No se altera la persistencia.
-16. Todos los tests pasan.
+- creación T1;
+- T1 académico;
+- T1 administrativo cuando corresponda;
+- T2 académico;
+- T2 administrativo;
+- carrera académica;
+- ausencia de carrera administrativa;
+- encabezado específico;
+- A4;
+- fullscreen;
+- Escape;
+- scroll vertical;
+- scroll horizontal;
+- zoom;
+- landscape;
+- DD/MM/YYYY en matriz;
+- fecha larga de elaboración;
+- responsable colectivo;
+- firma DEMO;
+- revisión paralela;
+- devolución;
+- ronda 2;
+- artefacto firmado inmutable;
+- aislamiento T1/T2;
+- evidencia;
+- flujo incompleto;
+- cierre DEMO;
+- notificaciones;
+- reportes;
+- unicidad de Plan.
+
+No cambies estas funciones salvo que encuentres un bug reproducible relacionado con la auditoría actual.
 
 ---
 
-# 18. REPORTE FINAL
+# 36. REPORTE OBLIGATORIO
 
-Entrega un reporte breve pero técnico con exactamente estas secciones:
+Al finalizar crea:
 
-## Reporte — normalización visual de fechas institucionales
+reporte-auditoria-ia-administracion.md
 
-### 1. Causa raíz
+Debe contener:
 
-Explicar dónde escapaban fechas ISO al renderer.
+## 1. Resumen ejecutivo
 
-### 2. Corrección
+Qué se auditó.
 
-Archivos y helper utilizados.
+## 2. Estado inicial encontrado
 
-### 3. Separación modelo/presentación
+Qué ya funcionaba y qué no.
 
-Confirmar que internamente se mantiene `YYYY-MM-DD`.
+## 3. Bugs reales encontrados
 
-### 4. Prevención de timezone
+Para cada bug:
 
-Explicar cómo se evitó el desplazamiento UTC/local.
+- comportamiento observado;
+- causa raíz;
+- requisito afectado;
+- corrección aplicada;
+- regresión añadida.
 
-### 5. T1
+## 4. Asistente IA
 
-Indicar ejemplos antes/después.
+Documentar:
 
-### 6. T2
+- campos auditados;
+- aplicar;
+- descartar;
+- persistencia;
+- aislamiento entre campos;
+- naturaleza DEMO.
 
-Indicar si existían o no fugas equivalentes y qué se hizo.
+## 5. Plantillas
 
-### 7. Regresión visual
+Documentar:
 
-Indicar snapshots inspeccionados y cuáles cambiaron.
+- T1;
+- T2;
+- drag/reorder;
+- confirmación;
+- persistencia;
+- restaurar predeterminado;
+- efecto solo en documentos posteriores;
+- protección de documentos anteriores.
 
-### 8. Pruebas
+## 6. Catálogos
 
-Tabla con todos los comandos y resultado PASS/FAIL.
+Documentar:
 
-### 9. Archivos modificados
+- académico;
+- administrativo;
+- carrera;
+- vínculo Administración → wizard;
+- snapshot histórico.
+
+## 7. Dashboard
+
+Documentar:
+
+- métricas mostradas;
+- origen de los datos;
+- ausencia de métricas de desempeño personal.
+
+## 8. Reset DEMO
+
+Explicar claramente qué resetea cada mecanismo.
+
+## 9. Pruebas nuevas
+
+Archivo por archivo.
+
+## 10. Snapshots
+
+Enumerar únicamente si cambiaron y por qué.
+
+## 11. Archivos modificados
 
 Lista exacta.
 
-### 10. Riesgos restantes
+## 12. Comandos
 
-Solo riesgos reales encontrados. No inventar pendientes.
+Con resultado real.
+
+## 13. Conteo final
+
+Ejemplo:
+
+E2E: XX PASS / 0 FAIL
+Node: X PASS / 0 FAIL
+TypeScript: PASS
+Build: PASS
+
+No uses cifras inventadas.
+
+## 14. Riesgos restantes
+
+Separar:
+
+- bug real;
+- limitación DEMO;
+- pendiente institucional;
+- trabajo futuro de producción.
 
 ---
 
-# PRIORIDAD FINAL
+# 37. IMPLEMENTATION STATUS
 
-Esta es una MICROCORRECCIÓN.
+Después de que las pruebas confirmen el comportamiento:
+
+actualiza implementation-status.md únicamente con funcionalidades efectivamente demostradas.
+
+No marcar como implementado:
+
+- Groq;
+- OpenAI real;
+- PostgreSQL;
+- DTIC;
+- firma real;
+- SSO;
+- almacenamiento real;
+
+porque siguen fuera de alcance.
+
+---
+
+# 38. CRITERIO FINAL DE ÉXITO
+
+La tarea solo puede declararse completada si es posible demostrar mediante pruebas que:
+
+A.
+Las sugerencias IA pueden aplicarse realmente al campo correcto.
+
+B.
+Descartar una sugerencia no cambia el texto original.
+
+C.
+Una sugerencia nunca se aplica automáticamente.
+
+D.
+T1 y T2 no comparten accidentalmente estado de sugerencias.
+
+E.
+El administrador puede reordenar las secciones de contenido T1/T2.
+
+F.
+El orden guardado realmente afecta documentos NUEVOS.
+
+G.
+Los documentos anteriores no cambian.
+
+H.
+Los artefactos firmados permanecen inmutables.
+
+I.
+T1 y T2 conservan configuraciones independientes.
+
+J.
+Restaurar predeterminado funciona.
+
+K.
+Los catálogos administrativos alimentan realmente los selectores documentales.
+
+L.
+Unidad administrativa elimina Carrera correctamente.
+
+M.
+Cambios de catálogo no alteran snapshots históricos.
+
+N.
+El dashboard deriva datos del estado DEMO real.
+
+O.
+Los mecanismos de reset tienen límites correctos y comprobables.
+
+P.
+No aparecen emojis.
+
+Q.
+No regresiona A4, fullscreen, scroll, fechas, firma, revisión ni composición institucional.
+
+R.
+Toda la suite final pasa.
+
+---
+
+# 39. FORMA DE TRABAJO
+
+Primero investiga.
+
+Después ejecuta pruebas focalizadas para reproducir.
+
+Después corrige.
+
+Después añade regresión.
+
+Después ejecuta la suite completa.
+
+NO comiences reescribiendo componentes grandes.
+
+Quiero correcciones basadas en evidencia.
+
+Si una característica ya funciona exactamente como debe:
+NO la reimplementes.
+
+Limítate a cubrirla con una prueba si no existe cobertura.
 
 Prioridad:
 
-1. corregir presentación de fechas;
-2. evitar timezone bugs;
-3. preservar absolutamente todo lo aprobado;
-4. añadir una regresión automática;
-5. no tocar nada fuera del alcance.
+1. Integridad del estado.
+2. Fidelidad funcional.
+3. No regresión.
+4. Persistencia correcta.
+5. UX.
+6. Accesibilidad.
+7. Limpieza interna.
+8. Extras.
 
-Si durante la auditoría descubres otro problema no relacionado, NO lo corrijas silenciosamente.
-
-Regístralo en el reporte como hallazgo separado para que decidamos posteriormente si merece intervención.
-
-```
+Comienza ahora con la auditoría.

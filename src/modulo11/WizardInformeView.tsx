@@ -147,6 +147,7 @@ export default function WizardInformeView({
   const [aiMenuField, setAiMenuField] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModalData, setAiModalData] = useState<{ field: string; original: string; suggestion: string } | null>(null);
+  const [aiError, setAiError] = useState("");
   const [showFirmaModal, setShowFirmaModal] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
 
@@ -179,21 +180,23 @@ export default function WizardInformeView({
   // AI handler
   const handleTriggerAi = (field: string, option: string) => {
     setAiMenuField(null);
+    const original = field === "antecedentes" ? antecedentes : field === "conclusiones" ? conclusiones : oportunidadesMejora;
+    if (!original.trim()) {
+      setAiError("Ingrese un texto antes de solicitar una mejora.");
+      return;
+    }
+    setAiError("");
     setAiLoading(true);
     setTimeout(() => {
       setAiLoading(false);
-      let original = "";
       let suggestion = "";
 
       if (field === "antecedentes") {
-        original = antecedentes;
-        suggestion = `${antecedentes} En estricto apego a los estándares institucionales de calidad académica (${option.toLowerCase()}), se sistematizan los respaldos documentales y medios de verificación generados durante el período.`;
+        suggestion = `${original} En estricto apego a los estándares institucionales de calidad académica (${option.toLowerCase()}), se sistematizan los respaldos documentales y medios de verificación generados durante el período.`;
       } else if (field === "conclusiones") {
-        original = conclusiones;
-        suggestion = `${conclusiones} Asimismo, se verificó que el 100% de los entregables cuentan con validación técnica y respaldo en las actas oficiales de la FISEI.`;
+        suggestion = `${original} Asimismo, se verificó que el 100% de los entregables cuentan con validación técnica y respaldo en las actas oficiales de la FISEI.`;
       } else {
-        original = oportunidadesMejora;
-        suggestion = `${oportunidadesMejora} Se propone además implementar un cronograma unificado de seguimiento para optimizar la trazabilidad de las actividades del próximo ciclo académico.`;
+        suggestion = `${original} Se propone además implementar un cronograma unificado de seguimiento para optimizar la trazabilidad de las actividades del próximo ciclo académico.`;
       }
 
       setAiModalData({ field, original, suggestion });
@@ -213,12 +216,14 @@ export default function WizardInformeView({
     if (step === 1 && (!selectedUnit || (unitType === "ACADEMIC" && !selectedUnit.carreras.some(c=>c.id===careerId&&c.estado==="ACTIVO")))) { setStepError("Seleccione una unidad institucional válida y su carrera cuando corresponda."); return; }
     if (step === 3 && informeOrigen === "DERIVADO_PLAN" && actividadesInforme.length === 0) { setStepError("El Plan seleccionado no contiene actividades para importar."); return; }
     setStepError("");
+    setAiError("");
     const next = step + 1;
     setStep(next);
     if (next > maxReached) setMaxReached(next);
   };
 
   const handlePrevStep = () => {
+    setAiError("");
     setStep((s) => Math.max(1, s - 1));
   };
 
@@ -511,6 +516,7 @@ export default function WizardInformeView({
 
       {/* Content Area */}
       <div style={{ flex: 1, overflowY: step === 7 ? "hidden" : "auto", padding: step === 7 ? "8px 16px" : "24px 28px", minHeight: 0 }}>
+        {aiError && <p role="alert" className="form-error">{aiError}</p>}
         <div style={{ maxWidth: step === 7 ? "100%" : 1000, width:"100%", height:step === 7 ? "100%" : "auto", minHeight:0, margin: "0 auto", transition: "max-width 0.3s ease" }}>
           
           {/* PASO 1: INFORMACIÓN GENERAL */}
@@ -701,7 +707,7 @@ export default function WizardInformeView({
                   rows={6}
                   value={antecedentes}
                   aria-label="Antecedentes"
-                  onChange={(e) => setAntecedentes(e.target.value)}
+                  onChange={(e) => { setAiError(""); setAntecedentes(e.target.value); }}
                   placeholder="Redacte los antecedentes..."
                 />
               </div>
@@ -850,7 +856,7 @@ export default function WizardInformeView({
                     rows={4}
                     value={conclusiones}
                     aria-label="Conclusiones"
-                    onChange={(e) => setConclusiones(e.target.value)}
+                    onChange={(e) => { setAiError(""); setConclusiones(e.target.value); }}
                   />
                 </div>
 
@@ -888,7 +894,7 @@ export default function WizardInformeView({
                     rows={4}
                     value={oportunidadesMejora}
                     aria-label="Oportunidades de mejora"
-                    onChange={(e) => setOportunidadesMejora(e.target.value)}
+                    onChange={(e) => { setAiError(""); setOportunidadesMejora(e.target.value); }}
                   />
                 </div>
               </div>

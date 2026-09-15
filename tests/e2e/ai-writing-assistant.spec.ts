@@ -17,6 +17,11 @@ async function startPlan(page: import('@playwright/test').Page) {
 test('asistente T1 aplica al campo correcto, descarta y persiste',async({page})=>{
   await reset(page); const id=await startPlan(page);
   const justification=page.getByRole('textbox',{name:'Justificación',exact:true});
+  await justification.fill('');
+  await page.getByLabel('Mejorar redacción de Justificación').click();
+  await page.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('Ingrese un texto antes de solicitar una mejora.');
+  await expect(page.getByTestId('ai-suggestion-apply')).toHaveCount(0);
   await justification.fill('texto inicial');
   await page.getByLabel('Mejorar redacción de Justificación').click();
   await page.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
@@ -31,6 +36,11 @@ test('asistente T1 aplica al campo correcto, descarta y persiste',async({page})=
   await page.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
   await page.getByTestId('ai-suggestion-discard').click();
   await expect(objective).toHaveValue('objetivo original');
+  await expect(justification).toHaveValue(applied);
+  await page.getByRole('button',{name:'Continuar →',exact:true}).click();
+  await page.getByRole('button',{name:'← Anterior',exact:true}).click();
+  await expect(justification).toHaveValue(applied);
+  await expect(objective).toHaveValue('objetivo original');
   await page.reload(); await login(page); await openDocuments(page);
   await row(page,id).getByRole('button',{name:'Continuar elaboración'}).click();
   await page.getByRole('button',{name:'Continuar →',exact:true}).click();
@@ -38,22 +48,46 @@ test('asistente T1 aplica al campo correcto, descarta y persiste',async({page})=
   await expect(page.getByRole('textbox',{name:'Objetivo',exact:true})).toHaveValue('objetivo original');
 });
 
-test('asistente T2 aplica Antecedentes y conserva el borrador al reabrir',async({page})=>{
+test('asistente T2 aplica Conclusiones, descarta Oportunidades y aísla ambos campos',async({page})=>{
   await reset(page); await openDocuments(page);
   await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();
   await page.getByRole('button',{name:'CREAR INFORME',exact:true}).click();
   await page.getByRole('radio',{name:/Informe independiente/}).check();
   await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
-  await page.getByLabel('Antecedentes').fill('antecedente inicial');
-  await page.getByRole('button',{name:/Mejorar redacción/,exact:true}).click();
-  await page.getByRole('button',{name:'Resumen ejecutivo del período académico',exact:true}).click();
+  const next=page.getByRole('button',{name:'Siguiente →',exact:true});
+  await next.click();
+  await next.click();
+  const conclusions=page.getByLabel('Conclusiones');
+  const opportunities=page.getByLabel('Oportunidades de mejora');
+  const conclusionHeader=page.getByText('3. Conclusiones',{exact:true}).locator('..');
+  const opportunityHeader=page.getByText('4. Oportunidades de Mejora',{exact:true}).locator('..');
+  await conclusions.fill('');
+  await conclusionHeader.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
+  await page.getByRole('button',{name:'Resaltar porcentaje global de cumplimiento y logros',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('Ingrese un texto antes de solicitar una mejora.');
+  await conclusions.fill('conclusión original');
+  await conclusionHeader.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
+  await page.getByRole('button',{name:'Resaltar porcentaje global de cumplimiento y logros',exact:true}).click();
   await page.getByTestId('ai-suggestion-apply').click();
-  const applied=await page.getByLabel('Antecedentes').inputValue();
-  expect(applied).toContain('antecedente inicial'); expect(applied).not.toBe('antecedente inicial');
+  const applied=await conclusions.inputValue();
+  expect(applied).toContain('conclusión original'); expect(applied).not.toBe('conclusión original');
+  await opportunities.fill('oportunidad original');
+  await opportunityHeader.getByRole('button',{name:'Mejorar redacción',exact:true}).click();
+  await page.getByRole('button',{name:'Optimizar la disponibilidad y reserva de laboratorios',exact:true}).click();
+  await page.getByTestId('ai-suggestion-discard').click();
+  await expect(conclusions).toHaveValue(applied);
+  await expect(opportunities).toHaveValue('oportunidad original');
+  await next.click();
+  await page.getByRole('button',{name:'← Anterior',exact:true}).click();
+  await expect(conclusions).toHaveValue(applied);
+  await expect(opportunities).toHaveValue('oportunidad original');
   await page.getByRole('button',{name:'Cancelar',exact:true}).click();
   await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();
   await page.getByRole('button',{name:'CREAR INFORME',exact:true}).click();
   await page.getByRole('radio',{name:/Informe independiente/}).check();
   await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
-  await expect(page.getByLabel('Antecedentes')).toHaveValue(applied);
+  await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
+  await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
+  await expect(page.getByLabel('Conclusiones')).toHaveValue(applied);
+  await expect(page.getByLabel('Oportunidades de mejora')).toHaveValue('oportunidad original');
 });

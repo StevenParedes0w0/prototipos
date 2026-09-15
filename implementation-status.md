@@ -860,3 +860,17 @@ Pendiente institucional: confirmar el catálogo definitivo de unidades/carreras,
 - Plantillas: todas las secciones de contenido requeridas son reordenables; solo encabezado y pie permanecen como marco fijo. Guardar y restaurar requieren confirmación.
 - Renderer: nuevos T1/T2 componen páginas, numeración e índice desde el snapshot de plantilla. Documentos existentes conservan su snapshot.
 - Arquitectura futura documentada: Groq DEV / OpenAI PROD mediante backend y PostgreSQL local/on-premise. El mockup sigue sin conexiones reales.
+
+# 43. AUDITORÍA IA, ADMINISTRACIÓN Y RESET DEMO — 15/09/2026
+
+Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
+
+- Asistente DEMO T1/T2: aplicar y descartar conservan el campo de origen, no comparten estado entre campos y persisten al navegar o recargar. Una solicitud con el campo vacío se rechaza con un mensaje inline y no genera contenido.
+- Plantillas T1/T2: la configuración guardada sobrevive a recarga, se mantiene independiente por tipo documental, gobierna documentos nuevos y no altera snapshots existentes. La restauración predeterminada permanece limitada a la plantilla seleccionada.
+- Catálogo institucional: altas, activación/desactivación y tipos académico/administrativo alimentan los selectores T1/T2; las unidades administrativas eliminan Carrera y los documentos históricos conservan su snapshot.
+- Dashboard: los conteos documentales se calculan desde la colección DEMO actual, reaccionan al crear un documento y vuelven al valor canónico después del reset documental.
+- Reset documental: restaura documentos, actividades/evidencias y borradores documentales; conserva plantillas y unidades institucionales administrativas, incluso después de recargar.
+- Cobertura: se amplió `ai-writing-assistant.spec.ts`, `admin-dashboard.spec.ts` y `template-builder.spec.ts`; se añadió `demo-reset-boundaries.spec.ts`.
+- Validación final: TypeScript y build correctos; 4 pruebas Node aprobadas; 32 pruebas E2E aprobadas; snapshots T1/T2 sin cambios.
+
+Limitación vigente: el asistente continúa siendo una simulación local y no integra Groq, OpenAI ni servicios externos.
