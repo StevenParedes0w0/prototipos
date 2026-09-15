@@ -168,8 +168,9 @@ export default function WizardInformeView({
       setActividadesInforme(getActividadesFromPlan(planId));
       setUnitType(targetPlan.currentArtifact.institutionalUnitType || "ACADEMIC");
       setInstitutionalUnitId(targetPlan.currentArtifact.institutionalUnitId || "unit-fisei");
-      setCareerId(targetPlan.currentArtifact.careerId || "career-software");
-      setCarrera(targetPlan.currentArtifact.carrera || "");
+      const isAcademicPlan = targetPlan.currentArtifact.institutionalUnitType !== "ADMINISTRATIVE";
+      setCareerId(isAcademicPlan ? (targetPlan.currentArtifact.careerId || "career-software") : "");
+      setCarrera(isAcademicPlan ? (targetPlan.currentArtifact.carrera || "") : "");
       setPeriodo(targetPlan.periodo);
       setStepError("");
     }
@@ -510,7 +511,7 @@ export default function WizardInformeView({
 
       {/* Content Area */}
       <div style={{ flex: 1, overflowY: step === 7 ? "hidden" : "auto", padding: step === 7 ? "8px 16px" : "24px 28px", minHeight: 0 }}>
-        <div style={{ maxWidth: step === 7 ? "100%" : 1000, margin: "0 auto", transition: "max-width 0.3s ease" }}>
+        <div style={{ maxWidth: step === 7 ? "100%" : 1000, width:"100%", height:step === 7 ? "100%" : "auto", minHeight:0, margin: "0 auto", transition: "max-width 0.3s ease" }}>
           
           {/* PASO 1: INFORMACIÓN GENERAL */}
           {step === 1 && (
@@ -529,7 +530,7 @@ export default function WizardInformeView({
 
               <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "22px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "grid", gridTemplateColumns: unitType === "ACADEMIC" ? "1fr 1.4fr 1.2fr" : "1fr 2fr", gap: 16 }}>
-                  <div><label className="form-label required">Tipo de unidad</label><select className="form-select" data-testid="institutional-unit-type" value={unitType} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{const type=e.target.value as TipoUnidadInstitucional;const first=adminState.unidadesInstitucionales.find(u=>u.tipo===type&&u.estado==="ACTIVO");setUnitType(type);setInstitutionalUnitId(first?.id||"");const career=first?.carreras.find(c=>c.estado==="ACTIVO");setCareerId(career?.id||"");setCarrera(career?.nombre||"");}}><option value="ACADEMIC">Unidad académica</option><option value="ADMINISTRATIVE">Unidad administrativa</option></select></div>
+                  <div><label className="form-label required">Tipo de unidad</label><select className="form-select" data-testid="institutional-unit-type" value={unitType} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{const type=e.target.value as TipoUnidadInstitucional;const first=adminState.unidadesInstitucionales.find(u=>u.tipo===type&&u.estado==="ACTIVO");setUnitType(type);setInstitutionalUnitId(first?.id||"");if(type==="ADMINISTRATIVE"){setCareerId("");setCarrera("");}else{const career=first?.carreras.find(c=>c.estado==="ACTIVO");setCareerId(career?.id||"");setCarrera(career?.nombre||"");}}}><option value="ACADEMIC">Unidad académica</option><option value="ADMINISTRATIVE">Unidad administrativa</option></select></div>
                   <div><label className="form-label required">Unidad</label><select className="form-select" data-testid="institutional-unit-select" value={institutionalUnitId} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{const unit=adminState.unidadesInstitucionales.find(u=>u.id===e.target.value);setInstitutionalUnitId(e.target.value);const career=unit?.carreras.find(c=>c.estado==="ACTIVO");setCareerId(career?.id||"");setCarrera(career?.nombre||"");}}><option value="">— Seleccione —</option>{adminState.unidadesInstitucionales.filter(u=>u.tipo===unitType&&u.estado==="ACTIVO").map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></div>
                   {unitType === "ACADEMIC" && <div><label className="form-label required">Carrera</label><select className="form-select" data-testid="career-select" value={careerId} disabled={informeOrigen === "DERIVADO_PLAN" && Boolean(selectedPlanId)} onChange={e=>{setCareerId(e.target.value);setCarrera(selectedUnit?.carreras.find(c=>c.id===e.target.value)?.nombre||"");}}><option value="">— Seleccione —</option>{selectedUnit?.carreras.filter(c=>c.estado==="ACTIVO").map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>}
                 </div>

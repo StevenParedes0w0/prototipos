@@ -91,7 +91,8 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
     const periodId = relatedPlan?.periodId || datos.periodId || configuration?.periodos?.find(p => p.nombre === periodo)?.id || `demo-period:${periodo}`;
     const existing = tipo === "PLAN_TRABAJO" ? findPlanByIdentity(documentsRef.current, { teacherId, groupId, periodId }) : undefined;
     if (existing) { setSelectedDocId(existing.id); return existing; }
-    const carrera = relatedPlan?.carrera || datos.carrera || "Ingeniería de Software";
+    const institutionalUnitType = relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || "ACADEMIC";
+    const carrera = institutionalUnitType === "ADMINISTRATIVE" ? "" : relatedPlan?.carrera || datos.carrera || "Ingeniería de Software";
     const titulo = tipo === "INFORME" ? normalizeInformeTitle(datos.titulo || `Seguimiento de actividades — ${grupo}`) : datos.titulo || `Plan de Trabajo: ${grupo}`;
     const id = uniqueId(tipo === "INFORME" ? "doc-inf" : "doc-plan");
     const authorUser = configuration?.usuarios.find(u => canonicalDemoActorId(u.id) === sessionRef.current.id);
@@ -106,9 +107,9 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       id: uniqueId(`art-${id}`), documentType: tipo, codigoFormatoOficial, titulo, formalVersion: "1.0", reviewRound: 1, pageCount: pages.length, pages,
       generatedAt: timestamp(), generatedBy: elaborador.nombre, grupo, carrera, periodo,
       unidadAcademica: relatedPlan?.currentArtifact.unidadAcademica || datos.unidadAcademica || "Facultad de Ingeniería en Sistemas, Electrónica e Industrial",
-      institutionalUnitType: relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || "ACADEMIC",
+      institutionalUnitType,
       institutionalUnitId: relatedPlan?.currentArtifact.institutionalUnitId || datos.institutionalUnitId || "unit-fisei",
-      careerId: relatedPlan?.currentArtifact.careerId || datos.careerId,
+      careerId: institutionalUnitType === "ADMINISTRATIVE" ? undefined : relatedPlan?.currentArtifact.careerId || datos.careerId,
       templateConfiguration: template ? { templateId: template.id, configVersion: template.version, sectionOrder: template.configuracion.map(s=>s.id), activeSectionIds: template.configuracion.filter(s=>s.activa).map(s=>s.id), capturedAt: timestamp() } : undefined,
       elaborador,
       justificacion: tipo === "PLAN_TRABAJO" ? JUSTIFICACION_INICIAL : undefined, objetivo: tipo === "PLAN_TRABAJO" ? OBJETIVO_INICIAL : undefined, matriz: tipo === "PLAN_TRABAJO" ? [] : undefined,
@@ -149,13 +150,14 @@ export function useDocumentEngine(onAuditLog?: AuditLog, configuration?: EngineC
       }) : [];
       const grupo = relatedPlan?.grupo || datos.grupo;
       const periodo = relatedPlan?.periodo || datos.periodo;
-      const carrera = relatedPlan?.carrera || datos.carrera || doc.carrera || "Ingeniería de Software";
+      const institutionalUnitType = relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || doc.currentArtifact.institutionalUnitType || "ACADEMIC";
+      const carrera = institutionalUnitType === "ADMINISTRATIVE" ? "" : relatedPlan?.carrera || datos.carrera || doc.carrera || "Ingeniería de Software";
       const artifact = composeArtifact({
         ...doc.currentArtifact, id: uniqueId(`art-${doc.id}-r${doc.reviewRound}`), titulo: normalizeInformeTitle(datos.titulo), grupo, periodo, carrera,
         unidadAcademica: relatedPlan?.currentArtifact.unidadAcademica || datos.unidadAcademica || doc.currentArtifact.unidadAcademica,
-        institutionalUnitType: relatedPlan?.currentArtifact.institutionalUnitType || datos.institutionalUnitType || doc.currentArtifact.institutionalUnitType,
+        institutionalUnitType,
         institutionalUnitId: relatedPlan?.currentArtifact.institutionalUnitId || datos.institutionalUnitId || doc.currentArtifact.institutionalUnitId,
-        careerId: relatedPlan?.currentArtifact.careerId || datos.careerId || doc.currentArtifact.careerId,
+        careerId: institutionalUnitType === "ADMINISTRATIVE" ? undefined : relatedPlan?.currentArtifact.careerId || datos.careerId || doc.currentArtifact.careerId,
         generatedAt: timestamp(), generatedBy: doc.currentArtifact.elaborador.nombre,
         informeData: { ...datos, relatedPlanId: relatedPlan?.id, relatedPlanTitulo: relatedPlan?.nombre, actividadesInforme: activities, contactosDelegacion: datos.aplicaRegistroContactos ? datos.contactosDelegacion || [] : [] },
         tieneAnexos: datos.tieneAnexos, anexos: datos.tieneAnexos === "si" ? datos.anexos : [],

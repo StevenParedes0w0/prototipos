@@ -18,13 +18,20 @@ const configuredSectionLabels: Record<string, string> = {
   annexes: "ANEXOS", signatures: "FIRMAS DE RESPONSABILIDAD", history: "CONTROL DE HISTORIAL DE CAMBIOS",
 };
 
+const institutionalOrigin = (artifact: DocumentArtifact) => ({
+  label: artifact.institutionalUnitType === "ADMINISTRATIVE" ? "Unidad administrativa" : "Unidad académica",
+  unitName: artifact.unidadAcademica,
+  careerName: artifact.institutionalUnitType === "ADMINISTRATIVE" ? "" : artifact.carrera,
+});
+
 function ConfiguredDocumentPage({ artifact, page, pages, flowStages }: { artifact: DocumentArtifact; page: DocumentPage; pages: DocumentPage[]; flowStages: FlowStageNode[] }) {
   const activeOrder = (artifact.templateConfiguration?.sectionOrder || []).filter(id => artifact.templateConfiguration?.activeSectionIds.includes(id) && configuredSectionLabels[id]);
+  const origin = institutionalOrigin(artifact);
   if (page.type === "cover") return <div data-rendered-section="general" style={{...t1CoverStyle,flex:1}}>
     <div style={{textAlign:"center",marginTop:44,marginBottom:58,fontSize:34,fontWeight:800,lineHeight:1.15}}>UNIVERSIDAD TÉCNICA<br/>DE AMBATO</div>
     <div style={t1CoverMainBlockStyle}>
-      <div><b>UNIDAD ACADÉMICA / ADMINISTRATIVA: </b>{artifact.unidadAcademica}</div>
-      {artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{marginTop:8}}><b>CARRERA: </b>{artifact.carrera.toUpperCase()}</div>}
+      <div><b>{origin.label.toUpperCase()}: </b>{origin.unitName}</div>
+      {origin.careerName && <div style={{marginTop:8}}><b>CARRERA: </b>{origin.careerName.toUpperCase()}</div>}
       <div style={{marginTop:8}}><b>{artifact.documentType === "PLAN_TRABAJO" ? "PLAN DE TRABAJO DE: " : "INFORME DE: "}</b>{artifact.documentType === "PLAN_TRABAJO" ? artifact.grupo.toUpperCase() : artifact.titulo}</div>
       <div style={{marginTop:8}}><b>PERÍODO: </b>{artifact.periodo}</div>
     </div>
@@ -223,6 +230,16 @@ export default function DocumentPdfPageViewer({
   const isLandscape = artifact.pages?.[currentPage - 1]?.orientation === "landscape";
   const currentPageData = artifact.pages?.[currentPage - 1];
   const currentA4 = isLandscape ? PAGE_SIZE_A4.landscape : PAGE_SIZE_A4.portrait;
+  const origin = institutionalOrigin(artifact);
+
+  useEffect(() => {
+    if (!previewExpanded || !onPreviewExpandedChange) return;
+    const closeExpanded = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onPreviewExpandedChange(false);
+    };
+    window.addEventListener("keydown", closeExpanded);
+    return () => window.removeEventListener("keydown", closeExpanded);
+  }, [previewExpanded, onPreviewExpandedChange]);
 
   const handleCreateObs = () => {
     if (!obsTexto.trim()) return;
@@ -345,7 +362,7 @@ export default function DocumentPdfPageViewer({
               letterSpacing: 0.6,
             }}
           >
-            Unidad académica / administrativa:
+            {origin.label}:
           </td>
           <td
             style={{
@@ -355,8 +372,8 @@ export default function DocumentPdfPageViewer({
               color: "#0f172a",
             }}
           >
-            <div>{artifact.unidadAcademica}</div>
-            {isPlan && artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{marginTop:2}}>Carrera de {artifact.carrera}</div>}
+            <div>{origin.unitName}</div>
+            {origin.careerName && <div style={{marginTop:2}}>Carrera de {origin.careerName}</div>}
           </td>
         </tr>
         <tr>
@@ -417,7 +434,7 @@ export default function DocumentPdfPageViewer({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "#f8fafc", overflow: "hidden" }}>
+    <div data-testid="document-viewer" data-expanded={previewExpanded ? "true" : "false"} style={{ display: "flex", flexDirection: "column", height: previewExpanded ? "100vh" : "100%", minHeight: 0, background: "#f8fafc", overflow: "hidden", ...(previewExpanded ? {position:"fixed" as const,inset:0,zIndex:1000,width:"100vw"} : {}) }}>
       {/* Drawer Agregar Observación */}
       {showAddObsDrawer && (
         <>
@@ -675,6 +692,7 @@ export default function DocumentPdfPageViewer({
           {/* PDF Page Canvas Scrollable Viewport */}
           <div
             ref={containerRef}
+            data-testid="document-scroll-container"
             style={{
               flex: 1,
               minHeight: 0,
@@ -774,13 +792,13 @@ export default function DocumentPdfPageViewer({
                           style={t1CoverMainBlockStyle}
                         >
                           <div style={{ marginTop: 8 }}>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.unidadAcademica}</span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>{origin.label}: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{origin.unitName}</span>
                           </div>
 
-                          {artifact.institutionalUnitType !== "ADMINISTRATIVE" && artifact.carrera && <div style={{ marginTop: 8 }}>
+                          {origin.careerName && <div style={{ marginTop: 8 }}>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>CARRERA: </span>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155", textTransform: "uppercase" }}>{artifact.carrera}</span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155", textTransform: "uppercase" }}>{origin.careerName}</span>
                           </div>}
 
                           <div style={{ marginTop: 8 }}>
@@ -1306,9 +1324,14 @@ export default function DocumentPdfPageViewer({
                           }}
                         >
                           <div style={{ marginTop: 8 }}>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>UNIDAD ACADÉMICA / ADMINISTRATIVA: </span>
-                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{artifact.unidadAcademica}</span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>{origin.label}: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155" }}>{origin.unitName}</span>
                           </div>
+
+                          {origin.careerName && <div style={{ marginTop: 8 }}>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>CARRERA: </span>
+                            <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 700, color: "#334155", textTransform: "uppercase" }}>{origin.careerName}</span>
+                          </div>}
 
                           <div style={{ marginTop: 8 }}>
                             <span style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", textTransform: "uppercase" }}>INFORME DE: </span>
