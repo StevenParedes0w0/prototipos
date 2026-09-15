@@ -72,6 +72,8 @@ interface DocumentPdfPageViewerProps {
   onEditObservacion?: (id: number, texto: string) => void;
   onDeleteObservacion?: (id: number) => void;
   readOnly?: boolean;
+  previewExpanded?: boolean;
+  onPreviewExpandedChange?: (expanded: boolean) => void;
 }
 
 export default function DocumentPdfPageViewer({
@@ -89,6 +91,8 @@ export default function DocumentPdfPageViewer({
   onEditObservacion,
   onDeleteObservacion,
   readOnly = false,
+  previewExpanded = false,
+  onPreviewExpandedChange,
 }: DocumentPdfPageViewerProps) {
   const isPlan = artifact.documentType === "PLAN_TRABAJO";
   const totalPages = artifact.pages?.length || artifact.pageCount;
@@ -523,7 +527,7 @@ export default function DocumentPdfPageViewer({
       )}
 
       {/* Main 70/30 Layout */}
-      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 340px", height: "100%", overflow: "hidden" }}>
+      <div data-testid="document-preview-layout" style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", height: "100%", overflow: "hidden" }}>
         
         {/* LEFT COLUMN (70%): Page-by-page PDF Viewer */}
         <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, borderRight: "1px solid #e2e8f0", background: "#525659", overflow: "hidden" }}>
@@ -533,7 +537,7 @@ export default function DocumentPdfPageViewer({
             style={{
               background: "#1e293b",
               color: "#fff",
-              padding: "8px 16px",
+              padding: "8px 12px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -543,7 +547,7 @@ export default function DocumentPdfPageViewer({
             }}
           >
             {/* Page Navigation Left */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
               <button
                 className="btn btn-ghost btn-xs"
                 style={{ color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}
@@ -552,7 +556,7 @@ export default function DocumentPdfPageViewer({
               >
                 ‹ Anterior
               </button>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#e2e8f0", minWidth: 85, textAlign: "center" }}>
+              <span data-testid="document-page-indicator" style={{ fontSize: 12.5, fontWeight: 600, color: "#e2e8f0", minWidth: 85, textAlign: "center", whiteSpace:"nowrap" }}>
                 Página {currentPage} de {totalPages}
                 {isLandscape && (
                   <span style={{ marginLeft: 6, fontSize: 10, background: "#0ea5e9", color: "#fff", padding: "1px 5px", borderRadius: 3 }}>
@@ -571,7 +575,7 @@ export default function DocumentPdfPageViewer({
             </div>
 
             {/* Direct page buttons Center */}
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 4, overflowX:"auto", minWidth:0 }}>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
                 <button
                   key={num}
@@ -596,8 +600,9 @@ export default function DocumentPdfPageViewer({
             </div>
 
             {/* Document Badges */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink:0 }}>
               <span
+                data-testid="document-version-round"
                 style={{
                   background: "rgba(255,255,255,0.12)",
                   color: "#cbd5e1",
@@ -605,6 +610,7 @@ export default function DocumentPdfPageViewer({
                   padding: "2px 8px",
                   borderRadius: 4,
                   fontWeight: 600,
+                  whiteSpace:"nowrap",
                 }}
               >
                 Versión formal {formalVersion} · Ronda {reviewRound}
@@ -612,7 +618,7 @@ export default function DocumentPdfPageViewer({
             </div>
 
             {/* Zoom Controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink:0 }}>
               <button
                 onClick={() => setZoom((z) => Math.max(50, z - 10))}
                 className="btn btn-ghost btn-xs"
@@ -653,6 +659,15 @@ export default function DocumentPdfPageViewer({
               >
                 100%
               </button>
+              {onPreviewExpandedChange && <button
+                className="btn btn-ghost btn-xs"
+                onClick={() => onPreviewExpandedChange(!previewExpanded)}
+                style={{ color: "#e2e8f0", padding: "2px 6px", display:"flex", alignItems:"center" }}
+                title={previewExpanded ? "Salir de vista expandida" : "Expandir previsualización"}
+                aria-label={previewExpanded ? "Salir de vista expandida" : "Expandir previsualización"}
+              >
+                <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{previewExpanded ? <><path d="M8 3v5H3"/><path d="m3 3 5 5"/><path d="M16 21v-5h5"/><path d="m21 21-5-5"/></> : <><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="M9 21H3v-6"/><path d="m3 21 7-7"/></>}</svg>
+              </button>}
             </div>
           </div>
 

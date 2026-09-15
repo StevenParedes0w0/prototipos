@@ -1,1137 +1,612 @@
-# MICRO-PASADA FUNCIONAL FINAL
-## Gestión Documental Académica FISEI
-## T2 demostrable + A4 global + cero emojis + orden real de plantillas + decisiones de IA/BD
+# CORRECCIÓN PUNTUAL FINAL — ENCABEZADO T2 + SCROLL DEL VISOR + MODO DE PANTALLA COMPLETA T1/T2
 
-Quiero realizar una intervención MUY FOCALIZADA sobre el mockup actual.
+Trabaja sobre el proyecto actual de Gestión Documental Académica FISEI.
 
-NO es una auditoría general.
-NO quiero refactor arquitectónico amplio.
-NO quiero implementar backend todavía.
-NO quiero conectar APIs reales.
-NO quiero introducir PostgreSQL todavía en ejecución.
-NO quiero romper los flujos ya estabilizados.
+Esta es una corrección sobre una implementación que ya funciona y que posee una suite amplia de pruebas. NO quiero una reimplementación del motor documental, NO quiero cambios arquitectónicos innecesarios y NO quiero regresiones en funcionalidades ya validadas.
 
-El objetivo es cerrar varios hallazgos concretos detectados durante la revisión manual posterior a la última pasada.
+Antes de modificar código:
 
-Antes de modificar código, lee:
+1. Revisa AGENTS.md si existe.
+2. Revisa requirements.md.
+3. Revisa implementation-status.md.
+4. Revisa los componentes implicados.
+5. Revisa las pruebas E2E existentes, especialmente las relacionadas con:
+   - T1
+   - T2
+   - previsualización
+   - A4
+   - layout
+   - template configuration
+6. Revisa las referencias institucionales disponibles en Documentos_guia cuando sean necesarias para comprobar el encabezado documental.
+7. Identifica la causa raíz de cada uno de los tres problemas antes de corregirlos.
 
-- AGENTS.md
-- requirements.md
-- implementation-status.md
-- reporte-pasada-focalizada-ui-documentos.md
-- reporte-correcciones-post-reunion.md
-- reporte-e2e-secundario.md
-- tests/document-engine.test.mjs
-- tests/e2e/*
-- Documentos_guia/*
-- package.json
+NO cambies requirements.md para acomodarlo al comportamiento actual.
+El código debe ajustarse a los requisitos y no al revés.
 
-Usa el estado real del proyecto como fuente de verdad técnica.
+======================================================================
+OBJETIVO
+======================================================================
 
-============================================================
-1. ESTADO QUE DEBES PRESERVAR
-============================================================
+Resolver correctamente estos tres problemas detectados mediante revisión manual:
 
-Actualmente el proyecto ya tiene aproximadamente:
+A. El encabezado institucional T2 no representa correctamente el tipo de unidad ni la carrera.
+B. El área de previsualización no permite recorrer correctamente todo el documento mediante scroll.
+C. “Expandir previsualización” no expande realmente el visor: actualmente básicamente oculta la sidebar.
 
-- 25 E2E PASS
-- TypeScript PASS
-- build PASS
-- motor documental PASS
-- visual regression T1/T2
+La corrección debe funcionar en T1 y T2 donde corresponda, sin romper A4, documentos existentes, artefactos firmados, paginación, signatureSlots, índices, flujos, rondas, firmas o snapshots institucionales válidos.
 
-NO reducir cobertura.
+======================================================================
+1. CORREGIR EL ENCABEZADO INSTITUCIONAL DEL T2
+======================================================================
 
-Preservar expresamente:
+Actualmente el T2 muestra una etiqueta fija:
 
-- teacherId + groupId + periodId para unicidad de Plan;
-- currentUser separado de activeContext;
-- targetDocId explícito;
-- formalVersion separado de reviewRound;
-- artefactos firmados inmutables;
-- artifactHistory;
-- revisores paralelos;
-- Coordinación secuencial;
-- Validación final;
-- observaciones y resaltados;
-- responsables colectivos + IDs individuales;
-- T1/T2 aislados;
-- evidencias independientes;
-- cierre/histórico;
-- firma DEMO;
-- flujo incompleto del Club;
-- catálogos institucionales;
-- nuevo selector Unidad académica/administrativa;
-- encabezado T1 corregido;
-- T2 con renderer propio;
-- asistente IA ya corregido.
+“Unidad académica / administrativa:”
 
-No reconstruyas estas áreas si ya funcionan.
+Esto es incorrecto.
 
-============================================================
-2. OBJETIVOS DE ESTA MICRO-PASADA
-============================================================
+El documento ya conoce el tipo seleccionado y NO debe generar un texto ambiguo.
 
-Resolver exactamente estos bloques:
+El comportamiento debe quedar alineado con la procedencia institucional que ya utiliza el T1.
 
-A. Hacer que el Informe T2 derivado sea demostrable desde el dataset DEMO canónico.
-B. Compactar el stepper de 8 pasos del Informe.
-C. Eliminar TODOS los emojis de la aplicación y reemplazarlos por iconos.
-D. Normalizar TODOS los documentos institucionales a tamaño A4.
-E. Permitir reordenación real de TODAS las secciones documentales configurables.
-F. Hacer que el renderer respete realmente el orden configurado.
-G. Añadir confirmación antes de guardar una estructura modificada.
-H. Documentar la estrategia futura de IA: Groq DEV / OpenAI PROD.
-I. Documentar PostgreSQL local/on-premise y gratuito como base de datos objetivo.
+----------------------------------------------------------------------
+1.1 Datos que debe conservar el documento
+----------------------------------------------------------------------
 
-NO ampliar el alcance fuera de estos bloques.
+El documento debe manejar explícitamente, como mínimo:
 
-============================================================
-A. T2 DERIVADO DEMOSTRABLE DESDE RESET DEMO
-============================================================
+- unitType
+- unitId
+- unitName
+- careerId cuando aplique
+- careerName cuando aplique
 
-PROBLEMA MANUAL CONFIRMADO:
+No determinar el tipo buscando palabras en el nombre de la unidad.
 
-Después de pulsar:
+No determinar una carrera basándose en el grupo institucional.
 
-RESTABLECER DOCUMENTOS DEMO
+No utilizar texto visible como identidad interna cuando ya exista ID.
 
-y entrar como:
+----------------------------------------------------------------------
+1.2 Caso: Unidad académica
+----------------------------------------------------------------------
 
-Ing. Andrea Pérez, Mg.
+Si el usuario seleccionó:
 
-al crear:
+Tipo de unidad:
+Unidad académica
 
-Informe
-→ Derivado de un Plan de Trabajo
+el encabezado institucional debe mostrar:
 
-el combo:
+Unidad académica:
+Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+Carrera de Ingeniería de Software
 
-Plan de Trabajo Relacionado
-
-aparece vacío.
-
-Solo muestra:
-
-— Seleccione un Plan validado o en ejecución —
-
-La validación del combo puede estar correctamente implementada, pero el dataset DEMO no contiene un Plan elegible para Andrea.
-
-Esto hace imposible demostrar manualmente el flujo T2 derivado.
-
-------------------------------------------------------------
-A1. NO DEGRADAR LA REGLA
-------------------------------------------------------------
-
-NO permitas:
-
-- BORRADOR;
-- EN CORRECCIÓN;
-- Plan de otro docente;
-- Informe;
-- documento inválido
-
-solo para llenar el combo.
-
-Mantener la regla canónica de elegibilidad existente.
-
-------------------------------------------------------------
-A2. DATASET DEMO
-------------------------------------------------------------
-
-Agregar al dataset canónico restaurable al menos UN Plan de Trabajo que:
-
-- pertenezca a Andrea;
-- esté VALIDADO o EN EJECUCIÓN;
-- tenga un flujo coherentemente completado;
-- tenga actividades configuradas;
-- tenga responsables;
-- tenga recursos;
-- tenga medios de verificación;
-- pueda usarse como Plan origen de T2;
-- no rompa la unicidad existente;
-- no ocupe combinaciones que necesitamos libres para pruebas T1.
+La Facultad y la Carrera deben aparecer correctamente dentro del área institucional definida por el formato.
 
 IMPORTANTE:
 
-NO usar como nueva combinación ocupada:
+En la referencia T1 actualmente aceptada, Facultad y Carrera aparecen juntas en la misma celda de contenido del encabezado:
 
-Andrea
-+
-Unidad de Titulación
-+
-Julio–Diciembre 2026
+Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+Carrera de Ingeniería de Software
 
-si actualmente esa combinación se utiliza para demostrar creación libre de Plan.
+Mantener esa lógica visual cuando corresponda.
 
-Selecciona otra combinación coherente del dataset.
+NO mostrar:
 
-Si es necesario:
-- otro período;
-- otro grupo;
-- o un Plan canónico ya existente adaptado correctamente.
+“Unidad académica / administrativa:”
 
-Pero no generes contradicciones.
+Debe decir únicamente:
 
-------------------------------------------------------------
-A3. EMPTY STATE REAL
-------------------------------------------------------------
+“Unidad académica:”
 
-Si un usuario genuinamente no tiene Planes elegibles:
+----------------------------------------------------------------------
+1.3 Caso: Unidad administrativa
+----------------------------------------------------------------------
 
-NO dejar un select vacío sin explicación.
+Si se seleccionó:
 
-Mostrar algo como:
+Tipo de unidad:
+Unidad administrativa
 
-“No dispone de Planes de Trabajo validados o en ejecución que puedan utilizarse como origen de un Informe.”
+el encabezado debe decir únicamente:
 
-El botón Siguiente continúa bloqueado.
+“Unidad administrativa:”
 
-------------------------------------------------------------
-A4. E2E
-------------------------------------------------------------
+y mostrar el nombre correspondiente.
 
-Crear o ampliar:
+En ese caso:
 
-tests/e2e/t2-canonical-dataset.spec.ts
+- NO debe mostrarse una carrera inexistente.
+- NO debe quedar una carrera heredada de una selección anterior.
+- NO debe imprimirse una fila/celda vacía titulada “Carrera”.
+- NO debe renderizarse “Carrera” en portada si institucionalmente no aplica.
+- cambiar de Unidad académica a Unidad administrativa debe limpiar correctamente el careerId/careerName que ya no correspondan.
 
-Debe probar:
+----------------------------------------------------------------------
+1.4 Wizard T2
+----------------------------------------------------------------------
 
-1. reset DEMO;
-2. sesión Andrea;
-3. Nuevo documento;
-4. Informe;
-5. Derivado de un Plan de Trabajo;
-6. el select contiene al menos un Plan elegible;
-7. seleccionar Plan;
-8. actividades importadas;
-9. medios importados;
-10. completar hasta previsualización;
-11. Plan origen permanece intacto.
+El paso Información General del Informe debe permitir seleccionar explícitamente:
 
-Esta prueba DEBE usar el dataset canónico restaurado.
+- Tipo de unidad
+  - Unidad académica
+  - Unidad administrativa
 
-NO crear dentro de la propia prueba un Plan artificial antes de verificar el combo.
+- Unidad
 
-Queremos proteger precisamente que el escenario DEMO sea demostrable.
+- Carrera, SOLO cuando corresponda a una unidad académica y sea aplicable.
 
-============================================================
-B. COMPACTAR STEPPER T2
-============================================================
+La visibilidad del selector de Carrera debe depender del tipo/unidad seleccionados.
 
-PROBLEMA MANUAL:
+No dejar una Carrera invisible pero todavía almacenada.
 
-El wizard T2 desperdicia demasiado espacio vertical.
+----------------------------------------------------------------------
+1.5 Consistencia T1/T2
+----------------------------------------------------------------------
 
-Actualmente se muestran simultáneamente:
+T1 y T2 deben compartir la misma semántica para procedencia institucional.
 
-- Crear Informe;
-- Formato;
-- Paso X de 8;
-- barra de progreso;
-- título del paso;
-- 8 pasos distribuidos en 2 filas.
+No crear dos reglas incompatibles.
 
-Esto ocupa demasiado viewport antes del formulario.
+Si existe código reutilizable para construir los metadatos del encabezado, preferir una única fuente de verdad.
 
-T1 tiene mejor densidad.
+NO cambiar el formato visual T1 que ya fue aceptado salvo que sea imprescindible para eliminar duplicación o inconsistencia.
 
-------------------------------------------------------------
-B1. DISEÑO ESPERADO
-------------------------------------------------------------
+======================================================================
+2. CORREGIR EL SCROLL DEL VISOR DOCUMENTAL
+======================================================================
 
-Crear un header compacto.
+Existe un bug de UX importante:
 
-Ejemplo conceptual:
+En determinadas previsualizaciones no es posible continuar desplazándose verticalmente para inspeccionar el contenido inferior.
 
-Crear Informe
-Paso 3 de 8 — Desarrollo de Actividades
+Esto debe corregirse de raíz.
 
-[ barra fina de progreso ]
+----------------------------------------------------------------------
+2.1 Comportamiento requerido
+----------------------------------------------------------------------
 
-1 General
-2 Antecedentes
-3 Actividades
-4 Conclusiones
-5 Contactos
-6 Anexos
-7 Previsualización
-8 Firma
+El área del documento debe poder desplazarse:
 
-En escritorio:
-una sola fila.
+- verticalmente,
+- horizontalmente cuando la orientación, zoom o ancho de página lo requieran.
 
-En resoluciones más estrechas:
-overflow horizontal controlado.
+Debe ser posible llegar desde la parte superior hasta la parte inferior de la página/documento.
 
-No volver a dos filas grandes salvo que sea estrictamente necesario.
+Debe funcionar con:
 
-------------------------------------------------------------
-B2. NO PERDER INFORMACIÓN
-------------------------------------------------------------
+- T1 vertical,
+- T1 matriz horizontal,
+- T2,
+- zoom 100%,
+- zoom aumentado,
+- vista normal,
+- vista expandida.
 
-Los nombres completos deben mantenerse mediante:
+----------------------------------------------------------------------
+2.2 No bloquear el scroll
+----------------------------------------------------------------------
 
-- title;
-- aria-label;
-- tooltip si ya existe patrón.
+Revisar especialmente combinaciones de:
 
-Ejemplo visible:
+- height
+- max-height
+- min-height
+- overflow
+- overflow-y
+- overflow-x
+- flex
+- min-height: 0
+- position: sticky/fixed
+- contenedores padres con overflow:hidden
 
-“Conclusiones”
+No arreglarlo añadiendo solamente un valor enorme fijo de altura.
 
-pero accesible:
+El visor debe aprovechar el viewport disponible de manera responsive.
 
-“Conclusiones y Oportunidades”
+----------------------------------------------------------------------
+2.3 Toolbar
+----------------------------------------------------------------------
 
-------------------------------------------------------------
-B3. ESTADOS
-------------------------------------------------------------
+La toolbar del visor puede permanecer visible/sticky si actualmente funciona bien.
 
-Conservar diferenciación entre:
+Pero:
 
-- completado;
-- actual;
-- bloqueado;
-- pendiente.
+- no debe cubrir contenido,
+- no debe impedir llegar al final de la página,
+- no debe crear un segundo scroll confuso salvo que sea intencional.
 
-No depender únicamente del color.
+----------------------------------------------------------------------
+2.4 Panel derecho
+----------------------------------------------------------------------
 
-Usar iconos de la librería actual.
+El panel:
 
-============================================================
-C. CERO EMOJIS EN TODA LA APLICACIÓN
-============================================================
+- cadena de aprobación,
+- aspectos a verificar,
+- observaciones,
+- acciones,
 
-NUEVA REGLA GLOBAL:
+debe seguir siendo utilizable.
 
-NO utilizar emojis en ningún lugar de la aplicación.
+Si necesita scroll independiente por su longitud, puede tenerlo.
 
-Todo elemento visual debe usar:
+Pero el scroll del panel derecho NO debe impedir desplazar el documento.
 
-- iconos SVG;
-- librería de iconos existente;
-- CSS;
-- texto.
+----------------------------------------------------------------------
+2.5 Footer de acciones del wizard
+----------------------------------------------------------------------
 
-Actualmente se observaron ejemplos como:
+Los controles inferiores como:
 
-- candado emoji en configurador de plantillas;
-- estrella/brillo emoji en botones de IA.
+- Anterior
+- Siguiente
+- Guardar borrador
 
-Debes hacer búsqueda global.
+deben mantenerse accesibles.
 
-------------------------------------------------------------
-C1. BUSCAR
-------------------------------------------------------------
+Evitar layouts donde el visor crezca infinitamente y empuje estas acciones fuera de una estructura utilizable.
 
-Auditar:
+======================================================================
+3. MODO “EXPANDIR PREVISUALIZACIÓN” REAL
+======================================================================
 
-src/
-tests/
-fixtures DEMO
-strings visibles
-botones
-modales
-notificaciones
-documentos
-administración
+La implementación actual no satisface el propósito del botón.
 
-Buscar emojis y caracteres decorativos Unicode usados como iconos.
+Actualmente “Expandir previsualización” básicamente oculta la sidebar.
 
-------------------------------------------------------------
-C2. REEMPLAZOS
-------------------------------------------------------------
+Eso NO es suficiente.
 
-Usar iconos equivalentes de la librería ya instalada.
+Quiero un verdadero modo de visualización ampliada.
 
-Ejemplos:
+Debe implementarse tanto para:
 
-Lock
-Sparkles
-GripVertical
-Check
-Info
-AlertTriangle
-Eye
-Pencil
-FileText
-ChevronRight
-History
+- Plan de Trabajo T1
+- Informe T2
 
-NO agregar una segunda librería de iconos si ya existe una.
+y debe reutilizar, en lo posible, la misma infraestructura.
 
-------------------------------------------------------------
-C3. ICONOS ACCESIBLES
-------------------------------------------------------------
+----------------------------------------------------------------------
+3.1 Comportamiento esperado
+----------------------------------------------------------------------
 
-Si el icono es decorativo:
+Al presionar el icono de Expandir previsualización:
 
-aria-hidden="true"
+el visor documental debe transformarse en una experiencia de pantalla completa dentro de la aplicación.
 
-Si representa una acción sin texto:
+Como mínimo debe:
 
-aria-label obligatorio.
+- ocupar todo el viewport disponible,
+- usar position fixed o una solución equivalente,
+- usar inset: 0 o comportamiento equivalente,
+- aparecer por encima de sidebar, wizard y contenido ordinario,
+- utilizar un z-index adecuado,
+- maximizar ancho,
+- maximizar alto.
 
-------------------------------------------------------------
-C4. REGRESIÓN AUTOMÁTICA
-------------------------------------------------------------
+NO considerar cumplido este requisito simplemente colapsando la sidebar.
 
-Agregar un check simple que detecte emojis visibles dentro de src/.
+----------------------------------------------------------------------
+3.2 Elementos visibles en modo expandido
+----------------------------------------------------------------------
 
-Puede ser:
+Debe conservarse una toolbar compacta que permita como mínimo:
 
-- test Node;
-- script;
-- test de código.
+- Página anterior
+- Página siguiente
+- selección/navegación de páginas
+- indicador Página X de Y
+- versión formal
+- ronda
+- zoom -
+- zoom +
+- Ajustar
+- porcentaje de zoom
+- salir de vista expandida
 
-No tiene que bloquear caracteres legítimos como tildes o símbolos técnicos.
-
-El objetivo es impedir reintroducir emojis como iconografía.
-
-============================================================
-D. TODOS LOS DOCUMENTOS EN A4
-============================================================
-
-DECISIÓN CONFIRMADA:
-
-TODO documento institucional generado por el proyecto debe usar A4.
-
-No queda pendiente.
-
-No usar tamaño Letter/Carta.
-
-------------------------------------------------------------
-D1. REGLAS
-------------------------------------------------------------
-
-Vertical:
-
-210 × 297 mm
-
-Horizontal:
-
-297 × 210 mm
-
-Aplicar a:
-
-- T1;
-- T2;
-- cualquier página generada por el motor documental;
-- previsualización;
-- export futuro;
-- snapshots.
-
-------------------------------------------------------------
-D2. ORIENTACIÓN
-------------------------------------------------------------
-
-A4 no significa siempre vertical.
-
-Las páginas que requieran matriz horizontal pueden usar:
-
-orientation = landscape
-
-pero deben continuar siendo A4.
-
-------------------------------------------------------------
-D3. MODELO
-------------------------------------------------------------
-
-Evitar hardcodes contradictorios.
-
-Centralizar algo equivalente a:
-
-PAGE_SIZE_A4
-
-y derivar:
-
-portrait
-landscape
-
-según page.orientation.
-
-------------------------------------------------------------
-D4. T2
-------------------------------------------------------------
-
-Aunque el DOCX fuente esté configurado físicamente en tamaño Carta:
-
-usar su contenido y estructura como referencia,
-pero normalizar el renderer final a A4.
-
-Documentar esta decisión.
-
-------------------------------------------------------------
-D5. TEST
-------------------------------------------------------------
-
-Agregar prueba de motor o E2E que compruebe:
-
-T1 portrait = A4
-T1 matrix landscape = A4 landscape
-T2 portrait = A4
-cualquier página T2 landscape = A4 landscape si existe.
-
-============================================================
-E. ORDEN LIBRE REAL DE SECCIONES DOCUMENTALES
-============================================================
-
-PROBLEMA:
-
-El configurador actual permite mover algunas secciones, pero mantiene otras bloqueadas.
-
-La decisión actual es:
-
-EL ADMINISTRADOR DEBE PODER REORDENAR LAS SECCIONES DEL DOCUMENTO SIN LIMITACIONES DE ORDEN.
-
-Esto aplica tanto a:
-
-T1
-como
-T2.
-
-IMPORTANTE:
-
-Distinguir:
-
-SECCIONES DOCUMENTALES
-vs
-MARCO DE PÁGINA.
-
-------------------------------------------------------------
-E1. MARCO DE PÁGINA
-------------------------------------------------------------
-
-NO tratar como sección movible:
-
-- encabezado institucional;
-- pie institucional.
-
-Estos pertenecen al marco de cada página.
-
-Pueden permanecer fijos.
-
-------------------------------------------------------------
-E2. SECCIONES T1 MOVIBLES
-------------------------------------------------------------
-
-Deben poder reordenarse:
-
-- Información general;
-- Justificación;
-- Objetivo;
-- Matriz de actividades;
-- Anexos;
-- Firmas de responsabilidad;
-- Control de historial de cambios.
-
-Si existen otras secciones de contenido:
-incluirlas.
-
-------------------------------------------------------------
-E3. SECCIONES T2 MOVIBLES
-------------------------------------------------------------
-
-Deben poder reordenarse:
-
-- Información general;
-- Antecedentes;
-- Desarrollo de actividades;
-- Conclusiones y oportunidades;
-- Registro de contactos;
-- Anexos;
-- Firmas de responsabilidad;
-- Control de historial de cambios.
-
-Si existen otras secciones:
-incluirlas.
-
-------------------------------------------------------------
-E4. REQUERIDA ≠ BLOQUEADA
-------------------------------------------------------------
-
-Una sección:
-
-REQUERIDA
-
-significa:
-
-no puede eliminarse/desactivarse.
-
-NO significa:
-
-no puede moverse.
-
-Por ejemplo:
-
-Firmas
-
-puede ser requerida y movible.
-
-Historial
-
-puede ser requerido y movible.
-
-Información general
-
-puede ser requerida y movible.
-
-------------------------------------------------------------
-E5. OPCIONAL
-------------------------------------------------------------
-
-Una sección opcional puede:
-
-- cambiar de posición;
-- activarse/desactivarse.
-
-No permitir que una sección requerida se desactive.
-
-============================================================
-F. EL RENDERER DEBE RESPETAR EL ORDEN
-============================================================
-
-ESTE ES EL PUNTO MÁS IMPORTANTE DEL CONFIGURADOR.
-
-NO basta con mover tarjetas en Administración.
-
-La configuración debe afectar realmente a NUEVOS documentos.
-
-------------------------------------------------------------
-F1. SNAPSHOT DE CONFIGURACIÓN
-------------------------------------------------------------
-
-Cuando se crea un documento nuevo:
-
-guardar dentro del documento una copia de la configuración de plantilla vigente.
-
-Ejemplo conceptual:
-
-templateConfigurationSnapshot
-
-Debe contener:
-
-- templateId;
-- version/configVersion;
-- orden;
-- visibilidad;
-- estado de secciones.
-
-------------------------------------------------------------
-F2. INMUTABILIDAD
-------------------------------------------------------------
-
-Cambiar la plantilla administrativa después:
-
-NO cambia documentos existentes.
-
-NO cambia artefactos firmados.
-
-NO cambia historial.
-
-Solo afecta documentos creados posteriormente.
-
-------------------------------------------------------------
-F3. COMPOSICIÓN DINÁMICA
-------------------------------------------------------------
-
-El generador debe recorrer:
-
-templateConfigurationSnapshot.sections
-
-en el orden configurado.
-
-Ejemplo:
-
-Admin configura:
-
-1 Objetivo
-2 Justificación
-3 Anexos
-4 Matriz
-5 Información general
-6 Firmas
-7 Historial
-
-Un NUEVO Plan debe:
-
-- construir el índice en ese orden;
-- construir las páginas en ese orden;
-- numerar las secciones en ese orden;
-- generar referencias/páginas correctas;
-- conservar orientation según la sección.
-
-NO permitir cosas como:
-
-“3. MATRIZ”
-
-antes de:
-
-“1. JUSTIFICACIÓN”
-
-porque los números estaban hardcodeados.
-
-------------------------------------------------------------
-F4. NUMERACIÓN DINÁMICA
-------------------------------------------------------------
-
-Derivar:
-
-1.
-2.
-3.
-...
-
-del orden real.
-
-Los nombres institucionales se mantienen.
-
-------------------------------------------------------------
-F5. ÍNDICE
-------------------------------------------------------------
-
-El índice debe seguir el orden configurado.
-
-Los números de página deben continuar derivados de:
-
-artifact.pages
-
-NO hardcodeados.
-
-------------------------------------------------------------
-F6. ORIENTACIÓN
-------------------------------------------------------------
-
-Si la Matriz se mueve:
-
-su página sigue siendo horizontal A4.
-
-Las demás secciones pueden continuar verticales.
-
-El cambio de orden no debe perder la orientación específica.
-
-------------------------------------------------------------
-F7. T1 Y T2 INDEPENDIENTES
-------------------------------------------------------------
-
-Configurar T1 no modifica T2.
-
-Configurar T2 no modifica T1.
-
-============================================================
-G. MODAL DE CONFIRMACIÓN
-============================================================
-
-Antes de guardar una configuración que cambie el orden:
-
-mostrar modal.
-
-Texto recomendado:
-
-“Confirmar cambio de estructura”
-
-“Ha modificado el orden de las secciones de esta plantilla. La nueva estructura se aplicará únicamente a los documentos creados a partir de este momento. Los documentos existentes y los artefactos firmados no serán modificados.”
-
-Botones:
-
-Cancelar
-
-Guardar nueva estructura
+Usar ICONOS de la librería existente.
 
 NO usar emojis.
 
-Usar icono Info o AlertTriangle.
+----------------------------------------------------------------------
+3.3 Documento
+----------------------------------------------------------------------
 
-------------------------------------------------------------
-G1. RESTAURAR
-------------------------------------------------------------
+En modo expandido:
 
-Mantener:
+- la página debe aprovechar mucho mejor el espacio;
+- conservar su relación de aspecto;
+- conservar A4;
+- no deformarse;
+- no estirarse artificialmente;
+- permitir scroll vertical;
+- permitir scroll horizontal cuando corresponda;
+- respetar landscape/portrait según metadata de la página.
 
-Restaurar predeterminado
+----------------------------------------------------------------------
+3.4 Panel documental derecho
+----------------------------------------------------------------------
 
-También debe pedir confirmación si destruye cambios actuales.
+No elimines la cadena institucional y controles del documento de forma arbitraria.
 
-============================================================
-H. DECISIÓN ARQUITECTÓNICA DE IA
-============================================================
+Implementa una solución responsive.
 
-NO conectar APIs reales en esta tarea.
+En una pantalla amplia puede mantenerse el panel derecho.
 
-NO poner claves en React.
+Si el ancho disponible resulta insuficiente, se puede:
 
-NO poner:
+- compactar,
+- colapsar,
+- permitir ocultarlo mediante un icono,
 
-VITE_GROQ_API_KEY
-VITE_OPENAI_API_KEY
+pero debe seguir existiendo una forma clara de consultarlo.
 
-ni ninguna clave secreta en frontend.
+No generar un layout donde el panel reduzca nuevamente el documento a un tamaño incómodo.
 
-La decisión de arquitectura futura será:
+----------------------------------------------------------------------
+3.5 Salir de vista expandida
+----------------------------------------------------------------------
 
-DESARROLLO:
-GroqCloud
-modelo objetivo de desarrollo:
-GPT-OSS 120B
+Debe existir un icono claro para salir.
 
-PRODUCCIÓN:
-OpenAI API
-modelo objetivo actual:
-GPT-5.6 Luna
+También debe aceptarse ESC si resulta viable y estable.
 
-IMPORTANTE:
+Al salir:
 
-Tratar nombres de modelos como configuración futura, no como dependencia rígida del dominio.
+- volver exactamente al modo normal,
+- conservar página actual,
+- conservar zoom,
+- conservar documento actual,
+- conservar estado del wizard,
+- no reiniciar formularios,
+- no regenerar otro documento,
+- no cambiar targetDocId.
 
-------------------------------------------------------------
-H1. ABSTRACCIÓN FUTURA
-------------------------------------------------------------
+----------------------------------------------------------------------
+3.6 Fullscreen API
+----------------------------------------------------------------------
 
-Documentar una arquitectura como:
+Si Fullscreen API puede incorporarse de forma estable, puede utilizarse como mejora adicional.
 
-AiWritingService
+Pero NO dependas exclusivamente de ella.
 
-↓
+El requisito obligatorio es una vista full-viewport estable dentro de la aplicación.
 
-AiProvider
+Debe funcionar incluso si el navegador rechaza Fullscreen API.
 
-con implementaciones futuras:
+======================================================================
+4. T1 Y T2 DEBEN UTILIZAR EL MISMO COMPONENTE/COMPORTAMIENTO
+======================================================================
 
-GroqAiProvider
+No quiero dos implementaciones divergentes.
 
-OpenAiProvider
+Audita DocumentPdfPageViewer y los wrappers que lo consumen.
 
-Configuración:
+Preferir:
 
-AI_PROVIDER=groq
+- una sola lógica de expand/collapse,
+- una sola lógica de scroll,
+- una sola toolbar,
+- un solo cálculo responsive,
 
-o
+con personalización por metadatos cuando sea necesario.
 
-AI_PROVIDER=openai
+No duplicar una versión T1 y otra T2 si no existe una razón estructural real.
 
-------------------------------------------------------------
-H2. SEGURIDAD
-------------------------------------------------------------
+======================================================================
+5. NO REGRESIONES
+======================================================================
 
-La llamada real deberá ocurrir en backend.
+No modificar ni romper:
 
-Arquitectura prevista:
+- unicidad de Plan por teacherId + groupId + periodId,
+- aislamiento Plan / Informe,
+- artefactos firmados inmutables,
+- rondas,
+- versión formal,
+- firma DEMO,
+- firma manual simulada,
+- firma única,
+- workflow,
+- revisores paralelos,
+- observaciones,
+- devoluciones,
+- correcciones,
+- evidencia,
+- historial,
+- cierre DEMO,
+- documentos históricos,
+- A4,
+- signatureSlots,
+- pageCount dinámico,
+- orientation de página,
+- footer institucional,
+- índices dinámicos,
+- orden configurable de secciones,
+- configuración administrativa de plantillas.
 
-React
-↓
-Spring Boot
-↓
-AiWritingService
-↓
-Groq / OpenAI
+No tocar módulos que no sean necesarios.
 
-Nunca navegador → proveedor directamente.
+======================================================================
+6. REGLA DE A4
+======================================================================
 
-------------------------------------------------------------
-H3. MOCKUP ACTUAL
-------------------------------------------------------------
+TODO documento institucional de este mockup debe continuar en A4.
 
-El mockup continúa utilizando:
+- portrait cuando corresponda,
+- landscape cuando corresponda.
 
-MockAiProvider
+No introducir Carta/Letter.
 
-o equivalente.
+No corregir el scroll o fullscreen cambiando el tamaño lógico de la hoja.
 
-No conectar red externa.
+======================================================================
+7. ICONOS, NO EMOJIS
+======================================================================
 
-------------------------------------------------------------
-H4. DOCUMENTAR
-------------------------------------------------------------
+No añadir emojis visibles.
 
-Crear:
+Para:
 
-docs/architecture/ai-provider-strategy.md
+- expandir,
+- contraer,
+- cerrar,
+- advertencias,
+- controles,
 
-o ubicación coherente existente.
+usar iconos SVG/componentes de la librería visual que ya utiliza el proyecto.
 
-Incluir:
+Mantener vigente la prueba no-visible-emojis.
 
-- propósito;
-- proveedor DEV;
-- proveedor PROD;
-- interfaz;
-- seguridad;
-- variables de entorno futuras;
-- fallback;
-- no exposición de API keys.
+======================================================================
+8. PRUEBAS AUTOMÁTICAS NUEVAS/ACTUALIZADAS
+======================================================================
 
-============================================================
-I. BASE DE DATOS LOCAL Y GRATUITA
-============================================================
+No me basta con “se ve bien”.
 
-NUEVA DECISIÓN CONFIRMADA DEL PROYECTO:
+Implementar pruebas que protejan específicamente estas correcciones.
 
-La base de datos debe:
+----------------------------------------------------------------------
+8.1 Encabezado T2 académico
+----------------------------------------------------------------------
 
-- ser local / on-premise;
-- ser gratuita;
-- no depender de servicios administrados de pago.
+Crear/usar un T2 con:
 
-Decisión tecnológica:
+Unidad académica
++
+Facultad
++
+Carrera
 
-PostgreSQL.
+Comprobar en el artefacto:
 
-------------------------------------------------------------
-I1. ALCANCE ACTUAL
-------------------------------------------------------------
+- aparece “Unidad académica”
+- aparece Facultad
+- aparece Carrera de Ingeniería de Software
+- NO aparece “Unidad académica / administrativa”
 
-NO implementar todavía backend.
+----------------------------------------------------------------------
+8.2 Encabezado T2 administrativo
+----------------------------------------------------------------------
 
-NO agregar PostgreSQL como dependencia obligatoria del mockup.
+Cambiar a:
 
-NO sustituir localStorage ahora.
+Unidad administrativa
 
-Esta tarea es documental/arquitectónica.
+Comprobar:
 
-------------------------------------------------------------
-I2. ARQUITECTURA FUTURA
-------------------------------------------------------------
+- aparece “Unidad administrativa”
+- aparece su unidad seleccionada
+- NO aparece Carrera
+- NO queda careerName persistido incorrectamente
+- NO aparece el literal combinado.
 
-Documentar:
+----------------------------------------------------------------------
+8.3 Scroll T1
+----------------------------------------------------------------------
 
-React / TypeScript
-↓
-Spring Boot
-↓
-PostgreSQL local / institucional on-premise
+Abrir T1 preview.
 
-PostgreSQL será la base principal.
+Comprobar que el contenedor es desplazable y se puede alcanzar el contenido inferior.
 
-------------------------------------------------------------
-I3. NO USAR
-------------------------------------------------------------
+Repetir en página horizontal de matriz.
 
-No diseñar el sistema alrededor de:
+----------------------------------------------------------------------
+8.4 Scroll T2
+----------------------------------------------------------------------
 
-- Firebase;
-- Supabase;
-- MongoDB Atlas;
-- Neon;
-- PlanetScale;
-- otros DBaaS obligatorios.
+Abrir T2 preview.
 
-------------------------------------------------------------
-I4. DESARROLLO
-------------------------------------------------------------
+Desplazar el visor desde arriba hasta abajo mediante Playwright.
 
-Se debe permitir futuro desarrollo con:
+Verificar que se puede llegar al final del contenido.
 
-PostgreSQL instalado localmente
+----------------------------------------------------------------------
+8.5 Expandido T1
+----------------------------------------------------------------------
 
-o
+Entrar a T1 preview.
 
-Docker Compose local.
+Pulsar expandir.
 
-Sin servicios pagados.
+Comprobar que:
 
-------------------------------------------------------------
-I5. DOCUMENTAR
-------------------------------------------------------------
+- el visor ocupa prácticamente todo el viewport,
+- NO se trata únicamente del sidebar colapsado,
+- se conserva toolbar,
+- se conserva documento,
+- se puede hacer scroll,
+- se puede salir,
+- al salir se conserva página y estado.
 
-Actualizar requirements.md.
+----------------------------------------------------------------------
+8.6 Expandido T2
+----------------------------------------------------------------------
 
-Actualizar architecture existente.
+Repetir el mismo escenario para T2.
 
-Crear si hace falta:
+----------------------------------------------------------------------
+8.7 ESC
+----------------------------------------------------------------------
 
-docs/architecture/database-strategy.md
+Si se implementa soporte ESC:
 
-Debe indicar:
+- entrar en expandido,
+- presionar Escape,
+- comprobar retorno normal sin pérdida de estado.
 
-- PostgreSQL;
-- local/on-premise;
-- gratuito;
-- SQL relacional;
-- auditoría;
-- transacciones;
-- migraciones futuras;
-- datos de documentos vs archivos binarios.
+======================================================================
+9. REGRESIÓN VISUAL
+======================================================================
 
-IMPORTANTE:
+Si cambia el layout legítimamente, no actualices snapshots de forma automática y ciega.
 
-No inventar todavía almacenamiento de PDFs si no está confirmado para este proyecto.
+Antes de aceptar un snapshot nuevo:
 
-Limitar este documento a la base de datos.
+1. inspecciona el diff,
+2. confirma que el cambio corresponde exclusivamente a mayor espacio útil/layout,
+3. confirma que:
+   - A4 sigue intacto,
+   - encabezados no se deformaron,
+   - tablas no se recortaron,
+   - firmas no se movieron indebidamente,
+   - footer no desapareció,
+   - marca BORRADOR sigue correcta,
+   - texto institucional no fue alterado accidentalmente.
 
-============================================================
-J. PRUEBAS DEL CONFIGURADOR
-============================================================
+Documenta qué snapshots cambiaste y por qué.
 
-Ampliar:
+======================================================================
+10. ARCHIVOS A REVISAR
+======================================================================
 
-tests/e2e/template-builder.spec.ts
+Como mínimo inspecciona, sin asumir que todos deben modificarse:
 
-Caso T1:
+- src/App.tsx
+- src/modulo11/WizardInformeView.tsx
+- src/documentEngine/DocumentPdfPageViewer.tsx
+- componentes del wizard T1
+- renderer/composer T1
+- renderer/composer T2
+- tipos/document metadata
+- procedencia institucional
+- template configuration
+- tests/e2e/preview-layout.spec.ts
+- pruebas de T2
+- pruebas A4
+- pruebas visuales
 
-1. reset;
-2. Admin;
-3. Plantillas;
-4. Configurar T1;
-5. mover Información general;
-6. mover Objetivo;
-7. mover Firmas;
-8. mover Historial;
-9. verificar que todas se mueven;
-10. guardar;
-11. confirmar modal;
-12. cerrar/reabrir;
-13. orden persiste;
-14. crear NUEVO T1;
-15. previsualizar;
-16. índice respeta orden;
-17. documento respeta orden;
-18. numeración respeta orden.
+Encuentra la implementación real antes de modificar.
 
-Después:
+No inventes archivos.
 
-19. modificar plantilla nuevamente;
-20. abrir documento anterior;
-21. comprobar que NO cambió.
+======================================================================
+11. COMANDOS DE VALIDACIÓN OBLIGATORIOS
+======================================================================
 
-Caso T2 equivalente mínimo.
-
-------------------------------------------------------------
-J1. RESTORE DEFAULT
-------------------------------------------------------------
-
-Probar:
-
-Restaurar predeterminado
-
-→ confirmación
-→ orden original
-→ persistencia.
-
-============================================================
-K. E2E STEPPER T2
-============================================================
-
-Añadir visual/smoke test:
-
-- stepper ocupa una sola fila en 1600×900;
-- no tapa formulario;
-- paso actual visible;
-- pasos completos diferenciados;
-- navegación continúa funcionando.
-
-No hacer prueba pixel-perfect innecesariamente frágil.
-
-============================================================
-L. E2E EMOJIS
-============================================================
-
-Añadir check de código y/o navegador que garantice que no existen emojis usados como iconografía en las pantallas principales.
-
-Como mínimo:
-
-- wizard T1;
-- wizard T2;
-- Administración;
-- configurador;
-- firma;
-- revisión.
-
-============================================================
-M. DOCUMENTACIÓN
-============================================================
-
-Actualizar:
-
-requirements.md
-implementation-status.md
-
-Crear:
-
-reporte-micro-pasada-final.md
-
-Debe incluir:
-
-# Reporte — Micro-pasada funcional final
-
-## 1. T2 derivado y dataset DEMO
-
-- causa del combo vacío;
-- Plan elegible añadido;
-- combinación utilizada;
-- estado;
-- prueba canónica.
-
-## 2. Stepper T2
-
-- problema anterior;
-- solución;
-- comportamiento responsive.
-
-## 3. Cero emojis
-
-- lugares detectados;
-- iconos sustituidos;
-- check automático.
-
-## 4. A4 global
-
-- T1;
-- T2;
-- portrait;
-- landscape;
-- tests.
-
-## 5. Configurador
-
-- secciones movibles T1;
-- secciones movibles T2;
-- marco fijo;
-- confirmación;
-- persistencia;
-- restauración.
-
-## 6. Renderer dinámico
-
-- snapshot;
-- orden;
-- numeración;
-- índice;
-- páginas;
-- documentos históricos.
-
-## 7. Estrategia IA
-
-- DEV Groq;
-- PROD OpenAI;
-- abstracción;
-- seguridad;
-- mock actual.
-
-## 8. Base de datos
-
-- PostgreSQL;
-- local/on-premise;
-- gratuito;
-- sin implementación backend en esta fase.
-
-## 9. Bugs reales encontrados
-
-## 10. Archivos modificados
-
-## 11. Tests nuevos/modificados
-
-## 12. Resultado final
-
-## 13. Snapshots actualizados
-
-## 14. Pendientes institucionales
-
-============================================================
-N. TESTS OBLIGATORIOS
-============================================================
-
-Ejecutar:
+Al finalizar ejecuta:
 
 npx tsc --noEmit
 
@@ -1139,171 +614,173 @@ npm run build
 
 node --test tests/document-engine.test.mjs
 
-Ejecutar individualmente:
+node --test tests/a4-page-size.test.mjs
 
-- nuevo test dataset T2;
-- template-builder;
-- A4;
-- emoji check;
-- stepper T2;
-- cualquier test nuevo.
+node --test tests/no-visible-emojis.test.mjs
 
-Después:
+las pruebas E2E específicas creadas/modificadas
+
+y finalmente:
 
 npm run test:e2e
 
-Toda la suite.
+Todas deben pasar.
 
-NO reducir el número de pruebas existentes.
+Si una prueba existente falla:
 
-NO modificar tests solamente para hacerlos pasar.
+NO actualices la expectativa automáticamente.
 
-============================================================
-O. SNAPSHOTS
-============================================================
+Primero determina si se trata de:
 
-A4 y nuevo orden dinámico pueden afectar snapshots.
+- regresión real,
+- cambio legítimo,
+- snapshot desactualizado,
+- test incorrecto.
 
-NO ejecutar update masivo.
+======================================================================
+12. REVISIÓN MANUAL DEL AGENTE
+======================================================================
 
-Actualizar únicamente snapshots legítimamente afectados.
+Después de los tests automáticos, utiliza Playwright/headed o el mecanismo disponible para inspeccionar visualmente como mínimo:
 
-Especial atención:
+A. T2 Unidad académica
+- encabezado correcto
+- Facultad
+- Carrera
 
-- T1 portada;
-- T1 matriz;
-- T1 firmas;
-- T2 portada;
-- T2 contenido;
-- T2 firmas.
+B. T2 Unidad administrativa
+- encabezado correcto
+- sin Carrera
 
-Documentar cada actualización.
+C. T2 vista normal
+- scroll hasta el final
 
-============================================================
-P. CRITERIOS DE ACEPTACIÓN
-============================================================
+D. T2 vista expandida
+- documento aprovechando el viewport
+- scroll funcional
 
-No declarar terminado hasta cumplir:
+E. T1 portrait expandido
 
-T2 DATASET
-[ ] Andrea tiene al menos un Plan elegible tras Reset DEMO.
-[ ] Combo no está vacío.
-[ ] Plan seleccionado importa actividades.
-[ ] Plan origen no se modifica.
+F. T1 matriz landscape expandida
 
-STEPPER
-[ ] T2 no desperdicia dos filas completas.
-[ ] Una sola fila desktop.
-[ ] Responsive razonable.
-[ ] Accesible.
+G. salir del modo expandido
+- misma página
+- mismo zoom
+- mismo documento
 
-EMOJIS
-[ ] No hay emojis visibles usados como iconos.
-[ ] Candados son iconos.
-[ ] IA usa icono real.
-[ ] Check automático PASS.
+No declares completado el trabajo únicamente porque npm run test:e2e esté verde.
 
-A4
-[ ] T1 portrait A4.
-[ ] T1 landscape A4.
-[ ] T2 portrait A4.
-[ ] No queda Letter/Carta en renderer documental.
+======================================================================
+13. CRITERIOS DE ACEPTACIÓN
+======================================================================
 
-PLANTILLAS
-[ ] Información general movible.
-[ ] Justificación movible.
-[ ] Objetivo movible.
-[ ] Matriz movible.
-[ ] Anexos movible.
-[ ] Firmas movible.
-[ ] Historial movible.
-[ ] Equivalentes T2 movibles.
-[ ] Header/footer permanecen marco fijo.
-[ ] Modal de confirmación.
-[ ] Restore default.
+No cierres la tarea hasta que TODOS estos puntos sean verdaderos:
 
-RENDERER
-[ ] Orden administrativo afecta nuevos documentos.
-[ ] Índice respeta orden.
-[ ] Numeración respeta orden.
-[ ] Orientación se conserva.
-[ ] Documentos existentes no cambian.
-[ ] Artefactos firmados no cambian.
-
-IA ARQUITECTURA
-[ ] Groq DEV documentado.
-[ ] OpenAI PROD documentado.
-[ ] Provider abstraction documentada.
-[ ] Sin API keys frontend.
-[ ] Mock actual permanece.
-
-BD
-[ ] PostgreSQL definido.
-[ ] Local/on-premise.
-[ ] Gratuito.
-[ ] Sin DBaaS obligatorio.
-[ ] No se implementó backend prematuramente.
-
-REGRESIÓN
+[ ] T2 ya no imprime “Unidad académica / administrativa”.
+[ ] T2 académico imprime “Unidad académica”.
+[ ] T2 académico incluye Facultad.
+[ ] T2 académico incluye Carrera cuando corresponde.
+[ ] T2 administrativo imprime “Unidad administrativa”.
+[ ] T2 administrativo no imprime una carrera inexistente.
+[ ] cambiar tipo limpia correctamente datos que dejan de aplicar.
+[ ] T1 sigue funcionando.
+[ ] T2 sigue funcionando.
+[ ] preview T1 tiene scroll completo.
+[ ] preview T2 tiene scroll completo.
+[ ] landscape tiene scroll horizontal si lo necesita.
+[ ] expandir T1 ocupa el viewport real de la aplicación.
+[ ] expandir T2 ocupa el viewport real de la aplicación.
+[ ] expandir NO se limita a ocultar sidebar.
+[ ] la toolbar sigue disponible.
+[ ] el panel documental continúa accesible.
+[ ] salir recupera la vista normal.
+[ ] página actual no se pierde.
+[ ] zoom no se pierde.
+[ ] A4 se conserva.
+[ ] ningún emoji nuevo es visible.
 [ ] TypeScript PASS.
 [ ] Build PASS.
 [ ] Motor PASS.
-[ ] Suite E2E completa PASS.
-[ ] Snapshots válidos.
+[ ] A4 PASS.
+[ ] no-emojis PASS.
+[ ] E2E completo PASS.
 
-============================================================
-Q. NO HACER
-============================================================
+======================================================================
+14. REPORTE FINAL
+======================================================================
 
-NO backend real.
-NO DB real todavía.
-NO Groq real.
-NO OpenAI real.
-NO API keys.
-NO Firebase.
-NO Supabase.
-NO redesign general.
-NO cambios cosméticos no relacionados.
-NO emojis.
-NO destruir fixtures existentes.
-NO cambiar reglas de revisión.
-NO cambiar evidencias.
-NO cambiar permisos.
-NO cambiar firma.
-NO cambiar cierre/histórico.
-NO inventar políticas institucionales.
+Al finalizar entrégame un reporte estructurado con:
 
-============================================================
-R. ENTREGA
-============================================================
+# Reporte — corrección de encabezado y previsualización T1/T2
 
-Trabaja directamente sobre el proyecto.
+## 1. Causas raíz encontradas
 
-NO me entregues solamente recomendaciones.
+Explica por separado:
 
-Haz:
+- encabezado T2,
+- scroll,
+- expandir preview.
 
-INSPECCIONAR
-→ REPRODUCIR
-→ CORREGIR
-→ PROBAR
-→ VERIFICAR NO REGRESIÓN
-→ DOCUMENTAR
+## 2. Cambios realizados
 
-Al terminar responde con:
+Indica archivos exactos y comportamiento modificado.
 
-1. resumen;
-2. bugs reales encontrados;
-3. combinación DEMO elegida para T2;
-4. número final de E2E PASS/FAIL;
-5. TypeScript/build/motor;
-6. snapshots modificados;
-7. prueba de que el renderer respeta el nuevo orden;
-8. estado del check cero emojis;
-9. documentos de arquitectura IA/BD creados;
-10. pendientes restantes;
-11. ruta de reporte-micro-pasada-final.md.
+## 3. Encabezado T2
 
-Después DETENTE.
+Describe cómo queda:
 
-No continúes con pulido visual.
+- académico,
+- administrativo,
+- carrera.
+
+## 4. Scroll
+
+Describe qué contenedor provocaba el bloqueo y cómo quedó resuelto.
+
+## 5. Modo expandido
+
+Explica exactamente qué se oculta, qué permanece y cuánto viewport utiliza.
+
+## 6. Pruebas añadidas/modificadas
+
+Enumera escenarios, no solo nombres de archivo.
+
+## 7. Snapshots
+
+Indica:
+- cuáles cambiaron,
+- por qué,
+- cuáles NO cambiaron.
+
+## 8. Resultados
+
+Tabla con:
+
+npx tsc --noEmit
+npm run build
+motor
+A4
+no emojis
+E2E específicas
+npm run test:e2e
+
+## 9. Riesgos restantes
+
+Solo riesgos reales.
+
+No inventes pendientes institucionales nuevos.
+
+======================================================================
+PRIORIDAD
+======================================================================
+
+La prioridad es:
+
+1. corregir la lógica del encabezado T2;
+2. garantizar navegación/scroll completa;
+3. implementar expansión de visor real;
+4. mantener A4 e integridad institucional;
+5. evitar regresiones;
+6. conservar la suite completa en verde.
+
+No realices mejoras adicionales fuera de este alcance salvo que sean imprescindibles para resolver correctamente estas tres causas raíz.

@@ -834,6 +834,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
             <button
               onClick={() => setCollapsed(false)}
               title="Expandir navegación"
+              aria-label="Expandir barra lateral"
               style={{ background: "none", border: "none", cursor: "pointer", color: "#7aaed0", padding: 4, borderRadius: 4, display: "flex" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -851,6 +852,7 @@ function Sidebar({ view, setView, onLogout, collapsed, setCollapsed, userRole, o
             <button
               onClick={() => setCollapsed(true)}
               title="Contraer navegación"
+              aria-label="Contraer barra lateral"
               style={{ background: "none", border: "none", cursor: "pointer", color: "#7aaed0", padding: 4, borderRadius: 4, display: "flex", flexShrink: 0 }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -3678,14 +3680,16 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
 
 // ─── Step 6 — Previsualización ────────────────────────────────────────────────
 
-function Step6Preview({ onPrev, onNext, maxReached = 6, artifact, docEngine }: {
+function Step6Preview({ onPrev, onNext, maxReached = 6, artifact, docEngine, previewLayout }: {
   onPrev: () => void; onNext: () => void; maxReached?: number;
   artifact: import("./documentEngine/types").DocumentArtifact;
   docEngine?: ReturnType<typeof useDocumentEngine>;
+  previewLayout?: PreviewLayoutControls;
 }) {
+  useEffect(() => { previewLayout?.enter(); return () => previewLayout?.exit(); }, []);
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <Stepper current={6} maxReached={maxReached} />
-    <div style={{flex:1,minHeight:0}}><DocumentPdfPageViewer artifact={artifact} formalVersion={artifact.formalVersion} reviewRound={artifact.reviewRound} documentState="BORRADOR" observations={[]} flowStages={docEngine?.flowStages || []} currentUser={{id:artifact.elaborador.id,nombre:artifact.elaborador.nombre,cargo:artifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} /></div>
+    <div style={{flex:1,minHeight:0}}><DocumentPdfPageViewer artifact={artifact} formalVersion={artifact.formalVersion} reviewRound={artifact.reviewRound} documentState="BORRADOR" observations={[]} flowStages={docEngine?.flowStages || []} currentUser={{id:artifact.elaborador.id,nombre:artifact.elaborador.nombre,cargo:artifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} previewExpanded={previewLayout?.expanded} onPreviewExpandedChange={previewLayout?.setExpanded} /></div>
     <FormFooter onPrev={onPrev} onNext={onNext} onSave={() => {}} saving={false} canContinue={true} />
   </div>;
 }
@@ -3883,11 +3887,14 @@ function loadDraft(): PlanDraft {
   return { ...DEFAULT_DRAFT };
 }
 
-function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adminState }: {
+type PreviewLayoutControls = { enter: () => void; exit: () => void; expanded: boolean; setExpanded: (value: boolean) => void };
+
+function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adminState, previewLayout }: {
   adminState?: ReturnType<typeof useAdminState>;
   onNavigateActividades?: () => void;
   initialShowObsModal?: boolean;
   docEngine?: ReturnType<typeof useDocumentEngine>;
+  previewLayout?: PreviewLayoutControls;
 } = {}) {
   const [sub, setSub] = useState<PlanesSubView>("list");
   const [maxReached, setMaxReached] = useState(1);
@@ -3991,6 +3998,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           adminState={adminState!}
           onFinish={() => setSub("list")}
           onCancel={() => setSub("list")}
+          previewLayout={previewLayout}
         />
       )}
       {sub !== "list" && docEngine?.docMaster.documentState === "EN CORRECCIÓN" && <details style={{padding:"8px 28px"}}><summary>Ver observaciones y resaltados del documento devuelto</summary><div style={{height:650}}><DocumentPdfPageViewer artifact={docEngine.currentArtifact} formalVersion={docEngine.docMaster.formalVersion} reviewRound={docEngine.docMaster.reviewRound} documentState="EN CORRECCIÓN" observations={docEngine.observations} flowStages={docEngine.flowStages} currentUser={{id:docEngine.currentArtifact.elaborador.id,nombre:docEngine.currentArtifact.elaborador.nombre,cargo:docEngine.currentArtifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} onResolveObservacion={id => docEngine.resolverObservacion(docEngine.docMaster.id,id)} /></div></details>}
@@ -4068,6 +4076,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
         <Step6Preview
           maxReached={maxReached}
           docEngine={docEngine}
+          previewLayout={previewLayout}
           artifact={(() => {
             const base = docEngine?.currentArtifact;
             if (!base) throw new Error("Documento no seleccionado");
@@ -4114,6 +4123,14 @@ type RevisorSub = "bandeja" | "revision" | "aprobado" | "devuelto";
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [view, setView] = useState<AppView>("inicio");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarBeforePreview = useRef<boolean | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const previewLayout: PreviewLayoutControls = {
+    enter: () => { if (sidebarBeforePreview.current === null) sidebarBeforePreview.current = sidebarCollapsed; setSidebarCollapsed(true); },
+    exit: () => { if (sidebarBeforePreview.current !== null) { setSidebarCollapsed(sidebarBeforePreview.current); sidebarBeforePreview.current = null; } setPreviewExpanded(false); },
+    expanded: previewExpanded,
+    setExpanded: setPreviewExpanded,
+  };
   const [userRole, setUserRole] = useState<"docente" | "revisor" | "admin">("docente");
   const [planesViewKey, setPlanesViewKey] = useState(0);
   const auditoriaState = useAuditoriaState();
@@ -4228,13 +4245,13 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
-      <Sidebar
+      {!previewExpanded && <Sidebar
         sessionUser={sessionDisplay}
         view={view} setView={setView} onLogout={onLogout}
         collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed}
         userRole={userRole} onRoleSwitch={handleRoleSwitch}
         noLeidasCount={notifState.noLeidasCount}
-      />
+      />}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <TopBar
           sessionUser={sessionDisplay}
@@ -4278,6 +4295,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
                 seguimientoState.setActividadSeleccionadaId(null);
                 setView("actividades");
               }}
+              previewLayout={previewLayout}
             />
           )}
           {view === "actividades" && (

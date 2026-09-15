@@ -18,11 +18,14 @@ import { useAdminState } from "../modulo7/useAdminState";
 import { TipoUnidadInstitucional } from "../modulo7/types";
 import { CheckCircle2, Lock, Paperclip, Sparkles } from "../components/icons";
 
+type PreviewLayoutControls = { enter: () => void; exit: () => void; expanded: boolean; setExpanded: (value: boolean) => void };
+
 interface WizardInformeViewProps {
   docEngine: ReturnType<typeof useDocumentEngine>;
   onFinish: () => void;
   onCancel: () => void;
   adminState: ReturnType<typeof useAdminState>;
+  previewLayout?: PreviewLayoutControls;
 }
 
 const T2_DRAFT_KEY = "fisei-informe-draft-v2";
@@ -51,12 +54,18 @@ export default function WizardInformeView({
   onFinish,
   onCancel,
   adminState,
+  previewLayout,
 }: WizardInformeViewProps) {
   const { documents, crearNuevoDocumento, generarArtefactoInforme, firmarComoElaborador } = docEngine;
 
   const [step, setStep] = useState<number>(1);
   const [createdDocId, setCreatedDocId] = useState<string | null>(null);
   const [maxReached, setMaxReached] = useState<number>(1);
+  useEffect(() => {
+    if (step !== 7) return;
+    previewLayout?.enter();
+    return () => previewLayout?.exit();
+  }, [step]);
 
   // Obtener planes disponibles del usuario para derivación
   const planesDisponibles = documents.filter(
@@ -500,7 +509,7 @@ export default function WizardInformeView({
       </div>
 
       {/* Content Area */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+      <div style={{ flex: 1, overflowY: step === 7 ? "hidden" : "auto", padding: step === 7 ? "8px 16px" : "24px 28px", minHeight: 0 }}>
         <div style={{ maxWidth: step === 7 ? "100%" : 1000, margin: "0 auto", transition: "max-width 0.3s ease" }}>
           
           {/* PASO 1: INFORMACIÓN GENERAL */}
@@ -1152,20 +1161,7 @@ export default function WizardInformeView({
 
           {/* PASO 7: PREVISUALIZACIÓN OFICIAL T2 */}
           {step === 7 && (
-            <div>
-              <div style={{ marginBottom: 14 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a4f8a", background: "#dbeafe", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" }}>
-                  Paso 7 de 8 · Previsualización Oficial
-                </span>
-                <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e2a3a", margin: "4px 0 2px", fontFamily: "'DM Sans', sans-serif" }}>
-                  Formato Oficial UTA-SGC-A-2-1-P7-T2
-                </h1>
-                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
-                  Verifique la diagramación completa, portada institucional, tablas y control de cambios antes de firmar.
-                </p>
-              </div>
-
-              <div style={{ height: 600, border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
+            <div data-testid="t2-preview-shell" style={{ height: "100%", minHeight: 0, border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
                 <DocumentPdfPageViewer
                   artifact={previewArtifact}
                   formalVersion="1.0"
@@ -1182,8 +1178,9 @@ export default function WizardInformeView({
                   onOpenDevolver={() => {}}
                   onAddObservacion={() => {}}
                   readOnly={true}
+                  previewExpanded={previewLayout?.expanded}
+                  onPreviewExpandedChange={previewLayout?.setExpanded}
                 />
-              </div>
             </div>
           )}
 
