@@ -1,786 +1,632 @@
-# CORRECCIÓN PUNTUAL FINAL — ENCABEZADO T2 + SCROLL DEL VISOR + MODO DE PANTALLA COMPLETA T1/T2
+Sí. En este punto conviene darle al agente un **prompt quirúrgico**, porque el visor T1/T2, A4, fullscreen, scroll, encabezados y responsables colectivos ya pasaron la revisión visual. No queremos que una corrección pequeña provoque una regresión grande.
 
-Trabaja sobre el proyecto actual de Gestión Documental Académica FISEI.
+Puedes enviarle este prompt completo:
 
-Esta es una corrección sobre una implementación que ya funciona y que posee una suite amplia de pruebas. NO quiero una reimplementación del motor documental, NO quiero cambios arquitectónicos innecesarios y NO quiero regresiones en funcionalidades ya validadas.
+````text
+# MICROCORRECCIÓN FINAL — FORMATO INSTITUCIONAL DE FECHAS EN T1/T2
+## Gestión Documental Académica FISEI — Mockup interactivo de alta fidelidad
 
-Antes de modificar código:
-
-1. Revisa AGENTS.md si existe.
-2. Revisa requirements.md.
-3. Revisa implementation-status.md.
-4. Revisa los componentes implicados.
-5. Revisa las pruebas E2E existentes, especialmente las relacionadas con:
-   - T1
-   - T2
-   - previsualización
-   - A4
-   - layout
-   - template configuration
-6. Revisa las referencias institucionales disponibles en Documentos_guia cuando sean necesarias para comprobar el encabezado documental.
-7. Identifica la causa raíz de cada uno de los tres problemas antes de corregirlos.
-
-NO cambies requirements.md para acomodarlo al comportamiento actual.
-El código debe ajustarse a los requisitos y no al revés.
-
-======================================================================
-OBJETIVO
-======================================================================
-
-Resolver correctamente estos tres problemas detectados mediante revisión manual:
-
-A. El encabezado institucional T2 no representa correctamente el tipo de unidad ni la carrera.
-B. El área de previsualización no permite recorrer correctamente todo el documento mediante scroll.
-C. “Expandir previsualización” no expande realmente el visor: actualmente básicamente oculta la sidebar.
-
-La corrección debe funcionar en T1 y T2 donde corresponda, sin romper A4, documentos existentes, artefactos firmados, paginación, signatureSlots, índices, flujos, rondas, firmas o snapshots institucionales válidos.
-
-======================================================================
-1. CORREGIR EL ENCABEZADO INSTITUCIONAL DEL T2
-======================================================================
-
-Actualmente el T2 muestra una etiqueta fija:
-
-“Unidad académica / administrativa:”
-
-Esto es incorrecto.
-
-El documento ya conoce el tipo seleccionado y NO debe generar un texto ambiguo.
-
-El comportamiento debe quedar alineado con la procedencia institucional que ya utiliza el T1.
-
-----------------------------------------------------------------------
-1.1 Datos que debe conservar el documento
-----------------------------------------------------------------------
-
-El documento debe manejar explícitamente, como mínimo:
-
-- unitType
-- unitId
-- unitName
-- careerId cuando aplique
-- careerName cuando aplique
-
-No determinar el tipo buscando palabras en el nombre de la unidad.
-
-No determinar una carrera basándose en el grupo institucional.
-
-No utilizar texto visible como identidad interna cuando ya exista ID.
-
-----------------------------------------------------------------------
-1.2 Caso: Unidad académica
-----------------------------------------------------------------------
-
-Si el usuario seleccionó:
-
-Tipo de unidad:
-Unidad académica
-
-el encabezado institucional debe mostrar:
-
-Unidad académica:
-Facultad de Ingeniería en Sistemas, Electrónica e Industrial
-Carrera de Ingeniería de Software
-
-La Facultad y la Carrera deben aparecer correctamente dentro del área institucional definida por el formato.
+Quiero realizar una corrección MUY ACOTADA sobre el sistema actual.
 
 IMPORTANTE:
+La infraestructura documental T1/T2 que ya funciona se considera APROBADA visual y funcionalmente.
 
-En la referencia T1 actualmente aceptada, Facultad y Carrera aparecen juntas en la misma celda de contenido del encabezado:
+NO realices refactorizaciones generales.
+NO rediseñes el visor.
+NO cambies la estructura A4.
+NO alteres los flujos documentales.
+NO cambies datos DEMO salvo que sea estrictamente necesario para una prueba.
+NO modifiques reglas institucionales.
+NO aproveches esta tarea para “mejorar” otras partes del proyecto.
 
-Facultad de Ingeniería en Sistemas, Electrónica e Industrial
-Carrera de Ingeniería de Software
+El objetivo es corregir exclusivamente una inconsistencia visual detectada en las fechas impresas dentro de los documentos institucionales.
 
-Mantener esa lógica visual cuando corresponda.
+---
 
-NO mostrar:
+# 1. PROBLEMA DETECTADO
 
-“Unidad académica / administrativa:”
+En la previsualización del Plan de Trabajo T1, específicamente en la tabla:
 
-Debe decir únicamente:
+`MATRIZ DE ACTIVIDADES`
 
-“Unidad académica:”
+las fechas del cronograma actualmente pueden mostrarse directamente en formato ISO, por ejemplo:
 
-----------------------------------------------------------------------
-1.3 Caso: Unidad administrativa
-----------------------------------------------------------------------
+`2026-09-02`
+`2026-09-27`
+`2026-09-03`
+`2026-09-22`
 
-Si se seleccionó:
+Eso es correcto como representación INTERNA del dato, pero no como presentación del documento institucional.
 
-Tipo de unidad:
-Unidad administrativa
+La representación visual esperada en las celdas del documento debe ser:
 
-el encabezado debe decir únicamente:
+`02/09/2026`
+`27/09/2026`
+`03/09/2026`
+`22/09/2026`
 
-“Unidad administrativa:”
+Es decir:
 
-y mostrar el nombre correspondiente.
+`DD/MM/YYYY`
 
-En ese caso:
+---
 
-- NO debe mostrarse una carrera inexistente.
-- NO debe quedar una carrera heredada de una selección anterior.
-- NO debe imprimirse una fila/celda vacía titulada “Carrera”.
-- NO debe renderizarse “Carrera” en portada si institucionalmente no aplica.
-- cambiar de Unidad académica a Unidad administrativa debe limpiar correctamente el careerId/careerName que ya no correspondan.
+# 2. REGLA FUNDAMENTAL
 
-----------------------------------------------------------------------
-1.4 Wizard T2
-----------------------------------------------------------------------
+Debemos separar estrictamente:
 
-El paso Información General del Informe debe permitir seleccionar explícitamente:
+## Representación interna
 
-- Tipo de unidad
-  - Unidad académica
-  - Unidad administrativa
+Debe mantenerse preferentemente como fecha ISO:
 
-- Unidad
+`YYYY-MM-DD`
 
-- Carrera, SOLO cuando corresponda a una unidad académica y sea aplicable.
+Ejemplo:
 
-La visibilidad del selector de Carrera debe depender del tipo/unidad seleccionados.
+`2026-09-02`
 
-No dejar una Carrera invisible pero todavía almacenada.
+Esto es correcto para:
 
-----------------------------------------------------------------------
-1.5 Consistencia T1/T2
-----------------------------------------------------------------------
+- estado interno;
+- formularios;
+- comparación de fechas;
+- persistencia;
+- validaciones;
+- localStorage;
+- lógica del motor;
+- reglas de feriados;
+- deadlines;
+- pruebas que requieran valores normalizados.
 
-T1 y T2 deben compartir la misma semántica para procedencia institucional.
+NO cambies estas estructuras internas a strings `DD/MM/YYYY`.
 
-No crear dos reglas incompatibles.
+## Representación institucional visible
 
-Si existe código reutilizable para construir los metadatos del encabezado, preferir una única fuente de verdad.
+Cuando una fecha de calendario almacenada como `YYYY-MM-DD` sea impresa dentro del documento formal T1/T2, debe mostrarse como:
 
-NO cambiar el formato visual T1 que ya fue aceptado salvo que sea imprescindible para eliminar duplicación o inconsistencia.
+`DD/MM/YYYY`
 
-======================================================================
-2. CORREGIR EL SCROLL DEL VISOR DOCUMENTAL
-======================================================================
+Ejemplo:
 
-Existe un bug de UX importante:
+`2026-09-02`
 
-En determinadas previsualizaciones no es posible continuar desplazándose verticalmente para inspeccionar el contenido inferior.
+debe renderizarse como:
 
-Esto debe corregirse de raíz.
+`02/09/2026`
 
-----------------------------------------------------------------------
-2.1 Comportamiento requerido
-----------------------------------------------------------------------
+Por tanto, la corrección pertenece a la capa de PRESENTACIÓN / COMPOSICIÓN DEL ARTEFACTO, no al modelo de datos.
 
-El área del documento debe poder desplazarse:
+---
 
-- verticalmente,
-- horizontalmente cuando la orientación, zoom o ancho de página lo requieran.
+# 3. MUY IMPORTANTE — EVITAR ERROR DE ZONA HORARIA
 
-Debe ser posible llegar desde la parte superior hasta la parte inferior de la página/documento.
+No quiero que esta corrección introduzca el típico bug de JavaScript:
 
-Debe funcionar con:
+```ts
+new Date("2026-09-02")
+````
 
-- T1 vertical,
-- T1 matriz horizontal,
-- T2,
-- zoom 100%,
-- zoom aumentado,
-- vista normal,
-- vista expandida.
+seguido de una conversión a hora local.
 
-----------------------------------------------------------------------
-2.2 No bloquear el scroll
-----------------------------------------------------------------------
+El proyecto usa Ecuador / `America/Guayaquil`, GMT-5.
 
-Revisar especialmente combinaciones de:
+Una fecha `YYYY-MM-DD` representa aquí una fecha CIVIL, no un instante UTC.
 
-- height
-- max-height
-- min-height
-- overflow
-- overflow-y
-- overflow-x
-- flex
-- min-height: 0
-- position: sticky/fixed
-- contenedores padres con overflow:hidden
+No debe existir ninguna posibilidad de que:
 
-No arreglarlo añadiendo solamente un valor enorme fijo de altura.
+`2026-09-02`
 
-El visor debe aprovechar el viewport disponible de manera responsive.
+termine mostrándose como:
 
-----------------------------------------------------------------------
-2.3 Toolbar
-----------------------------------------------------------------------
+`01/09/2026`
 
-La toolbar del visor puede permanecer visible/sticky si actualmente funciona bien.
+por un desplazamiento de zona horaria.
 
-Pero:
+Para fechas ISO puras `YYYY-MM-DD`, utiliza una transformación timezone-safe.
 
-- no debe cubrir contenido,
-- no debe impedir llegar al final de la página,
-- no debe crear un segundo scroll confuso salvo que sea intencional.
+Una solución válida sería conceptualmente:
 
-----------------------------------------------------------------------
-2.4 Panel derecho
-----------------------------------------------------------------------
+```ts
+const [year, month, day] = isoDate.split("-");
+return `${day}/${month}/${year}`;
+```
 
-El panel:
+o una utilidad equivalente robusta.
 
-- cadena de aprobación,
-- aspectos a verificar,
-- observaciones,
-- acciones,
+No es obligatorio utilizar exactamente ese código, pero la solución debe evitar conversiones UTC/local innecesarias.
 
-debe seguir siendo utilizable.
+---
 
-Si necesita scroll independiente por su longitud, puede tenerlo.
+# 4. ALCANCE DE LA AUDITORÍA
 
-Pero el scroll del panel derecho NO debe impedir desplazar el documento.
+Primero localiza todos los consumidores relevantes de fechas dentro de la generación/renderizado documental.
 
-----------------------------------------------------------------------
-2.5 Footer de acciones del wizard
-----------------------------------------------------------------------
+Revisa al menos:
 
-Los controles inferiores como:
+* composición T1;
+* matriz de actividades T1;
+* composición T2;
+* tablas T2 que puedan utilizar fechas de actividades;
+* artefactos derivados de Planes;
+* índices o bloques documentales si imprimen fechas;
+* cualquier helper de fechas utilizado por `DocumentPdfPageViewer`;
+* funciones de composición dentro del motor documental.
 
-- Anterior
-- Siguiente
-- Guardar borrador
+Busca explícitamente lugares donde se imprima directamente algo similar a:
 
-deben mantenerse accesibles.
+```ts
+activity.startDate
+activity.endDate
+actividad.desde
+actividad.hasta
+date
+```
 
-Evitar layouts donde el visor crezca infinitamente y empuje estas acciones fuera de una estructura utilizable.
+sin pasar por un formatter institucional.
 
-======================================================================
-3. MODO “EXPANDIR PREVISUALIZACIÓN” REAL
-======================================================================
+No quiero que arregles solamente una celda concreta si existe el mismo escape ISO en otro punto del documento.
 
-La implementación actual no satisface el propósito del botón.
+PERO:
 
-Actualmente “Expandir previsualización” básicamente oculta la sidebar.
+la auditoría debe estar limitada a las fechas que aparecen DENTRO DEL ARTEFACTO DOCUMENTAL T1/T2.
 
-Eso NO es suficiente.
+No cambies arbitrariamente el formato de fechas en:
 
-Quiero un verdadero modo de visualización ampliada.
+* administración;
+* auditoría;
+* listas;
+* formularios;
+* historial técnico;
+* estado interno;
+* pruebas;
+* datos DEMO;
 
-Debe implementarse tanto para:
+salvo que exista una razón directamente vinculada al artefacto institucional.
 
-- Plan de Trabajo T1
-- Informe T2
+---
 
-y debe reutilizar, en lo posible, la misma infraestructura.
+# 5. CREAR UNA ÚNICA UTILIDAD DE PRESENTACIÓN
 
-----------------------------------------------------------------------
-3.1 Comportamiento esperado
-----------------------------------------------------------------------
+Si actualmente no existe una función central adecuada, crea una utilidad pequeña y reutilizable, por ejemplo conceptualmente:
 
-Al presionar el icono de Expandir previsualización:
+```ts
+formatInstitutionalDate(...)
+```
 
-el visor documental debe transformarse en una experiencia de pantalla completa dentro de la aplicación.
+El nombre exacto puede seguir las convenciones existentes del proyecto.
 
-Como mínimo debe:
+Debe cumplir al menos:
 
-- ocupar todo el viewport disponible,
-- usar position fixed o una solución equivalente,
-- usar inset: 0 o comportamiento equivalente,
-- aparecer por encima de sidebar, wizard y contenido ordinario,
-- utilizar un z-index adecuado,
-- maximizar ancho,
-- maximizar alto.
+```text
+2026-09-02 -> 02/09/2026
+2026-12-31 -> 31/12/2026
+2026-01-05 -> 05/01/2026
+```
 
-NO considerar cumplido este requisito simplemente colapsando la sidebar.
+No debe romper:
 
-----------------------------------------------------------------------
-3.2 Elementos visibles en modo expandido
-----------------------------------------------------------------------
+* strings vacíos;
+* `undefined`;
+* valores ya preparados específicamente para otro tipo de presentación;
+* fechas que no tengan el patrón exacto `YYYY-MM-DD`.
 
-Debe conservarse una toolbar compacta que permita como mínimo:
+No conviertas indiscriminadamente cualquier string que contenga guiones.
 
-- Página anterior
-- Página siguiente
-- selección/navegación de páginas
-- indicador Página X de Y
-- versión formal
-- ronda
-- zoom -
-- zoom +
-- Ajustar
-- porcentaje de zoom
-- salir de vista expandida
+Preferiblemente detectar explícitamente:
 
-Usar ICONOS de la librería existente.
+```regex
+^\d{4}-\d{2}-\d{2}$
+```
 
-NO usar emojis.
+Si un valor no coincide, debe preservarse o tratarse de manera segura según la arquitectura existente.
 
-----------------------------------------------------------------------
-3.3 Documento
-----------------------------------------------------------------------
+---
 
-En modo expandido:
+# 6. NO CAMBIAR “FECHA DE ELABORACIÓN”
 
-- la página debe aprovechar mucho mejor el espacio;
-- conservar su relación de aspecto;
-- conservar A4;
-- no deformarse;
-- no estirarse artificialmente;
-- permitir scroll vertical;
-- permitir scroll horizontal cuando corresponda;
-- respetar landscape/portrait según metadata de la página.
+ATENCIÓN:
 
-----------------------------------------------------------------------
-3.4 Panel documental derecho
-----------------------------------------------------------------------
+En las capturas ya aprobadas, el encabezado institucional muestra correctamente fechas como:
 
-No elimines la cadena institucional y controles del documento de forma arbitraria.
+`15 de septiembre de 2026`
 
-Implementa una solución responsive.
+Esto se considera CORRECTO.
 
-En una pantalla amplia puede mantenerse el panel derecho.
+NO conviertas esa fecha a:
 
-Si el ancho disponible resulta insuficiente, se puede:
+`15/09/2026`
 
-- compactar,
-- colapsar,
-- permitir ocultarlo mediante un icono,
+La corrección de `DD/MM/YYYY` aplica principalmente a fechas tabulares/campos de cronograma donde actualmente se está filtrando el valor ISO sin formatear.
 
-pero debe seguir existiendo una forma clara de consultarlo.
+Debemos conservar la diferencia semántica:
 
-No generar un layout donde el panel reduzca nuevamente el documento a un tamaño incómodo.
+## Fecha de elaboración institucional
 
-----------------------------------------------------------------------
-3.5 Salir de vista expandida
-----------------------------------------------------------------------
+Puede seguir mostrándose como:
 
-Debe existir un icono claro para salir.
+`15 de septiembre de 2026`
 
-También debe aceptarse ESC si resulta viable y estable.
+## Cronograma / Desde / Hasta
 
-Al salir:
+Debe verse como:
 
-- volver exactamente al modo normal,
-- conservar página actual,
-- conservar zoom,
-- conservar documento actual,
-- conservar estado del wizard,
-- no reiniciar formularios,
-- no regenerar otro documento,
-- no cambiar targetDocId.
+`02/09/2026`
 
-----------------------------------------------------------------------
-3.6 Fullscreen API
-----------------------------------------------------------------------
+`27/09/2026`
 
-Si Fullscreen API puede incorporarse de forma estable, puede utilizarse como mejora adicional.
+Por tanto, no crees una regla global que reemplace todas las fechas visibles del sistema.
 
-Pero NO dependas exclusivamente de ella.
+---
 
-El requisito obligatorio es una vista full-viewport estable dentro de la aplicación.
+# 7. T1 — COMPORTAMIENTO ESPERADO
 
-Debe funcionar incluso si el navegador rechaza Fullscreen API.
+En:
 
-======================================================================
-4. T1 Y T2 DEBEN UTILIZAR EL MISMO COMPONENTE/COMPORTAMIENTO
-======================================================================
+`MATRIZ DE ACTIVIDADES`
 
-No quiero dos implementaciones divergentes.
+las columnas:
 
-Audita DocumentPdfPageViewer y los wrappers que lo consumen.
+`Desde`
+`Hasta`
 
-Preferir:
+deben utilizar `DD/MM/YYYY`.
 
-- una sola lógica de expand/collapse,
-- una sola lógica de scroll,
-- una sola toolbar,
-- un solo cálculo responsive,
+Ejemplo esperado:
 
-con personalización por metadatos cuando sea necesario.
+| Actividades                                     | Desde      | Hasta      |
+| ----------------------------------------------- | ---------- | ---------- |
+| Seguimiento al avance de trabajos de titulación | 02/09/2026 | 27/09/2026 |
+| Difusión de normativa interna de titulación     | 03/09/2026 | 22/09/2026 |
 
-No duplicar una versión T1 y otra T2 si no existe una razón estructural real.
+NO debe aparecer:
 
-======================================================================
-5. NO REGRESIONES
-======================================================================
+`2026-09-02`
 
-No modificar ni romper:
+en el artefacto visual.
 
-- unicidad de Plan por teacherId + groupId + periodId,
-- aislamiento Plan / Informe,
-- artefactos firmados inmutables,
-- rondas,
-- versión formal,
-- firma DEMO,
-- firma manual simulada,
-- firma única,
-- workflow,
-- revisores paralelos,
-- observaciones,
-- devoluciones,
-- correcciones,
-- evidencia,
-- historial,
-- cierre DEMO,
-- documentos históricos,
-- A4,
-- signatureSlots,
-- pageCount dinámico,
-- orientation de página,
-- footer institucional,
-- índices dinámicos,
-- orden configurable de secciones,
-- configuración administrativa de plantillas.
+---
 
-No tocar módulos que no sean necesarios.
+# 8. T2 — AUDITORÍA PREVENTIVA
 
-======================================================================
-6. REGLA DE A4
-======================================================================
+El T2 ya fue corregido y visualmente aprobado.
 
-TODO documento institucional de este mockup debe continuar en A4.
+No quiero modificar su estructura.
 
-- portrait cuando corresponda,
-- landscape cuando corresponda.
+Únicamente verifica si alguna tabla o sección del Informe puede imprimir directamente fechas ISO provenientes del Plan relacionado o de actividades.
 
-No introducir Carta/Letter.
+Si existe, aplica la misma utilidad de presentación.
 
-No corregir el scroll o fullscreen cambiando el tamaño lógico de la hoja.
+Si T2 no contiene actualmente campos de este tipo o ya están correctamente formateados, NO cambies nada.
 
-======================================================================
-7. ICONOS, NO EMOJIS
-======================================================================
+No inventes campos adicionales.
 
-No añadir emojis visibles.
+---
 
-Para:
+# 9. NO REGRESIONAR LO YA APROBADO
 
-- expandir,
-- contraer,
-- cerrar,
-- advertencias,
-- controles,
+Estas características están APROBADAS y deben permanecer EXACTAMENTE funcionales:
 
-usar iconos SVG/componentes de la librería visual que ya utiliza el proyecto.
+## T1
 
-Mantener vigente la prueba no-visible-emojis.
+* A4.
+* Portada.
+* Encabezado institucional.
+* `Unidad académica` o `Unidad administrativa` según procedencia.
+* Facultad + Carrera dentro de la celda institucional cuando corresponda.
+* portada centrada.
+* índice dinámico.
+* matriz landscape cuando corresponda.
+* `Responsable de la unidad` cuando se seleccionan todos los responsables.
+* IDs individuales preservados internamente.
+* firmas.
+* control de historial de cambios.
+* footer:
 
-======================================================================
-8. PRUEBAS AUTOMÁTICAS NUEVAS/ACTUALIZADAS
-======================================================================
+  * izquierda: `Documento de uso interno controlado por la Universidad Técnica de Ambato`
+  * centro: `Formato Nº: UTA-SGC-A-2-1-P7-T1`
+  * derecha: página dinámica.
+* sin línea horizontal superior en footer.
+* A4 portrait/landscape según metadata.
+* `pageCount = artifact.pages.length`.
+* `signatureSlots` dinámicos.
+* fullscreen real.
+* scroll vertical/horizontal.
+* conservación de página y zoom al entrar/salir del fullscreen.
 
-No me basta con “se ve bien”.
+## T2
 
-Implementar pruebas que protejan específicamente estas correcciones.
+* A4.
+* encabezado académico correcto.
+* encabezado administrativo correcto.
+* Carrera visible solo para procedencia académica.
+* Carrera eliminada de metadata para procedencia administrativa.
+* `Unidad académica` / `Unidad administrativa`, nunca literal combinado.
+* visor expandido real.
+* scroll.
+* toolbar.
+* panel documental.
+* páginas dinámicas.
+* firmas.
+* historial.
+* footer T2.
+* aislamiento absoluto respecto al Plan fuente.
 
-----------------------------------------------------------------------
-8.1 Encabezado T2 académico
-----------------------------------------------------------------------
+No quiero una regresión en ninguna de estas áreas.
 
-Crear/usar un T2 con:
+---
 
-Unidad académica
-+
-Facultad
-+
-Carrera
+# 10. RESPONSABLES — NO TOCAR
 
-Comprobar en el artefacto:
+Ya está aprobado este comportamiento:
 
-- aparece “Unidad académica”
-- aparece Facultad
-- aparece Carrera de Ingeniería de Software
-- NO aparece “Unidad académica / administrativa”
+Si TODOS los integrantes válidos de la unidad/grupo son responsables:
 
-----------------------------------------------------------------------
-8.2 Encabezado T2 administrativo
-----------------------------------------------------------------------
+se imprime una etiqueta colectiva como:
 
-Cambiar a:
+`Responsable de la unidad`
 
-Unidad administrativa
+o la etiqueta colectiva vigente según el tipo de grupo.
 
-Comprobar:
+Internamente deben seguir existiendo todos los IDs/nombres.
 
-- aparece “Unidad administrativa”
-- aparece su unidad seleccionada
-- NO aparece Carrera
-- NO queda careerName persistido incorrectamente
-- NO aparece el literal combinado.
+Si solo se seleccionan algunos:
 
-----------------------------------------------------------------------
-8.3 Scroll T1
-----------------------------------------------------------------------
+se muestran responsables individuales.
 
-Abrir T1 preview.
+NO modifiques esta lógica durante esta microcorrección.
 
-Comprobar que el contenedor es desplazable y se puede alcanzar el contenido inferior.
+---
 
-Repetir en página horizontal de matriz.
+# 11. PRUEBA UNITARIA / MOTOR PARA EL FORMATTER
 
-----------------------------------------------------------------------
-8.4 Scroll T2
-----------------------------------------------------------------------
+Añade una prueba específica para el formatter si la arquitectura lo permite.
 
-Abrir T2 preview.
+Debe comprobar mínimo:
 
-Desplazar el visor desde arriba hasta abajo mediante Playwright.
+```text
+2026-09-02 -> 02/09/2026
+2026-12-31 -> 31/12/2026
+2026-01-05 -> 05/01/2026
+```
 
-Verificar que se puede llegar al final del contenido.
+Y también:
 
-----------------------------------------------------------------------
-8.5 Expandido T1
-----------------------------------------------------------------------
+* no timezone shift;
+* valor vacío no provoca excepción;
+* `undefined` no provoca excepción;
+* un string que no es `YYYY-MM-DD` no se corrompe.
 
-Entrar a T1 preview.
+No hace falta sobreingeniería.
 
-Pulsar expandir.
+---
 
-Comprobar que:
+# 12. PRUEBA E2E DE REGRESIÓN
 
-- el visor ocupa prácticamente todo el viewport,
-- NO se trata únicamente del sidebar colapsado,
-- se conserva toolbar,
-- se conserva documento,
-- se puede hacer scroll,
-- se puede salir,
-- al salir se conserva página y estado.
+Añade o amplía una prueba Playwright focalizada.
 
-----------------------------------------------------------------------
-8.6 Expandido T2
-----------------------------------------------------------------------
+Puede formar parte de la prueba visual T1 existente o de una regresión funcional específica.
 
-Repetir el mismo escenario para T2.
+Debe:
 
-----------------------------------------------------------------------
-8.7 ESC
-----------------------------------------------------------------------
+1. restaurar DEMO;
+2. abrir/crear un T1 con matriz;
+3. llegar a previsualización;
+4. navegar a la matriz;
+5. comprobar que aparecen fechas `DD/MM/YYYY`;
+6. comprobar que los valores ISO correspondientes NO aparecen visibles en la tabla.
 
-Si se implementa soporte ESC:
+Ejemplo conceptual:
 
-- entrar en expandido,
-- presionar Escape,
-- comprobar retorno normal sin pérdida de estado.
+Debe encontrar:
 
-======================================================================
-9. REGRESIÓN VISUAL
-======================================================================
+`02/09/2026`
 
-Si cambia el layout legítimamente, no actualices snapshots de forma automática y ciega.
+y NO:
 
-Antes de aceptar un snapshot nuevo:
+`2026-09-02`
 
-1. inspecciona el diff,
-2. confirma que el cambio corresponde exclusivamente a mayor espacio útil/layout,
-3. confirma que:
-   - A4 sigue intacto,
-   - encabezados no se deformaron,
-   - tablas no se recortaron,
-   - firmas no se movieron indebidamente,
-   - footer no desapareció,
-   - marca BORRADOR sigue correcta,
-   - texto institucional no fue alterado accidentalmente.
+No acoples la prueba innecesariamente a fechas DEMO que puedan variar si existe una estrategia mejor con el contenido de la actividad creada durante el test.
 
-Documenta qué snapshots cambiaste y por qué.
+---
 
-======================================================================
-10. ARCHIVOS A REVISAR
-======================================================================
+# 13. REGRESIÓN VISUAL
 
-Como mínimo inspecciona, sin asumir que todos deben modificarse:
+Inspecciona los snapshots ANTES de modificarlos.
 
-- src/App.tsx
-- src/modulo11/WizardInformeView.tsx
-- src/documentEngine/DocumentPdfPageViewer.tsx
-- componentes del wizard T1
-- renderer/composer T1
-- renderer/composer T2
-- tipos/document metadata
-- procedencia institucional
-- template configuration
-- tests/e2e/preview-layout.spec.ts
-- pruebas de T2
-- pruebas A4
-- pruebas visuales
+Si el único cambio esperado en:
 
-Encuentra la implementación real antes de modificar.
+`t1-matriz-...png`
 
-No inventes archivos.
+es:
 
-======================================================================
-11. COMANDOS DE VALIDACIÓN OBLIGATORIOS
-======================================================================
+```text
+2026-09-02
+```
+
+→
+
+```text
+02/09/2026
+```
+
+ese cambio es legítimo.
+
+Actualiza únicamente snapshots realmente afectados.
+
+NO regeneres todos los snapshots indiscriminadamente.
+
+En el reporte indica exactamente cuáles cambiaron y por qué.
+
+---
+
+# 14. NO USAR EMOJIS
+
+Mantener la regla vigente:
+
+NO añadir emojis visibles en la interfaz.
+
+Si fuese necesario un indicador visual, usar iconos SVG/Lucide o el sistema de iconos existente.
+
+Esta tarea probablemente no requiere añadir ninguno.
+
+El test existente:
+
+`tests/no-visible-emojis.test.mjs`
+
+debe continuar pasando.
+
+---
+
+# 15. VALIDACIONES OBLIGATORIAS
 
 Al finalizar ejecuta:
 
+```bash
 npx tsc --noEmit
-
 npm run build
-
 node --test tests/document-engine.test.mjs
-
 node --test tests/a4-page-size.test.mjs
-
 node --test tests/no-visible-emojis.test.mjs
+```
 
-las pruebas E2E específicas creadas/modificadas
+Ejecuta además la prueba focalizada que hayas creado/modificado.
 
-y finalmente:
+Después ejecuta:
 
+```bash
 npm run test:e2e
+```
 
-Todas deben pasar.
+Resultado requerido:
 
-Si una prueba existente falla:
+* TypeScript PASS
+* Build PASS
+* Motor PASS
+* A4 PASS
+* No visible emojis PASS
+* prueba focalizada PASS
+* suite E2E completa PASS
 
-NO actualices la expectativa automáticamente.
+No aceptes actualizar snapshots simplemente para conseguir PASS sin inspeccionar visualmente la diferencia.
 
-Primero determina si se trata de:
+---
 
-- regresión real,
-- cambio legítimo,
-- snapshot desactualizado,
-- test incorrecto.
+# 16. INSPECCIÓN VISUAL OBLIGATORIA
 
-======================================================================
-12. REVISIÓN MANUAL DEL AGENTE
-======================================================================
+Además de los tests, inspecciona visualmente como mínimo:
 
-Después de los tests automáticos, utiliza Playwright/headed o el mecanismo disponible para inspeccionar visualmente como mínimo:
+### T1 matriz
 
-A. T2 Unidad académica
-- encabezado correcto
-- Facultad
-- Carrera
+* Desde.
+* Hasta.
+* formato DD/MM/YYYY.
+* tabla sin desbordamiento.
+* página landscape intacta.
+* footer intacto.
+* responsable colectivo intacto.
 
-B. T2 Unidad administrativa
-- encabezado correcto
-- sin Carrera
+### T1 portada
 
-C. T2 vista normal
-- scroll hasta el final
+Confirmar que no cambió.
 
-D. T2 vista expandida
-- documento aprovechando el viewport
-- scroll funcional
+### T1 firmas/historial
 
-E. T1 portrait expandido
+Confirmar que no cambió.
 
-F. T1 matriz landscape expandida
+### T2 portada
 
-G. salir del modo expandido
-- misma página
-- mismo zoom
-- mismo documento
+Confirmar que no cambió.
 
-No declares completado el trabajo únicamente porque npm run test:e2e esté verde.
+Si T2 tiene una tabla con fechas derivadas:
+confirmar también formato correcto.
 
-======================================================================
-13. CRITERIOS DE ACEPTACIÓN
-======================================================================
+---
 
-No cierres la tarea hasta que TODOS estos puntos sean verdaderos:
+# 17. CRITERIO DE ACEPTACIÓN
 
-[ ] T2 ya no imprime “Unidad académica / administrativa”.
-[ ] T2 académico imprime “Unidad académica”.
-[ ] T2 académico incluye Facultad.
-[ ] T2 académico incluye Carrera cuando corresponde.
-[ ] T2 administrativo imprime “Unidad administrativa”.
-[ ] T2 administrativo no imprime una carrera inexistente.
-[ ] cambiar tipo limpia correctamente datos que dejan de aplicar.
-[ ] T1 sigue funcionando.
-[ ] T2 sigue funcionando.
-[ ] preview T1 tiene scroll completo.
-[ ] preview T2 tiene scroll completo.
-[ ] landscape tiene scroll horizontal si lo necesita.
-[ ] expandir T1 ocupa el viewport real de la aplicación.
-[ ] expandir T2 ocupa el viewport real de la aplicación.
-[ ] expandir NO se limita a ocultar sidebar.
-[ ] la toolbar sigue disponible.
-[ ] el panel documental continúa accesible.
-[ ] salir recupera la vista normal.
-[ ] página actual no se pierde.
-[ ] zoom no se pierde.
-[ ] A4 se conserva.
-[ ] ningún emoji nuevo es visible.
-[ ] TypeScript PASS.
-[ ] Build PASS.
-[ ] Motor PASS.
-[ ] A4 PASS.
-[ ] no-emojis PASS.
-[ ] E2E completo PASS.
+La tarea solo se considera terminada cuando:
 
-======================================================================
-14. REPORTE FINAL
-======================================================================
+1. Los datos internos continúan en ISO `YYYY-MM-DD`.
+2. Las fechas de cronograma del documento T1 se muestran `DD/MM/YYYY`.
+3. No existe desfase de día por timezone.
+4. `Fecha de elaboración` conserva el formato institucional largo actualmente aprobado.
+5. T2 no presenta fugas ISO equivalentes.
+6. No se rompe A4.
+7. No se rompe landscape.
+8. No se altera la composición institucional.
+9. No se altera fullscreen.
+10. No se altera scroll.
+11. No se altera zoom.
+12. No se altera el estado de página.
+13. No se altera la lógica de responsables.
+14. No se altera el flujo de firma/revisión.
+15. No se altera la persistencia.
+16. Todos los tests pasan.
 
-Al finalizar entrégame un reporte estructurado con:
+---
 
-# Reporte — corrección de encabezado y previsualización T1/T2
+# 18. REPORTE FINAL
 
-## 1. Causas raíz encontradas
+Entrega un reporte breve pero técnico con exactamente estas secciones:
 
-Explica por separado:
+## Reporte — normalización visual de fechas institucionales
 
-- encabezado T2,
-- scroll,
-- expandir preview.
+### 1. Causa raíz
 
-## 2. Cambios realizados
+Explicar dónde escapaban fechas ISO al renderer.
 
-Indica archivos exactos y comportamiento modificado.
+### 2. Corrección
 
-## 3. Encabezado T2
+Archivos y helper utilizados.
 
-Describe cómo queda:
+### 3. Separación modelo/presentación
 
-- académico,
-- administrativo,
-- carrera.
+Confirmar que internamente se mantiene `YYYY-MM-DD`.
 
-## 4. Scroll
+### 4. Prevención de timezone
 
-Describe qué contenedor provocaba el bloqueo y cómo quedó resuelto.
+Explicar cómo se evitó el desplazamiento UTC/local.
 
-## 5. Modo expandido
+### 5. T1
 
-Explica exactamente qué se oculta, qué permanece y cuánto viewport utiliza.
+Indicar ejemplos antes/después.
 
-## 6. Pruebas añadidas/modificadas
+### 6. T2
 
-Enumera escenarios, no solo nombres de archivo.
+Indicar si existían o no fugas equivalentes y qué se hizo.
 
-## 7. Snapshots
+### 7. Regresión visual
 
-Indica:
-- cuáles cambiaron,
-- por qué,
-- cuáles NO cambiaron.
+Indicar snapshots inspeccionados y cuáles cambiaron.
 
-## 8. Resultados
+### 8. Pruebas
 
-Tabla con:
+Tabla con todos los comandos y resultado PASS/FAIL.
 
-npx tsc --noEmit
-npm run build
-motor
-A4
-no emojis
-E2E específicas
-npm run test:e2e
+### 9. Archivos modificados
 
-## 9. Riesgos restantes
+Lista exacta.
 
-Solo riesgos reales.
+### 10. Riesgos restantes
 
-No inventes pendientes institucionales nuevos.
+Solo riesgos reales encontrados. No inventar pendientes.
 
-======================================================================
-PRIORIDAD
-======================================================================
+---
 
-La prioridad es:
+# PRIORIDAD FINAL
 
-1. corregir la lógica del encabezado T2;
-2. garantizar navegación/scroll completa;
-3. implementar expansión de visor real;
-4. mantener A4 e integridad institucional;
-5. evitar regresiones;
-6. conservar la suite completa en verde.
+Esta es una MICROCORRECCIÓN.
 
-No realices mejoras adicionales fuera de este alcance salvo que sean imprescindibles para resolver correctamente estas tres causas raíz.
+Prioridad:
+
+1. corregir presentación de fechas;
+2. evitar timezone bugs;
+3. preservar absolutamente todo lo aprobado;
+4. añadir una regresión automática;
+5. no tocar nada fuera del alcance.
+
+Si durante la auditoría descubres otro problema no relacionado, NO lo corrijas silenciosamente.
+
+Regístralo en el reporte como hallazgo separado para que decidamos posteriormente si merece intervención.
+
+```

@@ -1,4 +1,4 @@
-import { MATRIX_ROWS_PER_PAGE, PAGE_SIZE_A4 } from "./pagination";
+import { formatInstitutionalCalendarDate, MATRIX_ROWS_PER_PAGE, PAGE_SIZE_A4 } from "./pagination";
 import React, { useEffect, useState, useRef } from "react";
 import { DocumentArtifact, DocumentObservation, DocumentObservationAnchor, DocumentPage, FlowStageNode } from "./types";
 import logoUta from "../img/Logo UTA-Azul.png";
@@ -1061,10 +1061,10 @@ export default function DocumentPdfPageViewer({
                                   {act.nombre}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px", textAlign: "center", color: "#334155", fontSize: 8 }}>
-                                  {act.desde ? act.desde.split("-").reverse().join("/") : "—"}
+                                  {act.desde ? formatInstitutionalCalendarDate(act.desde) : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px", textAlign: "center", color: "#334155", fontSize: 8 }}>
-                                  {act.hasta ? act.hasta.split("-").reverse().join("/") : "—"}
+                                  {act.hasta ? formatInstitutionalCalendarDate(act.hasta) : "—"}
                                 </td>
                                 <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px", color: "#334155" }}>
                                   {getActivityResponsibleDisplayLabel(act) || "Docente Responsable"}
@@ -1271,7 +1271,7 @@ export default function DocumentPdfPageViewer({
                                   <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                                     <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", fontWeight: 700 }}>v{h.version}</td>
                                     <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px" }}>{h.descripcion}</td>
-                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#64748b" }}>{h.fecha}</td>
+                                    <td style={{ border: "1px solid #cbd5e1", padding: "5px 6px", color: "#64748b" }}>{formatInstitutionalCalendarDate(h.fecha)}</td>
                                   </tr>
                                 ))
                               ) : (
@@ -1714,7 +1714,7 @@ export default function DocumentPdfPageViewer({
                                   <tr key={i} style={{ background: "#fff" }}>
                                     <td style={{ border: "1px solid #475569", padding: "5px 6px", fontWeight: 700 }}>v{h.version}</td>
                                     <td style={{ border: "1px solid #475569", padding: "5px 6px" }}>{h.descripcion}</td>
-                                    <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{h.fecha}</td>
+                                    <td style={{ border: "1px solid #475569", padding: "5px 6px", color: "#64748b" }}>{formatInstitutionalCalendarDate(h.fecha)}</td>
                                   </tr>
                                 ))
                               ) : (

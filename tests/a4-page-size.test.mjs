@@ -12,7 +12,7 @@ function load(file){
   const require=name=>load(path.resolve(path.dirname(file),name+'.ts'));
   vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{structuredClone})(require,module,module.exports);return module.exports;
 }
-const {composeArtifactPages,PAGE_SIZE_A4}=load('src/documentEngine/pagination.ts');
+const {composeArtifactPages,PAGE_SIZE_A4,formatInstitutionalCalendarDate}=load('src/documentEngine/pagination.ts');
 const stages=[{id:'author',stageName:'Elaboración',actorName:'Andrea',actorCargo:'Docente',actorRole:'docente',estado:'PENDIENTE',actionLabel:'ELABORADO_POR'}];
 const base={id:'a',formalVersion:'1.0',reviewRound:1,pageCount:0,generatedAt:'14/09/2026 10:00',generatedBy:'Andrea',grupo:'Unidad',carrera:'Software',periodo:'2026',unidadAcademica:'FISEI',elaborador:{nombre:'Andrea',cargo:'Docente',email:''},tieneAnexos:'no',anexos:[],signatures:[],historialCambios:[]};
 const t1={...base,documentType:'PLAN_TRABAJO',justificacion:'Justificación',objetivo:'Objetivo',matriz:[{id:1,nombre:'Actividad',desde:'2026-09-01',hasta:'2026-09-02',responsables:['Andrea'],recursos:['Equipo'],medios:['Informe']}],templateConfiguration:{sectionOrder:['general','justification','objective','matrix','annexes','signatures','history'],activeSectionIds:['general','justification','objective','matrix','annexes','signatures','history'],capturedAt:'hoy'}};
@@ -23,4 +23,8 @@ assert.equal(JSON.stringify(PAGE_SIZE_A4.landscape),JSON.stringify({widthMm:297,
 assert.equal(t1Pages.find(page=>page.contentSections?.includes('matrix')).orientation,'landscape');
 assert.ok(t1Pages.filter(page=>page.orientation==='portrait').length>0);
 assert.ok(t2Pages.every(page=>page.orientation==='portrait'||page.orientation==='landscape'));
+const matrixBlock=t1Pages.flatMap(page=>page.blocks||[]).find(block=>block.type==='matrix');
+assert.equal(matrixBlock.rows[0][1],'01/09/2026');
+assert.equal(matrixBlock.rows[0][2],'02/09/2026');
+assert.equal(t1.matriz[0].desde,'2026-09-01','la fecha interna permanece ISO');
 console.log('PASS: T1 y T2 usan A4 portrait/landscape y la matriz T1 conserva A4 horizontal.');

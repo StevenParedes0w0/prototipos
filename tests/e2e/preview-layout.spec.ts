@@ -75,6 +75,9 @@ test('T1 mantiene scroll portrait/landscape, páginas y expansión full-viewport
   await expectScrollableToEnd(page);
   for(let n=1;n<=count;n++){await page.getByTitle(`Ir a página ${n}`,{exact:true}).click();if(await sheet.locator('[data-rendered-section="matrix"]').count())break;}
   await expect(sheet).toHaveAttribute('data-page-orientation','landscape');
+  await expect(sheet).toContainText('14/09/2026');
+  await expect(sheet).toContainText('18/12/2026');
+  await expect(sheet).not.toContainText(/2026-09-14|2026-12-18/);
   for(let i=0;i<4;i++) await page.getByTitle('Aumentar zoom').click();
   await expectScrollableToEnd(page,true);
   const selected=await sheet.getAttribute('data-page-number');

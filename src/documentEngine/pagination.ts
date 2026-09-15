@@ -8,6 +8,15 @@ export const PAGE_SIZE_A4 = {
 } as const;
 export const DOCUMENT_PAGE_WIDTH = PAGE_SIZE_A4.portrait.widthPx;
 export const DOCUMENT_PAGE_HEIGHT = PAGE_SIZE_A4.portrait.heightPx;
+export function formatInstitutionalCalendarDate(value?: string): string {
+  if (!value) return value || "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
 export const signatureActionLabel = (stage: Pick<FlowStageNode, "actionLabel" | "actorRole">) =>
   stage.actionLabel === "APROBADO_POR" ? "Aprobado por" : stage.actionLabel === "VALIDADO_POR" || stage.actorRole === "validador" ? "Validado por" : stage.actionLabel === "REVISADO_POR" || stage.actorRole === "revisor" ? "Revisado por" : "Elaborado por";
 export const normalizeInformeTitle = (value: string) => value.replace(/^(?:\s*informe\s+de\s*:\s*)+/i, "").trim();
@@ -92,7 +101,7 @@ export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowSta
   };
   const addHistory = () => {
     const history = artifact.historialCambios?.length ? artifact.historialCambios : [{ version: artifact.formalVersion, descripcion: artifact.documentType === "PLAN_TRABAJO" ? "Elaboración del Plan de Trabajo" : "Elaboración inicial del Informe", fecha: artifact.elaborationFinalizedAt || artifact.generatedAt.split(" ")[0] }];
-    table("history", "history", title("history", "CONTROL DE HISTORIAL DE CAMBIOS"), history.map(row => ["v" + row.version.replace(/^v/i, ""), row.descripcion, row.fecha]), [14, 65, 22], "portrait");
+    table("history", "history", title("history", "CONTROL DE HISTORIAL DE CAMBIOS"), history.map(row => ["v" + row.version.replace(/^v/i, ""), row.descripcion, formatInstitutionalCalendarDate(row.fecha)]), [14, 65, 22], "portrait");
   };
   for (const section of ordered) {
     resetSection();
@@ -100,7 +109,7 @@ export function composeArtifactPages(artifact: DocumentArtifact, stages: FlowSta
     else if (section === "justification") text(section, title(section, "JUSTIFICACIÓN"), artifact.justificacion);
     else if (section === "objective") text(section, title(section, "OBJETIVO"), artifact.objetivo);
     else if (section === "matrix") {
-      table("matrix", section, title(section, "MATRIZ DE ACTIVIDADES"), (artifact.matriz || []).map(row => [row.nombre, row.desde, row.hasta, getActivityResponsibleDisplayLabel(row), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
+      table("matrix", section, title(section, "MATRIZ DE ACTIVIDADES"), (artifact.matriz || []).map(row => [row.nombre, formatInstitutionalCalendarDate(row.desde), formatInstitutionalCalendarDate(row.hasta), getActivityResponsibleDisplayLabel(row), row.recursos.join("\n"), row.medios.join("\n")]), [32, 10, 10, 25, 27, 28], "landscape");
       add({ type: "text", section, text: "Fuente: " + (artifact.fuente || "—") + "\nElaborado por: " + artifact.grupo }, 42, "landscape");
       if (artifact.collectsPersonalData) add({ type: "text", section, text: "Nota: Los datos proporcionados serán tratados conforme a la Ley Orgánica de Protección de Datos Personales, garantizando su confidencialidad, seguridad y uso responsable, y serán utilizados exclusivamente para fines institucionales." }, 64, "landscape");
     } else if (section === "background") text(section, title(section, "ANTECEDENTES"), artifact.informeData?.antecedentes || artifact.informeData?.introduccion);
