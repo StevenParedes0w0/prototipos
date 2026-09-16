@@ -874,3 +874,12 @@ Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
 - Validación final: TypeScript y build correctos; 4 pruebas Node aprobadas; 32 pruebas E2E aprobadas; snapshots T1/T2 sin cambios.
 
 Limitación vigente: el asistente continúa siendo una simulación local y no integra Groq, OpenAI ni servicios externos.
+
+# 44. CAPTCHA DE ACCESO — 16/09/2026
+
+Estado: **IMPLEMENTADO Y VALIDADO EN MOCKUP**.
+
+- El inicio de sesión incluye una verificación matemática renovable y bloquea el acceso hasta recibir el resultado correcto.
+- Una respuesta inválida muestra un error inline accesible; al cambiar el desafío se limpia la respuesta anterior.
+- La autenticación DEMO conserva sus credenciales y flujos existentes. Las ayudas E2E resuelven el desafío visible antes de iniciar sesión.
+- Validación: TypeScript y build correctos; 4 pruebas Node aprobadas; 34 pruebas E2E aprobadas; snapshots sin cambios.

@@ -2,10 +2,17 @@ import { expect, type Page } from '@playwright/test';
 import type { DocumentMasterState } from '../../src/documentEngine/types';
 
 export const names = { andrea: 'Ing. Andrea Pérez, Mg.', carlos: 'Ing. Carlos López, Mg.', patricia: 'Ing. Patricia Salazar, Mg.', laura: 'Ing. Laura Medina, Mg.' };
+async function solveLoginCaptcha(page: Page) {
+ const question = await page.getByTestId('login-captcha-question').textContent();
+ const operands = question?.match(/(\d+)\s*\+\s*(\d+)/);
+ expect(operands, 'La verificación de seguridad debe mostrar una suma').not.toBeNull();
+ await page.getByLabel('Respuesta de verificación').fill(String(Number(operands![1]) + Number(operands![2])));
+}
 export async function login(page: Page) {
  await page.goto('/');
  await page.getByPlaceholder('usuario@uta.edu.ec').fill('andrea.perez@uta.edu.ec');
  await page.getByPlaceholder('••••••••••', {exact:true}).fill('Mi$Clave2026');
+ await solveLoginCaptcha(page);
  await page.getByRole('button', {name:'INICIAR SESIÓN',exact:true}).click();
  await expect(page.getByLabel('Cambiar persona de la sesión DEMO')).toBeVisible();
 }

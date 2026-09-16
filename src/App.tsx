@@ -349,6 +349,19 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 
 // ─── Screen 01 — Login ────────────────────────────────────────────────────────
 
+type CaptchaChallenge = { left: number; right: number };
+
+function createCaptchaChallenge(previous?: CaptchaChallenge): CaptchaChallenge {
+  let challenge: CaptchaChallenge;
+  do {
+    challenge = {
+      left: Math.floor(Math.random() * 8) + 2,
+      right: Math.floor(Math.random() * 8) + 2,
+    };
+  } while (previous && challenge.left === previous.left && challenge.right === previous.right);
+  return challenge;
+}
+
 function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
   onLogin: () => void;
   onForgot: () => void;
@@ -358,9 +371,23 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
   const [hasError, setHasError] = useState(false);
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
+  const [captcha, setCaptcha] = useState<CaptchaChallenge>(() => createCaptchaChallenge());
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaError, setCaptchaError] = useState(false);
+  const captchaIsCorrect = captchaAnswer.trim() === String(captcha.left + captcha.right);
+
+  function renewCaptcha() {
+    setCaptcha(previous => createCaptchaChallenge(previous));
+    setCaptchaAnswer("");
+    setCaptchaError(false);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!captchaIsCorrect) {
+      setCaptchaError(true);
+      return;
+    }
     // Simulate: wrong creds → error, correct → login
     if (email === "andrea.perez@uta.edu.ec" && pwd === "temporal123") {
       onFirstLogin();
@@ -440,6 +467,47 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
             </div>
           </div>
 
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+              <label className="form-label required" htmlFor="login-captcha" style={{ marginBottom: 0 }}>Verificación de seguridad</label>
+              <button type="button" onClick={renewCaptcha} style={{
+                background: "none", border: "none", cursor: "pointer", padding: 0,
+                color: "#1a4f8a", fontSize: 12.5, fontWeight: 600,
+              }} aria-label="Cambiar desafío de verificación">
+                Cambiar desafío
+              </button>
+            </div>
+            <p id="login-captcha-question" data-testid="login-captcha-question" style={{
+              margin: "0 0 8px", fontSize: 13, color: "#475569", fontWeight: 500,
+            }}>
+              ¿Cuánto es {captcha.left} + {captcha.right}?
+            </p>
+            <input
+              id="login-captcha"
+              className={`form-input${captchaError ? " form-input-error" : ""}`}
+              style={{ borderColor: captchaError ? "#fca5a5" : undefined }}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Resultado"
+              value={captchaAnswer}
+              onChange={e => {
+                const answer = e.target.value;
+                setCaptchaAnswer(answer);
+                if (answer.trim() === String(captcha.left + captcha.right)) setCaptchaError(false);
+              }}
+              onBlur={() => setCaptchaError(Boolean(captchaAnswer.trim()) && !captchaIsCorrect)}
+              aria-label="Respuesta de verificación"
+              aria-invalid={captchaError}
+              aria-describedby={captchaError ? "login-captcha-error" : "login-captcha-question"}
+            />
+            {captchaError && (
+              <p id="login-captcha-error" role="alert" style={{ margin: "6px 0 0", fontSize: 12.5, color: "#b91c1c" }}>
+                El resultado no coincide. Intente nuevamente o cambie el desafío.
+              </p>
+            )}
+          </div>
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
               <input type="checkbox" style={{ accentColor: "#1a4f8a", width: 15, height: 15 }} />
@@ -453,7 +521,7 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
             </button>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
+          <button type="submit" className="btn btn-primary" disabled={!captchaIsCorrect} style={{ width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
             INICIAR SESIÓN
           </button>
         </form>
