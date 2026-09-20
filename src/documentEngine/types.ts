@@ -17,6 +17,7 @@ export interface AnexoDoc {
   id: number;
   nombre: string;
   archivo: string;
+  descripcion?: string;
   tamano: string;
 }
 

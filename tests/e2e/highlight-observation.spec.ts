@@ -75,8 +75,6 @@ test('resaltado normalizado persiste, navega y queda histórico en ronda 2', asy
   await next(page);
   await next(page);
   await next(page);
-  await page.getByRole('button', { name: 'Continuar a Anexos →', exact: true }).click();
-  await next(page);
   await next(page);
   current = await document(page, id);
   expect(current).toMatchObject({ formalVersion: '1.0', reviewRound: 2 });

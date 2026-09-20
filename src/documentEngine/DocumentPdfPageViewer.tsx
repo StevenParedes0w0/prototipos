@@ -1125,7 +1125,8 @@ export default function DocumentPdfPageViewer({
                           {artifact.tieneAnexos === "si" && artifact.anexos && artifact.anexos.length > 0 ? (
                             artifact.anexos.map((anexo, idx) => (
                               <div key={anexo.id} style={{ fontSize: 9.5, color: "#334155", padding: "3px 0", borderBottom: "1px dashed #e2e8f0" }}>
-                                <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.nombre} ({anexo.archivo} - {anexo.tamano})
+                                <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.archivo || anexo.nombre}
+                                {anexo.descripcion?.trim() && <div style={{ marginTop: 2 }}>{anexo.descripcion.trim()}</div>}
                               </div>
                             ))
                           ) : (
@@ -1552,7 +1553,8 @@ export default function DocumentPdfPageViewer({
                           {artifact.tieneAnexos === "si" && artifact.anexos && artifact.anexos.length > 0 ? (
                             artifact.anexos.map((anexo, idx) => (
                               <div key={anexo.id} style={{ fontSize: 9.5, color: "#334155", padding: "3px 0", borderBottom: "1px dashed #e2e8f0" }}>
-                                <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.nombre} ({anexo.archivo} - {anexo.tamano})
+                                <b>Anexo {LETRAS[idx] || idx + 1}:</b> {anexo.archivo || anexo.nombre}
+                                {anexo.descripcion?.trim() && <div style={{ marginTop: 2 }}>{anexo.descripcion.trim()}</div>}
                               </div>
                             ))
                           ) : (

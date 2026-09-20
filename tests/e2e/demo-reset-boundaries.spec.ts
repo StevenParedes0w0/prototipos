@@ -28,7 +28,7 @@ test('reset documental restaura documentos sin borrar plantillas ni catálogos a
 
   await session(page,names.andrea);await openDocuments(page);
   await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
-  const create=page.getByRole('dialog',{name:'Seleccionar grupo y período'});await create.getByLabel('Grupo institucional').selectOption('grp-1');await create.getByLabel('Período').selectOption('per-1');await create.getByRole('button',{name:'Crear borrador'}).click();
+  const create=page.getByRole('dialog',{name:'Seleccionar grupo y período'});await create.getByLabel('Grupo institucional').selectOption('grp-1');await create.getByRole('button',{name:'Crear borrador'}).click();
   expect(await documents(page)).toHaveLength(baseDocuments.length+1);
   await page.getByRole('button',{name:'Restablecer documentos DEMO',exact:true}).click();
   expect((await documents(page)).map(item=>item.id)).toEqual(baseDocuments.map(item=>item.id));

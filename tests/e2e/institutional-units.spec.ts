@@ -18,14 +18,14 @@ test('catálogo institucional compartido distingue unidades académicas y admini
  await createUnit(page,'ACADEMIC',academic,career); await createUnit(page,'ADMINISTRATIVE',administrative);
  await session(page,names.andrea); await openDocuments(page);
  await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
- const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});await dialog.getByLabel('Grupo institucional').selectOption('grp-1');await dialog.getByLabel('Período').selectOption('per-1');await dialog.getByRole('button',{name:'Crear borrador'}).click();
- await page.getByTestId('institutional-unit-select').selectOption({label:academic});await page.getByTestId('career-select').selectOption({label:career});
+ const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});await dialog.getByLabel('Grupo institucional').selectOption('grp-1');await dialog.getByRole('button',{name:'Crear borrador'}).click();
+ await expect(page.getByTestId('institutional-unit-select')).toBeDisabled();await expect(page.getByTestId('career-select')).toBeDisabled();
  const id=(await documents(page)).find(d=>d.teacherId==='usr-andrea-01'&&d.groupId==='grp-1')!.id;
  await page.getByRole('button',{name:'Continuar →',exact:true}).click();
- let persisted=(await documents(page)).find(d=>d.id===id)!;expect(persisted.currentArtifact).toMatchObject({unidadAcademica:academic,institutionalUnitType:'ACADEMIC'});expect(persisted.currentArtifact.carrera).toBe(career);
+ let persisted=(await documents(page)).find(d=>d.id===id)!;expect(persisted.currentArtifact).toMatchObject({unidadAcademica:'Facultad de Ingeniería en Sistemas, Electrónica e Industrial',institutionalUnitType:'ACADEMIC'});expect(persisted.currentArtifact.carrera).toBe('Ingeniería de Software');
  await session(page,names.laura);await page.getByText('Unidades Institucionales',{exact:true}).click();
  await page.getByRole('row').filter({hasText:academic}).getByRole('button',{name:`Desactivar ${academic}`}).click();
- persisted=(await documents(page)).find(d=>d.id===id)!;expect(persisted.currentArtifact.unidadAcademica).toBe(academic);
+ persisted=(await documents(page)).find(d=>d.id===id)!;expect(persisted.currentArtifact.unidadAcademica).toBe('Facultad de Ingeniería en Sistemas, Electrónica e Industrial');
  await session(page,names.andrea);await openDocuments(page);await page.getByRole('button',{name:'NUEVO DOCUMENTO',exact:true}).click();await page.getByRole('button',{name:'CREAR INFORME',exact:true}).click();
  await page.getByRole('radio',{name:/Informe independiente/}).check();
  await expect(page.getByTestId('institutional-unit-select').locator('option',{hasText:academic})).toHaveCount(0);

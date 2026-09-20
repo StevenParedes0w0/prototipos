@@ -69,8 +69,7 @@ test('Plan T1: elaboración, firma, observación persistente, devolución y rond
  await page.getByText('Ver observaciones y resaltados del documento devuelto',{exact:true}).click();
  await next(page);
  await page.getByPlaceholder('Defina el objetivo general...').fill('Gestionar y verificar los procesos de titulación con seguimiento periódico corregido.');
- await next(page);await next(page);await next(page);
- await page.getByRole('button',{name:'Continuar a Anexos →',exact:true}).click();await next(page);await next(page);
+ await next(page);await next(page);await next(page);await next(page);
  d=await document(page,id);expect(d).toMatchObject({reviewRound:2,formalVersion:'1.0'});expect(d.currentArtifact.signatures).toHaveLength(0);expect(d.artifactHistory[0]).toEqual(signed);expect(d.observations[0].status).toBe('HISTORICAL');
  await sign(page);
  d=await document(page,id);expect(d).toMatchObject({documentState:'EN REVISIÓN',reviewRound:2});expect(d.currentArtifact.signatures).toHaveLength(1);

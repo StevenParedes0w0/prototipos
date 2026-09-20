@@ -7,7 +7,6 @@ async function startPlan(page: import('@playwright/test').Page) {
   await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});
   await dialog.getByLabel('Grupo institucional').selectOption('grp-1');
-  await dialog.getByLabel('Período').selectOption('per-1');
   await dialog.getByRole('button',{name:'Crear borrador'}).click();
   const id=(await documents(page)).find(d=>d.teacherId==='usr-andrea-01'&&d.groupId==='grp-1')!.id;
   await page.getByRole('button',{name:'Continuar →',exact:true}).click();

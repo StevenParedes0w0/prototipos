@@ -295,7 +295,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
               fontSize: 30, fontWeight: 800, color: "#e8f0fa", lineHeight: 1.2,
               fontFamily: "'DM Sans',sans-serif", marginBottom: 10,
             }}>
-              Gestión<br />Documental
+              UTAPED <br /> 
             </h1>
             <p style={{ fontSize: 14.5, color: "#7aaed0", lineHeight: 1.65, marginBottom: 32, maxWidth: 340 }}>
               Planificación, seguimiento y evidencias docentes.
@@ -1545,6 +1545,7 @@ interface ActividadMatriz {
   id: number;
   nombre: string;
   categoria: string;
+  activityType?: "POA" | "Plan de Mejoras" | "Acción de Mejora" | "Otra";
   tipo: "obligatoria" | "opcional" | "otra";
   descripcion: string;
   desde: string;
@@ -1557,13 +1558,21 @@ interface ActividadMatriz {
   medios: string[];
 }
 
+type ActivityType = NonNullable<ActividadMatriz["activityType"]>;
+const ACTIVITY_TYPES: ActivityType[] = ["POA", "Plan de Mejoras", "Acción de Mejora", "Otra"];
+function getActivityType(activity: unknown): ActivityType {
+  const value = activity && typeof activity === "object" ? activity as { activityType?: unknown; categoria?: unknown } : {};
+  return ACTIVITY_TYPES.includes(value.activityType as ActivityType)
+    ? value.activityType as ActivityType
+    : ACTIVITY_TYPES.includes(value.categoria as ActivityType) ? value.categoria as ActivityType : "Otra";
+}
+
 // ─── Stepper ──────────────────────────────────────────────────────────────────
 
 const STEPS = [
   "Información general",
   "Contenido",
   "Actividades",
-  "Matriz de actividades",
   "Anexos",
   "Previsualización",
   "Firma y Finalización",
@@ -2043,14 +2052,10 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, un
                 <div>
                   <label className="form-label">Tipo de documento</label>
                   <input className="form-input" value="Plan de Trabajo" disabled style={{ background: "#f8fafc", color: "#475569" }} />
-                  <div className="form-hint">Formato institucional UTA-SGC-A-2-1-P7-T1.</div>
                 </div>
                 <div>
-                  <label className="form-label required">Período académico</label>
-                  <select className="form-select" value={periodo} onChange={e => setPeriodo(e.target.value)}>
-                    {periodos.map(p => <option key={p.id}>{p.nombre}</option>)}
-                  </select>
-                  <div className="form-hint">Las fechas de las actividades deben estar dentro de este período.</div>
+                  <label className="form-label">Período académico</label>
+                  <input className="form-input" value={periodo} disabled style={{ background: "#f8fafc", color: "#475569" }} />
                 </div>
               </div>
             </div>
@@ -2058,9 +2063,9 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, un
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: "20px" }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1e2a3a", marginBottom: 14 }}>Procedencia institucional</h3>
               <div style={{ display: "grid", gridTemplateColumns: unitType === "ACADEMIC" ? "1fr 1.4fr 1.2fr" : "1fr 2fr", gap: 14 }}>
-                <div><label className="form-label required">Tipo de unidad</label><select className="form-select" data-testid="institutional-unit-type" value={unitType} onChange={e=>{const nextType=e.target.value as TipoUnidadInstitucional;const first=unidades.find(u=>u.tipo===nextType&&u.estado==="ACTIVO");onChange({unitType:nextType,institutionalUnitId:first?.id||"",careerId:nextType==="ACADEMIC"?(first?.carreras.find(c=>c.estado==="ACTIVO")?.id||""):""});}}><option value="ACADEMIC">Unidad académica</option><option value="ADMINISTRATIVE">Unidad administrativa</option></select></div>
-                <div><label className="form-label required">Unidad</label><select className="form-select" data-testid="institutional-unit-select" value={institutionalUnitId} onChange={e=>{const u=unidades.find(x=>x.id===e.target.value);onChange({institutionalUnitId:e.target.value,careerId:u?.tipo==="ACADEMIC"?(u.carreras.find(c=>c.estado==="ACTIVO")?.id||""):""});}}><option value="">— Seleccione —</option>{unidades.filter(u=>u.tipo===unitType&&u.estado==="ACTIVO").map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></div>
-                {unitType === "ACADEMIC" && <div><label className="form-label required">Carrera</label><select className="form-select" data-testid="career-select" value={careerId} onChange={e=>onChange({careerId:e.target.value})}><option value="">— Seleccione —</option>{selectedUnit?.carreras.filter(c=>c.estado==="ACTIVO").map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>}
+                <div><label className="form-label">Tipo de unidad</label><input className="form-input" data-testid="institutional-unit-type" value={unitType === "ACADEMIC" ? "Unidad académica" : "Unidad administrativa"} disabled style={{ background: "#f8fafc", color: "#475569" }} /></div>
+                <div><label className="form-label">Facultad</label><input className="form-input" data-testid="institutional-unit-select" value={selectedUnit?.nombre || ""} disabled style={{ background: "#f8fafc", color: "#475569" }} /></div>
+                {unitType === "ACADEMIC" && <div><label className="form-label">Carrera</label><input className="form-input" data-testid="career-select" value={selectedUnit?.carreras.find(c => c.id === careerId)?.nombre || ""} disabled style={{ background: "#f8fafc", color: "#475569" }} /></div>}
               </div>
             </div>
 
@@ -2146,9 +2151,6 @@ function Step1InfoGeneral({ onNext, onCancel, maxReached = 3, grupo, periodo, un
               </div>
             </div>
 
-            <div style={{ padding: "11px 14px", borderRadius: 8, background: "#f0f6ff", border: "1px solid #bfdbfe", fontSize: 12, color: "#1e40af", lineHeight: 1.6 }}>
-              <strong>Pasos siguientes:</strong> Después de guardar la información general, completará la justificación y el objetivo antes de seleccionar actividades.
-            </div>
           </div>
         </div>
       </div>
@@ -2436,6 +2438,7 @@ const MATRIZ_INICIAL: ActividadMatriz[] = [
 
 function isCompleta(a: ActividadMatriz) {
   return (
+    Boolean(a.nombre.trim()) &&
     Boolean(a.desde) &&
     Boolean(a.hasta) &&
     a.desde <= a.hasta &&
@@ -2478,6 +2481,12 @@ function Step3Matriz({
     setDateError("");
     setRecursoOtroError("");
     setMedioOtroError("");
+  }
+
+  function handleAgregarActividad() {
+    const id = Math.max(0, ...matriz.map(activity => activity.id)) + 1;
+    setMatriz([...matriz, { id, nombre: "", categoria: "POA", activityType: "POA", tipo: "otra", descripcion: "", desde: "", hasta: "", responsables: [], recursos: [], medios: [] }]);
+    handleOpenEdit(id);
   }
 
   // Auto-open & highlight when arriving via "Completar pendientes"
@@ -2593,19 +2602,22 @@ function Step3Matriz({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
-      <Stepper current={4} maxReached={maxReached} />
+      <Stepper current={3} maxReached={maxReached} />
 
       <div style={{ padding: "20px 28px 0" }}>
         <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Configurar matriz de actividades</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif" }}>Actividades</h1>
             <p style={{ fontSize: 13, color: "#6b7a8d", marginTop: 3 }}>
-              Complete la planificación de cada actividad definiendo fechas, responsables, recursos y medios de verificación.
+              Registre cada actividad con sus fechas, responsables, recursos y medios de verificación.
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12.5, color: "#6b7a8d" }}>{matriz.length} actividades seleccionadas</span>
+            <button className="btn btn-primary btn-sm" onClick={handleAgregarActividad}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar actividad
+            </button>
             <span style={{
               fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
               background: canContinue ? "#dcfce7" : "#fef3c7",
@@ -2655,12 +2667,9 @@ function Step3Matriz({
                     <td>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#1e2a3a", marginBottom: 3, lineHeight: 1.3 }}>{a.nombre}</div>
                       <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, background: "#dbeafe", color: "#1e40af", padding: "1px 6px", borderRadius: 99 }}>{a.categoria}</span>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, background: "#dbeafe", color: "#1e40af", padding: "1px 6px", borderRadius: 99 }}>{getActivityType(a)}</span>
                         {a.tipo === "obligatoria" && (
                           <span style={{ fontSize: 10.5, fontWeight: 700, background: "#f0fdf4", color: "#166534", padding: "1px 6px", borderRadius: 99 }}>OBL.</span>
-                        )}
-                        {a.tipo === "otra" && (
-                          <span style={{ fontSize: 10.5, fontWeight: 700, background: "#f1f5f9", color: "#475569", padding: "1px 6px", borderRadius: 99 }}>OTRA</span>
                         )}
                       </div>
                     </td>
@@ -2729,6 +2738,8 @@ function Step3Matriz({
           </table>
         </div>
 
+        <p style={{ marginTop: 10, fontSize: 12.5, color: "#64748b" }}>La matriz institucional del T1 se genera automáticamente con estas actividades.</p>
+
         {!canContinue && (
           <div style={{ marginTop: 14, padding: "11px 16px", background: "#fef3c7", border: "1.5px solid #fde68a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -2775,10 +2786,7 @@ function Step3Matriz({
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a", lineHeight: 1.3 }}>{editAct.nombre}</div>
                   <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, background: "#dbeafe", color: "#1e40af", padding: "1px 7px", borderRadius: 99 }}>{editAct.categoria}</span>
-                    <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                      {editAct.tipo === "obligatoria" ? "Obligatoria" : editAct.tipo === "otra" ? "Tipo: Otra" : "Opcional"}
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, background: "#dbeafe", color: "#1e40af", padding: "1px 7px", borderRadius: 99 }}>{getActivityType(editAct)}</span>
                   </div>
                 </div>
                 <button
@@ -2792,7 +2800,19 @@ function Step3Matriz({
 
             {/* Drawer body — scrollable */}
             <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label className="form-label required">Tipo de actividad</label>
+                <select className="form-select" aria-label="Tipo de actividad" value={getActivityType(editAct)} onChange={e => updateAct({ ...editAct, categoria: e.target.value, activityType: e.target.value as ActivityType })}>
+                  <option value="POA">POA</option><option value="Plan de Mejoras">Plan de Mejoras</option><option value="Acción de Mejora">Acción de Mejora</option><option value="Otra">Otra</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label required">Actividad</label>
+                <textarea className="form-textarea" aria-label="Actividad" value={editAct.nombre} placeholder="Describa la actividad" onChange={e => updateAct({ ...editAct, nombre: e.target.value })} />
+              </div>
               {/* Fechas */}
+              <div style={{ padding: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "#475569", marginBottom: 8, letterSpacing: "0.04em" }}>DURACIÓN DE LA ACTIVIDAD</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label className="form-label required">Desde</label>
@@ -2810,6 +2830,7 @@ function Step3Matriz({
                       setDateError(validateDates(editAct.desde, e.target.value));
                     }} />
                 </div>
+              </div>
               </div>
 
               {dateError && (
@@ -3395,7 +3416,7 @@ function Step4Contenido({ onPrev, onNext, maxReached = 4, justificacion, setJust
                 {wordCount(justificacion)} palabras
               </div>
               {justificacion.trim().length === 0 && (
-                <p className="form-error" style={{ marginTop: 4 }}>Complete esta sección antes de continuar.</p>
+                <p className="form-error" style={{ marginTop: 4 }}>Ingrese la justificación del Plan de Trabajo para continuar.</p>
               )}
             </div>
 
@@ -3542,8 +3563,6 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
   const [showModal, setShowModal] = useState(false);
   const [editingId,setEditingId] = useState<number | null>(null);
   const annexFileRef=useRef<HTMLInputElement>(null);
-  const [modalNombre, setModalNombre] = useState("");
-  const [modalDesc, setModalDesc] = useState("");
   const [modalFile, setModalFile] = useState("");
 
   const LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -3551,11 +3570,11 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
   const canContinue = tieneAnexos === "no" || (tieneAnexos === "si" && anexos.length > 0);
 
   const handleAddAnexo = () => {
-    if (!modalNombre.trim()) return;
-    const next={id:editingId || Date.now(),nombre:modalNombre.trim(),descripcion:modalDesc,archivo:modalFile || "anexo_DEMO.pdf"};
+    if (!modalFile.trim()) return;
+    const next={id:editingId || Math.max(0, ...anexos.map(anexo => anexo.id)) + 1,nombre:modalFile.trim(),descripcion:"",archivo:modalFile.trim()};
     setAnexos(editingId ? anexos.map(a => a.id === editingId ? next : a) : [...anexos,next]);
     setEditingId(null);
-    setModalNombre(""); setModalDesc(""); setModalFile("");
+    setModalFile("");
     setShowModal(false);
   };
 
@@ -3575,17 +3594,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
             <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1e2a3a", marginBottom: 18, fontFamily: "'DM Sans',sans-serif" }}>{editingId ? "Editar anexo" : "Agregar anexo"}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label className="form-label required">Nombre del anexo</label>
-                <input className="form-input" placeholder="Ej. Cronograma complementario"
-                  value={modalNombre} onChange={e => setModalNombre(e.target.value)} />
-              </div>
-              <div>
-                <label className="form-label">Descripción</label>
-                <textarea className="form-textarea" style={{ minHeight: 70 }} placeholder="Descripción breve del contenido del anexo..."
-                  value={modalDesc} onChange={e => setModalDesc(e.target.value)} />
-              </div>
-              <div>
-                <label className="form-label">Archivo adjunto</label>
+                <label className="form-label required">Archivo</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input className="form-input" placeholder="Seleccionar archivo..."
                     value={modalFile} onChange={e => setModalFile(e.target.value)} readOnly />
@@ -3598,19 +3607,18 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleAddAnexo} disabled={!modalNombre.trim()}>{editingId ? "Guardar cambios" : "Agregar anexo"}</button>
+              <button className="btn btn-primary" onClick={handleAddAnexo} disabled={!modalFile.trim()}>{editingId ? "Guardar cambios" : "Agregar"}</button>
             </div>
           </div>
         </div>
       )}
 
-      <Stepper current={5} maxReached={maxReached} />
+      <Stepper current={4} maxReached={maxReached} />
 
       <div style={{ padding: "20px 28px 0" }}>
         <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Gestión Documental Académica &rsaquo; Nuevo Plan de Trabajo</div>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Anexos</h1>
         <p style={{ fontSize: 13, color: "#6b7a8d" }}>
-          Indique si el Plan de Trabajo incluirá anexos y organice los elementos que formarán parte del documento.
         </p>
       </div>
 
@@ -3624,8 +3632,8 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
             </h3>
             <div style={{ display: "flex", gap: 14 }}>
               {[
-                { val: "si" as const, label: "Sí", desc: "Incluir sección de anexos en el documento" },
-                { val: "no" as const, label: "No", desc: "El documento se generará sin anexos" },
+                { val: "si" as const, label: "Sí" },
+                { val: "no" as const, label: "No" },
               ].map(opt => (
                 <label key={opt.val} style={{
                   flex: 1, cursor: "pointer", borderRadius: 8, padding: "14px 16px",
@@ -3638,32 +3646,21 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                     onChange={() => setTieneAnexos(opt.val)}
                     style={{ accentColor: "#1a4f8a", marginTop: 2, flexShrink: 0 }}
                   />
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1e2a3a" }}>{opt.label}</div>
-                    <div style={{ fontSize: 12, color: "#6b7a8d", marginTop: 2 }}>{opt.desc}</div>
-                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1e2a3a" }}>{opt.label}</div>
                 </label>
               ))}
             </div>
           </div>
-
-          {/* No anexos message */}
-          {tieneAnexos === "no" && (
-            <div className="alert alert-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              El documento será generado sin sección de anexos.
-            </div>
-          )}
 
           {/* Sí: list */}
           {tieneAnexos === "si" && (
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
               <div style={{ padding: "14px 18px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3 style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2a3a" }}>
-                  Anexos del documento
+                  Anexos
                   <span style={{ marginLeft: 8, fontSize: 11.5, color: "#6b7a8d", fontWeight: 400 }}>{anexos.length} {anexos.length === 1 ? "elemento" : "elementos"}</span>
                 </h3>
-                <button className="btn btn-primary btn-sm" onClick={() => {setEditingId(null);setModalNombre("");setModalDesc("");setModalFile("");setShowModal(true);}}>
+                <button className="btn btn-primary btn-sm" onClick={() => {setEditingId(null);setModalFile("");setShowModal(true);}}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   AGREGAR ANEXO
                 </button>
@@ -3690,7 +3687,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                       {/* Content */}
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1e2a3a" }}>
-                          Anexo {LETRAS[idx]} — {a.nombre}
+                          Anexo {LETRAS[idx]}
                         </div>
                         {a.descripcion && (
                           <div style={{ fontSize: 12, color: "#6b7a8d", marginTop: 2 }}>{a.descripcion}</div>
@@ -3716,7 +3713,7 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                             opacity: idx === anexos.length - 1 ? 0.3 : 1,
                           }}>↓</button>
                         </div>
-                        <button title="Editar anexo" aria-label="Editar anexo" className="btn btn-ghost btn-xs" onClick={() => {setEditingId(a.id);setModalNombre(a.nombre);setModalDesc(a.descripcion);setModalFile(a.archivo);setShowModal(true);}}>Editar</button>
+                        <button title="Reemplazar archivo" aria-label="Reemplazar archivo" className="btn btn-ghost btn-xs" onClick={() => {setEditingId(a.id);setModalFile(a.archivo);setShowModal(true);}}>Reemplazar</button>
                         <button className="btn btn-xs" style={{ background: "#fee2e2", color: "#991b1b", border: "none" }}
                           onClick={() => setAnexos(anexos.filter(x => x.id !== a.id))}>
                           Eliminar
@@ -3726,9 +3723,6 @@ function Step5Anexos({ onPrev, onNext, maxReached = 5, tieneAnexos, setTieneAnex
                   ))}
                 </div>
               )}
-              <div style={{ padding: "10px 18px", background: "#f8fafc", borderTop: "1px solid #f1f5f9", fontSize: 11.5, color: "#94a3b8" }}>
-                El sistema asigna automáticamente la numeración (Anexo A, B, C…). Si elimina un anexo, la secuencia se reordena.
-              </div>
             </div>
           )}
 
@@ -3763,7 +3757,7 @@ function Step6Preview({ onPrev, onNext, maxReached = 6, artifact, docEngine, pre
 }) {
   useEffect(() => { previewLayout?.enter(); return () => previewLayout?.exit(); }, []);
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-    <Stepper current={6} maxReached={maxReached} />
+    <Stepper current={5} maxReached={maxReached} />
     <div style={{flex:1,minHeight:0}}><DocumentPdfPageViewer artifact={artifact} formalVersion={artifact.formalVersion} reviewRound={artifact.reviewRound} documentState="BORRADOR" observations={[]} flowStages={docEngine?.flowStages || []} currentUser={{id:artifact.elaborador.id,nombre:artifact.elaborador.nombre,cargo:artifact.elaborador.cargo,role:"docente"}} readOnly onOpenFirmar={() => {}} onOpenDevolver={() => {}} onAddObservacion={() => {}} previewExpanded={previewLayout?.expanded} onPreviewExpandedChange={previewLayout?.setExpanded} /></div>
     <FormFooter onPrev={onPrev} onNext={onNext} onSave={() => {}} saving={false} canContinue={true} />
   </div>;
@@ -3776,18 +3770,40 @@ function Step7Firma({ onPrev, onNext, maxReached = 7, docEngine }: {
   docEngine?: ReturnType<typeof useDocumentEngine>;
 }) {
   const [open, setOpen] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const doc = docEngine?.docMaster;
   const slot = doc?.currentArtifact.signatureSlots?.find(s => s.role === "docente");
   const actorEligible = Boolean(doc && canonicalDemoActorId(doc.currentArtifact.elaborador.id) === canonicalDemoActorId(docEngine?.currentUser.id));
   const flowConfigured = Boolean(doc && hasConfiguredNextStage(doc.flowStages));
   return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-    <Stepper current={7} maxReached={maxReached} />
+    <Stepper current={6} maxReached={maxReached} />
     <div style={{padding:28}}><h1 style={{fontSize:22,fontWeight:700,color:"#0f2f56"}}>Firma y Finalización</h1>
       <p style={{margin:"16px 0"}}>La firma finaliza la elaboración y envía automáticamente el documento a la siguiente etapa configurada.</p>
       {!flowConfigured && <div role="alert" style={{marginBottom:16,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#92400e"}}><strong>El flujo de aprobación de este grupo aún no está completamente configurado.</strong><br/>Solicite al administrador completar la configuración del flujo.</div>}
-      {doc?.documentState === "LISTO PARA FIRMA" && <button className="btn btn-primary" disabled={!slot || !actorEligible || !flowConfigured} onClick={() => setOpen(true)}>FIRMAR Y FINALIZAR ELABORACIÓN</button>}
+      {doc?.documentState === "LISTO PARA FIRMA" && <button className="btn btn-primary" disabled={!slot || !actorEligible || !flowConfigured} onClick={() => setShowConfirm(true)}>FIRMAR Y FINALIZAR ELABORACIÓN</button>}
       <button className="btn btn-ghost" onClick={onPrev}>Volver a previsualización</button>
     </div>
+    {showConfirm && (
+      <div role="dialog" aria-modal="true" aria-label="Confirmar firma y finalización" style={{position:"fixed",inset:0,backgroundColor:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+        <div style={{background:"#fff",padding:24,borderRadius:12,width:400,maxWidth:"90%",boxShadow:"0 10px 25px rgba(0,0,0,0.15)"}}>
+          <div style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:20}}>
+            <div style={{background:"#eff6ff",color:"#3b82f6",padding:10,borderRadius:"50%",flexShrink:0}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div>
+              <h3 style={{fontSize:18,fontWeight:600,color:"#1e293b",margin:"0 0 8px 0"}}>Confirmar firma y finalización</h3>
+              <p style={{fontSize:14,color:"#64748b",margin:0,lineHeight:1.5}}>
+                Está a punto de firmar y finalizar la elaboración de este documento. Después de continuar se generará el artefacto correspondiente para el flujo de revisión. ¿Desea continuar?
+              </p>
+            </div>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>
+            <button className="btn btn-ghost" onClick={() => setShowConfirm(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={() => { setShowConfirm(false); setOpen(true); }}>Firmar y finalizar</button>
+          </div>
+        </div>
+      </div>
+    )}
     {doc && <ModalFirmaDocumental isOpen={open} onClose={() => setOpen(false)} tituloDocumento={doc.nombre} grupo={doc.grupo} formalVersion={doc.formalVersion} reviewRound={doc.reviewRound} actorNombre={doc.currentArtifact.elaborador.nombre} actorCargo={doc.currentArtifact.elaborador.cargo} ubicacionSugerida={slot ? `Página ${slot.pageNumber || slot.pageIndex} — ${slot.label}` : "Ubicación no disponible"} accionTexto="FIRMAR Y FINALIZAR ELABORACIÓN" actorEligible={actorEligible} hasValidSignatureSlot={Boolean(slot)} onFirmar={(file, location, mode) => {const signed=docEngine!.firmarComoElaborador(doc.id,file,location,mode);if(signed) onNext();return signed;}} />}
   </div>;
 }
@@ -3987,6 +4003,14 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
   const responsablesGrupo = miembrosAplicables.map(m => m.nombreCompleto);
   const responsablesGrupoIds = miembrosAplicables.map(m => canonicalDemoActorId(m.usuarioId));
   const gruposDisponibles = (adminState?.grupos || GRUPOS_ADMIN_INICIALES).filter(g => g.estado === "ACTIVO" && g.miembros.some(m => canonicalDemoActorId(m.usuarioId) === docEngine?.currentUser.id));
+  const actividadesIniciales: ActividadMatriz[] = (adminState
+    ? adminState.actividadesCatalogo.filter(a => a.estado === "ACTIVO" && (a.gruposAsociadosNombres.includes(draft.grupo) || grupoActual?.actividades.some(g => g.actividadId === a.id))).map((a, index) => ({
+      id: index + 1, nombre: a.nombre, descripcion: a.descripcion, categoria: a.categoria, activityType: ACTIVITY_TYPES.includes(a.categoria as ActivityType) ? a.categoria as ActivityType : "Otra",
+      tipo: grupoActual?.actividades.find(g => g.actividadId === a.id)?.obligatoriedad === "OBLIGATORIA" ? "obligatoria" as const : "opcional" as const,
+      desde: "", hasta: "", responsables: [], recursos: [], medios: [],
+    }))
+    : ACTIVIDADES_CATALOGO.map(a => ({ ...a, activityType: a.categoria as ActivityType, desde: "", hasta: "", responsables: [], recursos: [], medios: [] }))
+  ).filter(a => a.tipo === "obligatoria");
   const matrizDocumental = draft.matriz.map(a => {
     const members = miembrosAplicables;
     const responsableIds = members.filter(member => a.responsables.includes(member.nombreCompleto)).map(member => canonicalDemoActorId(member.usuarioId));
@@ -4002,7 +4026,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
     let saved: Partial<PlanDraft> = {};
     try { saved = JSON.parse(localStorage.getItem(`${DRAFT_KEY}:${docId}`) || "{}"); } catch {}
     const a = doc.currentArtifact;
-    setDraftState({...DEFAULT_DRAFT, unitType:a.institutionalUnitType || "ACADEMIC", institutionalUnitId:a.institutionalUnitId || "unit-fisei", careerId:a.careerId || "career-software", grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", collectsPersonalData:a.collectsPersonalData || false, justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m,categoria:"Actividad",tipo:"otra",descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
+    setDraftState({...DEFAULT_DRAFT, unitType:a.institutionalUnitType || "ACADEMIC", institutionalUnitId:a.institutionalUnitId || "unit-fisei", careerId:a.careerId || "career-software", grupo:doc.grupo, periodo:doc.periodo, fuente:a.fuente || "", collectsPersonalData:a.collectsPersonalData || false, justificacion:a.justificacion || "", objetivo:a.objetivo || "", matriz:(a.matriz || []).map(m => ({...m, categoria:getActivityType(m), activityType:getActivityType(m), tipo:"otra", descripcion:""})), tieneAnexos:a.tieneAnexos, anexos:a.anexos.map(x => ({...x,descripcion:""})), ...saved});
   }
 
   function updateDraft(changes: Partial<PlanDraft>) {
@@ -4086,10 +4110,10 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           setMaxReached(m => Math.max(m, 2)); setSub("step4"); }} onCancel={() => setSub("list")} />
       )}
       {sub === "step2" && (
-        <Step2Actividades grupoNombre={draft.grupo} periodoNombre={draft.periodo} catalogo={adminState ? adminState.actividadesCatalogo.filter(a => a.estado === "ACTIVO" && (a.gruposAsociadosNombres.includes(draft.grupo) || grupoActual?.actividades.some(g => g.actividadId === a.id))).map(a => ({id:adminState.actividadesCatalogo.indexOf(a)+1,nombre:a.nombre,descripcion:a.descripcion,categoria:a.categoria,tipo:grupoActual?.actividades.find(g => g.actividadId === a.id)?.obligatoriedad === "OBLIGATORIA" ? "obligatoria" : "opcional"})) : ACTIVIDADES_CATALOGO} matriz={draft.matriz} onChange={m => saveDraft({ matriz: m })} maxReached={maxReached} onPrev={() => setSub("step4")} onNext={() => { setMaxReached(m => Math.max(m, 4)); setSub("step3edit"); }} />
+        <Step2Actividades grupoNombre={draft.grupo} periodoNombre={draft.periodo} catalogo={adminState ? adminState.actividadesCatalogo.filter(a => a.estado === "ACTIVO" && (a.gruposAsociadosNombres.includes(draft.grupo) || grupoActual?.actividades.some(g => g.actividadId === a.id))).map(a => ({id:adminState.actividadesCatalogo.indexOf(a)+1,nombre:a.nombre,descripcion:a.descripcion,categoria:a.categoria,tipo:grupoActual?.actividades.find(g => g.actividadId === a.id)?.obligatoriedad === "OBLIGATORIA" ? "obligatoria" : "opcional"})) : ACTIVIDADES_CATALOGO} matriz={draft.matriz} onChange={m => saveDraft({ matriz: m })} maxReached={maxReached} onPrev={() => setSub("step4")} onNext={() => { setMaxReached(m => Math.max(m, 4)); setSub("step5"); }} />
       )}
       {sub === "step3edit" && (
-        <><label style={{padding:"12px 28px",fontSize:13}}><input type="checkbox" checked={draft.collectsPersonalData} onChange={e => saveDraft({collectsPersonalData:e.target.checked})} /> Esta planificación recopila datos personales. Incluir nota de protección de datos.</label><label className="form-label" style={{padding:"12px 28px"}}>Fuente de la matriz<input className="form-input" value={draft.fuente} onChange={e => saveDraft({fuente:e.target.value})} placeholder="Documento, grupo u otra fuente" /></label><Step3Matriz
+        <Step3Matriz
           maxReached={maxReached}
           responsablesGrupo={responsablesGrupo}
           responsablesGrupoIds={responsablesGrupoIds}
@@ -4102,9 +4126,9 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           saving={saving}
           onSave={m => saveDraft({ matriz: m })}
           initialEditId={initialEditId}
-          onPrev={() => setSub("step2")}
-          onNext={() => { setMaxReached(m => Math.max(m, 3)); setInitialEditId(null); setSub("step3review"); }}
-        /></>
+          onPrev={() => setSub("step4")}
+          onNext={() => { setMaxReached(m => Math.max(m, 4)); setInitialEditId(null); setSub("step5"); }}
+        />
       )}
       {sub === "step3review" && (
         <Step3Revision
@@ -4131,7 +4155,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           saving={saving}
           onSave={() => saveDraft({})}
           onPrev={() => setSub("step1")}
-          onNext={() => { saveDraft({}); setMaxReached(m => Math.max(m, 3)); setSub("step2"); }}
+          onNext={() => { saveDraft(draft.matriz.length ? {} : { matriz: actividadesIniciales }); setMaxReached(m => Math.max(m, 3)); setSub("step3edit"); }}
         />
       )}
       {sub === "step5" && (
@@ -4143,8 +4167,8 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
           setAnexos={v => updateDraft({ anexos: v })}
           saving={saving}
           onSave={() => saveDraft({})}
-          onPrev={() => setSub("step3review")}
-          onNext={() => { saveDraft({}); setMaxReached(m => Math.max(m, 6)); setSub("step6"); }}
+          onPrev={() => setSub("step3edit")}
+          onNext={() => { saveDraft({}); setMaxReached(m => Math.max(m, 5)); setSub("step6"); }}
         />
       )}
       {sub === "step6" && (
@@ -4170,7 +4194,7 @@ function PlanesView({ onNavigateActividades, initialShowObsModal, docEngine, adm
               if (flow?.estado === "CONFIGURADO" && flow.etapas.length > 1 && adminState) docEngine.configurarFlujoDocumento(id,flowFromConfiguration(flow,adminState.usuarios));
               docEngine.generarArtefacto(id, {collectsPersonalData:draft.collectsPersonalData,fuente:draft.fuente, justificacion: draft.justificacion, objetivo: draft.objetivo, matriz: matrizDocumental, tieneAnexos: draft.tieneAnexos, anexos: draft.anexos.map(a => ({...a, tamano: ""}))});
             }
-            saveDraft({}); setMaxReached(m => Math.max(m, 7)); setSub("step7");
+            saveDraft({}); setMaxReached(m => Math.max(m, 6)); setSub("step7");
           }}
         />
       )}

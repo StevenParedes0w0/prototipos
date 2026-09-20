@@ -10,7 +10,6 @@ test('Club Académico bloquea el envío cuando el flujo de aprobación está inc
   const createDialog = page.getByRole('dialog', { name: 'Seleccionar grupo y período' });
   await expect(createDialog.getByLabel('Grupo institucional').locator('option[value="grp-3"]')).toHaveText('Club Académico de Software');
   await createDialog.getByLabel('Grupo institucional').selectOption('grp-3');
-  await createDialog.getByLabel('Período').selectOption('per-1');
   await expect(createDialog.getByRole('button', { name: 'Crear borrador', exact: true })).toBeEnabled();
   await createDialog.getByRole('button', { name: 'Crear borrador', exact: true }).click();
 
@@ -27,11 +26,11 @@ test('Club Académico bloquea el envío cuando el flujo de aprobación está inc
   await page.getByPlaceholder('Defina el objetivo general...').fill('Fomentar el desarrollo tecnológico y la participación estudiantil en programación universitaria.');
   await page.getByRole('button', { name: 'Continuar →', exact: true }).click();
 
-  await page.getByText('Competencias internas de programación universitaria', { exact: true }).click();
-  await page.getByRole('button', { name: 'Continuar →', exact: true }).click();
+  await page.getByRole('button', { name: 'Agregar actividad', exact: true }).click();
+  await page.getByLabel('Tipo de actividad', { exact: true }).selectOption('POA');
+  await page.getByLabel('Actividad', { exact: true }).fill('Competencias internas de programación universitaria');
 
   const activityRow = page.getByRole('row').filter({ hasText: 'Competencias internas de programación universitaria' });
-  await activityRow.getByRole('button', { name: 'Completar', exact: true }).click();
   await page.getByLabel('Desde', { exact: true }).fill('2026-09-14');
   await page.getByLabel('Hasta', { exact: true }).fill('2026-12-18');
   await page.getByRole('checkbox', { name: 'Seleccionar todos', exact: true }).check();
@@ -41,8 +40,7 @@ test('Club Académico bloquea el envío cuando el flujo de aprobación está inc
   await expect(activityRow).toContainText('COMPLETA');
 
   await page.getByRole('button', { name: 'Continuar →', exact: true }).click();
-  await page.getByRole('button', { name: 'Continuar a Anexos →', exact: true }).click();
-  await page.getByRole('radio', { name: 'No El documento se generará sin anexos', exact: true }).check();
+  await page.getByRole('radio', { name: 'No', exact: true }).check();
   await page.getByRole('button', { name: 'Continuar →', exact: true }).click();
 
   const preview = page.getByTestId('document-page');

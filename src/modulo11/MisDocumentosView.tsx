@@ -32,8 +32,8 @@ export default function MisDocumentosView({
   const documents = docEngine.documents.filter(d => d.currentArtifact.elaborador.id === docEngine.currentUser.id);
   const [showPlanModal,setShowPlanModal]=useState(false);
   const [newGroupId,setNewGroupId]=useState("");
-  const [newPeriodId,setNewPeriodId]=useState(periodos.find(p => p.estado === "ACTIVO")?.id || "");
-  const duplicate=findPlanByIdentity(docEngine.documents,{teacherId:docEngine.currentUser.id,groupId:newGroupId,periodId:newPeriodId});
+  const activePeriod = periodos.find(p => p.estado === "ACTIVO");
+  const duplicate=findPlanByIdentity(docEngine.documents,{teacherId:docEngine.currentUser.id,groupId:newGroupId,periodId:activePeriod?.id || ""});
   const continueDocument=(doc:DocumentMasterState) => {
     if(doc.documentType === "INFORME") {if(doc.documentState === "DEVUELTO")docEngine.iniciarCorreccion(doc.id);onContinuarInforme(doc.id);}
     else if(["DEVUELTO","EN CORRECCIÓN"].includes(doc.documentState))onCorregirPlan(doc.id);
@@ -392,7 +392,7 @@ export default function MisDocumentosView({
 
       {showPlanModal && <div role="dialog" aria-modal="true" aria-label="Seleccionar grupo y período" style={{position:"fixed",inset:0,background:"#0f233ca6",zIndex:360,display:"grid",placeItems:"center",padding:20}}><div style={{background:"white",padding:24,borderRadius:12,width:520,maxWidth:"100%"}}>
         <h2>Nuevo Plan de Trabajo</h2><label className="form-label">Grupo institucional<select className="form-select" value={newGroupId} onChange={e=>setNewGroupId(e.target.value)}><option value="">Seleccione un grupo</option>{grupos.map(g=><option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label>
-        <label className="form-label">Período<select className="form-select" value={newPeriodId} onChange={e=>setNewPeriodId(e.target.value)}><option value="">Seleccione un período</option>{periodos.filter(p=>p.estado === "ACTIVO").map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></label>
+        <div style={{marginTop:12,padding:"10px 12px",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:8}}><div className="form-label">Período académico</div><div style={{fontSize:13.5,color:"#334155"}}>{activePeriod?.nombre || "No hay un período activo configurado"}</div></div>
         {!grupos.length && <p>No tiene grupos activos asignados. El administrador puede gestionar su pertenencia.</p>}
         {duplicate && <div role="alert" style={{marginTop:12,padding:12,borderRadius:8,background:"#fffbeb",border:"1px solid #fcd34d",color:"#78350f"}}>
           <strong>Ya existe un Plan de Trabajo para este docente, grupo y período.</strong>
@@ -401,7 +401,7 @@ export default function MisDocumentosView({
             {duplicate.documentState === "BORRADOR" ? "Continuar borrador" : duplicate.documentState === "EN CORRECCIÓN" ? "Continuar corrección" : "Ver documento"}
           </button>
         </div>}
-        <div style={{display:"flex",gap:8,marginTop:16}}><button className="btn btn-ghost" onClick={()=>setShowPlanModal(false)}>Cancelar</button><button className="btn btn-primary" disabled={!newGroupId || !newPeriodId || !!duplicate} onClick={()=>{setShowPlanModal(false);onNewPlan(newGroupId,newPeriodId);}}>Crear borrador</button></div>
+        <div style={{display:"flex",gap:8,marginTop:16}}><button className="btn btn-ghost" onClick={()=>setShowPlanModal(false)}>Cancelar</button><button className="btn btn-primary" disabled={!newGroupId || !activePeriod || !!duplicate} onClick={()=>{if(!activePeriod)return;setShowPlanModal(false);onNewPlan(newGroupId,activePeriod.id);}}>Crear borrador</button></div>
       </div></div>}
       {/* MODAL 1: SELECCIONAR TIPO DE DOCUMENTO */}
       {showTipoModal && (

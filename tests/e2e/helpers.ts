@@ -45,13 +45,11 @@ export async function createPlan(page: Page) {
  await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});
  await dialog.getByLabel('Grupo institucional').selectOption('grp-1');
- await dialog.getByLabel('Período').selectOption('per-1');
  await expect(dialog.getByRole('button',{name:'Crear borrador'})).toBeEnabled();
  await dialog.getByRole('button',{name:'Crear borrador'}).click();
  const doc=(await documents(page)).find(d=>d.teacherId==='usr-andrea-01' && d.groupId==='grp-1' && d.periodId==='per-1')!;
  await next(page);
  await page.getByPlaceholder('Defina el objetivo general...').fill('Gestionar la ejecución de los procesos académicos y administrativos de la Unidad de Titulación.');
- await next(page);
  await next(page);
  return doc.id;
 }
@@ -77,12 +75,12 @@ export async function completeMatrix(page: Page, validateOther=false) {
   await page.getByRole('button',{name:'Guardar actividad',exact:true}).click();
  }
  await next(page);
- await page.getByRole('button',{name:'Continuar a Anexos →',exact:true}).click();
- await page.getByRole('radio',{name:'No El documento se generará sin anexos',exact:true}).check();
+ await page.getByRole('radio',{name:'No',exact:true}).check();
  await next(page);
 }
 export async function sign(page: Page, action='FIRMAR Y FINALIZAR ELABORACIÓN', trigger=action) {
  await page.getByRole('button',{name:trigger,exact:true}).click();
+ if (action === 'FIRMAR Y FINALIZAR ELABORACIÓN') await page.getByRole('dialog',{name:'Confirmar firma y finalización'}).getByRole('button',{name:'Firmar y finalizar',exact:true}).click();
  const modal=page.getByRole('dialog',{name:'Firma documental'});
  await modal.getByRole('button',{name:'Usar certificado DEMO',exact:true}).click();
  await modal.getByRole('checkbox').check();

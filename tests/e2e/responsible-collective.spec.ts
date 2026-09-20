@@ -20,10 +20,7 @@ test('Seleccionar todos conserva identidades y usa responsable colectivo en UI y
   await configureActivity(page, first);
   await configureActivity(page, 'Difusión de normativa interna de titulación');
 
-  await next(page);
-  await expect(page.getByText('Responsable de la unidad', { exact: true })).toHaveCount(2);
-
-  await page.getByRole('button', { name: `Editar actividad ${first}`, exact: true }).click();
+  await page.getByRole('row').filter({ hasText: first }).getByRole('button', { name: 'Editar', exact: true }).click();
   await page.getByRole('checkbox', { name: names.patricia, exact: true }).uncheck();
   await page.getByRole('button', { name: 'Guardar actividad', exact: true }).click();
   const firstRow = page.getByRole('row').filter({ hasText: first });
@@ -42,8 +39,7 @@ test('Seleccionar todos conserva identidades y usa responsable colectivo en UI y
   await expect(firstRow).toContainText('Responsable de la unidad');
 
   await next(page);
-  await page.getByRole('button', { name: 'Continuar a Anexos →', exact: true }).click();
-  await page.getByRole('radio', { name: 'No El documento se generará sin anexos', exact: true }).check();
+  await page.getByRole('radio', { name: 'No', exact: true }).check();
   await next(page);
   const preview = page.getByTestId('document-page');
   const matrixPage = Number((await document(page, id)).currentArtifact.pages?.findIndex(item => item.blocks?.some(block => block.type === 'matrix'))) + 1 || 4;

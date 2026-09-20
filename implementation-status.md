@@ -883,3 +883,31 @@ Estado: **IMPLEMENTADO Y VALIDADO EN MOCKUP**.
 - Una respuesta inválida muestra un error inline accesible; al cambiar el desafío se limpia la respuesta anterior.
 - La autenticación DEMO conserva sus credenciales y flujos existentes. Las ayudas E2E resuelven el desafío visible antes de iniciar sesión.
 - Validación: TypeScript y build correctos; 4 pruebas Node aprobadas; 34 pruebas E2E aprobadas; snapshots sin cambios.
+
+# 45. AJUSTES T1 POSTERIORES A VALIDACIÓN CON CLIENTE — 19/09/2026
+
+Estado: **IMPLEMENTADOS Y VALIDADOS EN MOCKUP**.
+
+- Información general T1: el período activo, unidad y carrera se muestran como datos institucionales automáticos y de solo lectura; el diálogo de creación conserva únicamente la selección del grupo institucional.
+- Contenido: la justificación es obligatoria y muestra el mensaje inline solicitado. El asistente IA DEMO no sustituye la necesidad de ingresar contenido.
+- Actividades: el recorrido normal T1 se consolidó en una sola pantalla de actividades. Cada registro incluye tipo, descripción, duración, responsables, recursos y medios de verificación; la matriz del documento se compone desde esos datos.
+- Anexos: se conserva la decisión Sí/No; cuando se habilitan se aceptan documentos de cualquier tipo para la simulación y no se mezclan con evidencias de ejecución.
+- Firma: antes de abrir la simulación de certificado aparece una confirmación explícita. Cancelar mantiene el documento sin firmas y permite volver a editar; confirmar continúa con la firma y finalización existentes.
+- Regresión: TypeScript y build correctos; 4 pruebas Node aprobadas; 36 pruebas E2E aprobadas, incluidas dos pruebas específicas de los ajustes T1. Snapshots sin cambios.
+
+# 46. MICROCORRECCIÓN VISUAL T1 — 20/09/2026
+
+Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
+
+- Actividades: `activityType` es la fuente de verdad visual y las filas ya no combinan una clasificación con `Tipo: Otra`; se conserva compatibilidad con datos DEMO heredados.
+- Anexos: la pantalla se redujo a Sí/No; al elegir Sí el modal solicita únicamente un archivo, acepta `.docx` e imágenes y asigna la letra del anexo automáticamente.
+- Información general: se retiraron ayudas redundantes y `Unidad` se presenta como `Facultad`, sin modificar IDs ni lógica institucional.
+- Validación: TypeScript, build, cuatro pruebas Node y 36 pruebas E2E aprobadas; snapshots sin cambios.
+
+# 47. RENDER DE ANEXOS E IDS ÚNICOS — 20/09/2026
+
+Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
+
+- El visor T1 dejó de imprimir nombre y archivo como campos separados cuando representan el mismo filename; la descripción solo aparece si tiene contenido.
+- Se conserva la numeración automática de anexos y los IDs nuevos se calculan a partir del máximo ID persistido, incluso después de recargar.
+- Validación: TypeScript, build, cuatro pruebas Node y 36 pruebas E2E aprobadas; snapshots sin cambios.

@@ -8,7 +8,6 @@ test('unicidad de Plan por docente, grupo y período y reset canónico',async({p
  await page.getByRole('button',{name:'CREAR PLAN DE TRABAJO',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'Seleccionar grupo y período'});
  await dialog.getByLabel('Grupo institucional').selectOption('grp-2');
- await dialog.getByLabel('Período').selectOption('per-1');
  await expect(dialog).toContainText('Comisión de Eventos Académicos');
  await expect(dialog).toContainText('Julio – Diciembre 2026');
  await expect(dialog).toContainText('1.0');await expect(dialog).toContainText('Ronda: 1');
