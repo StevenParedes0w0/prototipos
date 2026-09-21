@@ -4,9 +4,8 @@ import type { DocumentMasterState } from '../../src/documentEngine/types';
 export const names = { andrea: 'Ing. Andrea Pérez, Mg.', carlos: 'Ing. Carlos López, Mg.', patricia: 'Ing. Patricia Salazar, Mg.', laura: 'Ing. Laura Medina, Mg.' };
 async function solveLoginCaptcha(page: Page) {
  const question = await page.getByTestId('login-captcha-question').textContent();
- const operands = question?.match(/(\d+)\s*\+\s*(\d+)/);
- expect(operands, 'La verificación de seguridad debe mostrar una suma').not.toBeNull();
- await page.getByLabel('Respuesta de verificación').fill(String(Number(operands![1]) + Number(operands![2])));
+ expect(question?.trim(), 'El CAPTCHA visual debe mostrar un código').toMatch(/^[A-Z2-9]{6}$/);
+ await page.getByRole('textbox', { name: 'Código de verificación' }).fill(question!.trim());
 }
 export async function login(page: Page) {
  await page.goto('/');

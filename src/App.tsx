@@ -191,6 +191,11 @@ const Ico = {
       <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
     </svg>
   ),
+  refresh: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+  ),
   upload: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -257,7 +262,25 @@ function FISEILogoMark({ size = 44 }: { size?: number }) {
 
 // ─── Auth Layout (shared wrapper for screens 1–3) ────────────────────────────
 
-function AuthLayout({ children }: { children: React.ReactNode }) {
+function AuthLayout({ children, loginMode = false }: { children: React.ReactNode; loginMode?: boolean }) {
+  if (loginMode) {
+    return (
+      <div style={{ minHeight: "100vh", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px", background: "linear-gradient(135deg,#082746 0%,#104b78 52%,#1d6b92 100%)" }}>
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: .28, backgroundImage: "linear-gradient(120deg,transparent 0 42%,rgba(133,209,235,.18) 42.2% 42.35%,transparent 42.5%), radial-gradient(circle at 12% 18%,rgba(255,255,255,.2) 0 2px,transparent 3px), radial-gradient(circle at 88% 78%,rgba(255,255,255,.16) 0 2px,transparent 3px)", backgroundSize: "auto, 48px 48px, 64px 64px" }} />
+        <div aria-hidden="true" style={{ position: "absolute", width: 420, height: 420, border: "1px solid rgba(174,226,241,.22)", borderRadius: "35%", transform: "rotate(28deg)", right: "-120px", top: "-150px" }} />
+        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 470, background: "rgba(244,250,253,.97)", border: "1px solid rgba(255,255,255,.55)", borderRadius: 22, boxShadow: "0 26px 70px rgba(1,24,48,.32)", padding: "30px 34px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 24 }}>
+            <FISEILogoMark size={54} />
+            <div>
+              <div style={{ color: "#12385f", fontWeight: 800, fontSize: 16, fontFamily: "'DM Sans',sans-serif" }}>UTAPED-Gestión Documental Académica</div>
+              <div style={{ color: "#397aa0", fontSize: 12 }}>FISEI — Universidad Técnica de Ambato</div>
+            </div>
+          </div>
+          {children}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", height: "100%", minHeight: "100vh" }}>
       {/* Left institutional panel */}
@@ -278,7 +301,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 56 }}>
             <FISEILogoMark size={48} />
             <div>
-              <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 15, fontFamily: "'DM Sans',sans-serif" }}>Gestión Documental Académica</div>
+              <div style={{ color: "#e8f0fa", fontWeight: 700, fontSize: 15, fontFamily: "'DM Sans',sans-serif" }}>UTAPED-Gestión Documental Académica</div>
               <div style={{ color: "#8ab8d8", fontSize: 11.5 }}>FISEI — Universidad Técnica de Ambato</div>
             </div>
           </div>
@@ -349,17 +372,13 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 
 // ─── Screen 01 — Login ────────────────────────────────────────────────────────
 
-type CaptchaChallenge = { left: number; right: number };
+type CaptchaChallenge = string;
 
 function createCaptchaChallenge(previous?: CaptchaChallenge): CaptchaChallenge {
-  let challenge: CaptchaChallenge;
-  do {
-    challenge = {
-      left: Math.floor(Math.random() * 8) + 2,
-      right: Math.floor(Math.random() * 8) + 2,
-    };
-  } while (previous && challenge.left === previous.left && challenge.right === previous.right);
-  return challenge;
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let next = "";
+  do { next = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""); } while (next === previous);
+  return next;
 }
 
 function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
@@ -374,7 +393,7 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
   const [captcha, setCaptcha] = useState<CaptchaChallenge>(() => createCaptchaChallenge());
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaError, setCaptchaError] = useState(false);
-  const captchaIsCorrect = captchaAnswer.trim() === String(captcha.left + captcha.right);
+  const captchaIsCorrect = captchaAnswer.trim().toUpperCase() === captcha;
 
   function renewCaptcha() {
     setCaptcha(previous => createCaptchaChallenge(previous));
@@ -399,14 +418,14 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout loginMode>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e2a3a", fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>
             Iniciar sesión
           </h2>
           <p style={{ fontSize: 13.5, color: "#6b7a8d" }}>
-            Ingrese con las credenciales asignadas por la institución.
+            Ingrese con sus credenciales institucionales.
           </p>
         </div>
 
@@ -468,42 +487,33 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
           </div>
 
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-              <label className="form-label required" htmlFor="login-captcha" style={{ marginBottom: 0 }}>Verificación de seguridad</label>
-              <button type="button" onClick={renewCaptcha} style={{
-                background: "none", border: "none", cursor: "pointer", padding: 0,
-                color: "#1a4f8a", fontSize: 12.5, fontWeight: 600,
-              }} aria-label="Cambiar desafío de verificación">
-                Cambiar desafío
-              </button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <label className="form-label required" htmlFor="login-captcha" style={{ marginBottom: 0 }}>Código de verificación</label>
+              <button type="button" onClick={renewCaptcha} title="Generar nuevo código" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#1a4f8a", display: "flex" }} aria-label="Generar nuevo código de verificación">{Ico.refresh}</button>
             </div>
-            <p id="login-captcha-question" data-testid="login-captcha-question" style={{
-              margin: "0 0 8px", fontSize: 13, color: "#475569", fontWeight: 500,
-            }}>
-              ¿Cuánto es {captcha.left} + {captcha.right}?
-            </p>
+            <div id="login-captcha-question" data-testid="login-captcha-question" role="img" aria-label="Código de verificación visual" style={{ height: 58, borderRadius: 9, border: "1px solid #b8ccda", background: "linear-gradient(135deg,#e9f4f7,#d9eaf1)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", marginBottom: 9 }}>
+              <span style={{ position: "absolute", inset: "50% 8px auto", borderTop: "1px solid rgba(26,79,138,.28)", transform: "rotate(-7deg)" }} />
+              <span style={{ letterSpacing: "0.22em", fontWeight: 800, fontSize: 24, color: "#164d74", transform: "rotate(-2deg)", textShadow: "2px 1px 0 rgba(255,255,255,.8)" }}>{captcha}</span>
+            </div>
             <input
               id="login-captcha"
               className={`form-input${captchaError ? " form-input-error" : ""}`}
               style={{ borderColor: captchaError ? "#fca5a5" : undefined }}
               type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="Resultado"
+              placeholder="Introduzca el código"
               value={captchaAnswer}
               onChange={e => {
                 const answer = e.target.value;
                 setCaptchaAnswer(answer);
-                if (answer.trim() === String(captcha.left + captcha.right)) setCaptchaError(false);
+                if (answer.trim().toUpperCase() === captcha) setCaptchaError(false);
               }}
-              onBlur={() => setCaptchaError(Boolean(captchaAnswer.trim()) && !captchaIsCorrect)}
-              aria-label="Respuesta de verificación"
+              aria-label="Código de verificación"
               aria-invalid={captchaError}
               aria-describedby={captchaError ? "login-captcha-error" : "login-captcha-question"}
             />
             {captchaError && (
               <p id="login-captcha-error" role="alert" style={{ margin: "6px 0 0", fontSize: 12.5, color: "#b91c1c" }}>
-                El resultado no coincide. Intente nuevamente o cambie el desafío.
+                El código de verificación no coincide.
               </p>
             )}
           </div>
@@ -521,7 +531,7 @@ function LoginScreen({ onLogin, onForgot, onFirstLogin }: {
             </button>
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={!captchaIsCorrect} style={{ width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
+          <button type="submit" className="btn btn-primary" disabled={!captchaAnswer.trim()} style={{ width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
             INICIAR SESIÓN
           </button>
         </form>

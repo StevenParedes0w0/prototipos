@@ -911,3 +911,13 @@ Estado: **IMPLEMENTADA Y VALIDADA EN MOCKUP**.
 - El visor T1 dejó de imprimir nombre y archivo como campos separados cuando representan el mismo filename; la descripción solo aparece si tiene contenido.
 - Se conserva la numeración automática de anexos y los IDs nuevos se calculan a partir del máximo ID persistido, incluso después de recargar.
 - Validación: TypeScript, build, cuatro pruebas Node y 36 pruebas E2E aprobadas; snapshots sin cambios.
+
+# 48. REDISEÑO INSTITUCIONAL DEL LOGIN — 21/09/2026
+
+Estado: **IMPLEMENTADO Y VALIDADO EN MOCKUP**.
+
+- Login: se reemplazó la composición rígida azul/blanca por una tarjeta institucional central sobre un fondo azul con gradientes y geometría CSS sutil.
+- Identidad: se conserva el logo existente y se redujo el contenido a identidad, credenciales, verificación y acceso.
+- CAPTCHA: se sustituyó el desafío matemático por un código alfanumérico visual DEMO regenerable, con validación case-insensitive y error inline.
+- Accesibilidad: se conservaron labels, controles de contraseña accesibles y acciones SVG con nombres accesibles.
+- Validación: TypeScript, build, prueba de emojis y 36 pruebas E2E aprobadas; no se modificaron snapshots.
